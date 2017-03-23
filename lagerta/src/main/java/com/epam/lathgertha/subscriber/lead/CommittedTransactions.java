@@ -24,19 +24,24 @@ import java.util.List;
 
 public class CommittedTransactions {
 
-    private static final long INITIAL_COMMIT_ID = -1L;
+    static final long INITIAL_READY_COMMIT_ID = -1L;
+    private static final long INITIAL_COMMIT_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
-    private final List<Long> committed = new LinkedList<>();
-    private volatile long lastDenseCommit = INITIAL_COMMIT_ID;
+    private final List<Long> sparseCommitted = new LinkedList<>();
     private List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
+    private long lastDenseCommit;
+
+    public CommittedTransactions() {
+        this.lastDenseCommit = INITIAL_COMMIT_ID;
+    }
 
     public boolean addAll(List<Long> sortedTransactions) {
         return toMerge.add(sortedTransactions);
     }
 
     public boolean contains(long l) {
-        return l <= lastDenseCommit || committed.contains(l);
+        return l <= lastDenseCommit || sparseCommitted.contains(l);
     }
 
     public long getLastDenseCommit() {
@@ -45,7 +50,7 @@ public class CommittedTransactions {
 
     public void compress() {
         mergeCollections();
-        Iterator<Long> iterator = committed.iterator();
+        Iterator<Long> iterator = sparseCommitted.iterator();
         while (iterator.hasNext()) {
             Long next = iterator.next();
             if (lastDenseCommit + 1 == next) {
@@ -57,8 +62,18 @@ public class CommittedTransactions {
         }
     }
 
+    void updateLastDenseCommit(Long newLastDenseCommit) {
+        if (newLastDenseCommit > INITIAL_READY_COMMIT_ID) {
+            lastDenseCommit = newLastDenseCommit;
+            compress();
+        } else {
+            lastDenseCommit = INITIAL_READY_COMMIT_ID;
+            compress();
+        }
+    }
+
     private void mergeCollections() {
-        MergeUtil.mergeCollections(committed, toMerge, Long::compare);
+        MergeUtil.mergeCollections(sparseCommitted, toMerge, Long::compare);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
     }
 }

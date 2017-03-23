@@ -18,6 +18,7 @@ package com.epam.lathgertha.subscriber.lead;
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.common.CallableKeyListTask;
 import com.epam.lathgertha.common.CallableKeyTask;
+import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 
@@ -30,31 +31,35 @@ import java.util.UUID;
 
 public class LeadImpl extends Scheduler implements Lead {
 
+    private static final long SAVE_STATE_PERIOD = 1000L;
+
     private final Set<Long> inProgress = new HashSet<>();
     private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
 
-    LeadImpl(ReadTransactions readTransactions, CommittedTransactions committed) {
+    LeadImpl(LeadStateAssistant stateAssistant, ReadTransactions readTransactions, CommittedTransactions committed) {
         this.readTransactions = readTransactions;
         this.committed = committed;
+        pushTask(() -> stateAssistant.load(this));
         registerRule(this.committed::compress);
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
         registerRule(this::plan);
+        registerRule(new PeriodicRule(() -> stateAssistant.saveState(committed), SAVE_STATE_PERIOD));
     }
 
-    public LeadImpl() {
-        this(new ReadTransactions(), new CommittedTransactions());
+    public LeadImpl(LeadStateAssistant stateAssistant) {
+        this(stateAssistant, new ReadTransactions(), new CommittedTransactions());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
-        List<Long> result = !txScopes.isEmpty()
-                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
+    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> scopes) {
+        List<Long> result = !scopes.isEmpty()
+                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, scopes))
                 : toCommit.call(consumerId);
         return result == null ? Collections.emptyList() : result;
     }
@@ -76,6 +81,15 @@ public class LeadImpl extends Scheduler implements Lead {
     @Override
     public void notifyFailed(Long id) {
         //todo
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateState(Long lastCommit) {
+        pushTask(() -> committed.updateLastDenseCommit(lastCommit));
+        pushTask(readTransactions::updateLastDenseRead);
     }
 
     private void plan() {

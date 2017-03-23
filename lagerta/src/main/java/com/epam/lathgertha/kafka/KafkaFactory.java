@@ -18,6 +18,8 @@ package com.epam.lathgertha.kafka;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 
+import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Properties;
 
 public interface KafkaFactory {

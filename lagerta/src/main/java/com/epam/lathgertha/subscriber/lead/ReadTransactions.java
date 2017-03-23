@@ -30,7 +30,8 @@ import java.util.stream.Collectors;
 
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
 
-    private static final long INITIAL_READ_ID = -1L;
+    private static final long INITIAL_READY_READ_ID = -1L;
+    private static final long INITIAL_READ_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
@@ -54,8 +55,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
-    public void addAllOnNode(UUID consumerId, List<TransactionScope> txScopes) {
-        List<ConsumerTxScope> collect = txScopes.stream()
+    public void addAllOnNode(UUID consumerId, List<TransactionScope> scopes) {
+        List<ConsumerTxScope> collect = scopes.stream()
                 .map(tx -> new ConsumerTxScope(consumerId, tx.getTransactionId(), tx.getScope()))
                 .collect(Collectors.toList());
         buffer.add(collect);
@@ -66,6 +67,13 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         return allTransactions.stream()
                 .filter(tx -> tx.getTransactionId() <= lastDenseRead)
                 .iterator();
+    }
+
+    void updateLastDenseRead() {
+        if (lastDenseRead == INITIAL_READ_ID) {
+            lastDenseRead = INITIAL_READY_READ_ID;
+            compress();
+        }
     }
 
     private void compress() {
