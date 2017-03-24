@@ -1,19 +1,19 @@
 /*
- *  Copyright 2017 EPAM Systems.
+ * Copyright (c) 2017. EPAM Systems.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package com.epam.lathgertha.rules;
+package com.epam.lathgertha.resources;
 
 import com.epam.lathgertha.cluster.IgniteClusterManager;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * Core class for tests which performs set up and tear down of cluster and exposes some useful methods.
  */
-public class IgniteClusterResource {
+public class IgniteClusterResource implements Resource {
     private static final long CLEANUP_AWAIT_TIME = 1_000;
     /**
      * Root node which is used for submitting tasks.
@@ -64,14 +64,15 @@ public class IgniteClusterResource {
         return clusterManager.nodes();
     }
 
-    public Ignite startCluster() {
+    @Override
+    public void setUp() {
         root = clusterManager.startCluster(numberOfNodes);
         cacheConfigs = getNonSystemCacheConfigs();
         serviceConfigs = root.configuration().getServiceConfiguration();
-        return root;
     }
 
-    public void stopCluster() {
+    @Override
+    public void tearDown() {
         root.services().cancelAll();
         clusterManager.stopCluster();
     }
