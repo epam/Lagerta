@@ -19,6 +19,7 @@ import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
+import com.epam.lathgertha.services.LeadService;
 import com.epam.lathgertha.subscriber.lead.Lead;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
@@ -28,12 +29,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
@@ -47,10 +43,10 @@ public class Reader extends Scheduler {
 
     private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer = new HashMap<>();
 
-    public Reader(Ignite ignite, KafkaFactory kafkaFactory, Lead lead, SubscriberConfig config, Serializer serializer,
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
         this.kafkaFactory = kafkaFactory;
-        this.lead = lead;
+        this.lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
