@@ -22,10 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-/**
- * @author Evgeniy_Ignatiev
- * @since 14:41 03/22/2017
- */
 public class TemporaryDirectory implements Resource {
     private static final String TEMP_DIR_PREFIX = "test-resources-";
 

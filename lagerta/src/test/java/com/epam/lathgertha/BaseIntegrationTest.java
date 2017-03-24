@@ -33,10 +33,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
-/**
- * @author Evgeniy_Ignatiev
- * @since 3/21/2017 12:36 PM
- */
 public abstract class BaseIntegrationTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseIntegrationTest.class);
     private static final long TX_WAIT_TIME = 1_000;

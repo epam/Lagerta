@@ -41,10 +41,6 @@ import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 
-/**
- * @author Evgeniy_Ignatiev
- * @since 12:08 03/22/2017
- */
 public class EmbeddedKafka implements Resource {
     private static final int ZOOKEEPER_PORT = 2181;
     private static final int ZOOKEEPER_TICK_TIME = 500;

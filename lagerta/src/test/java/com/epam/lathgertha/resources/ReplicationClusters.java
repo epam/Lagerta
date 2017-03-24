@@ -21,10 +21,6 @@ import com.epam.lathgertha.cluster.XmlOneProcessClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Evgeniy_Ignatiev
- * @since 3/23/2017 1:38 PM
- */
 public class ReplicationClusters implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationClusters.class);
     private static final String CONFIGS_DIR = "com/epam/lathgertha/integration/";
