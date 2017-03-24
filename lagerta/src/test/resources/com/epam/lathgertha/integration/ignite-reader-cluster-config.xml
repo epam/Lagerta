@@ -16,6 +16,7 @@
   -->
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns="http://www.springframework.org/schema/beans"
+       xmlns:p="http://www.springframework.org/schema/p"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
@@ -38,9 +39,8 @@
     <util:properties id="consumerProperties" location="${configBasePath}reader-consumer.properties"/>
     <util:properties id="producerProperties" location="${configBasePath}reader-producer.properties"/>
 
-    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig">
-        <property name="remoteTopic" value="remoteTopic"/>
-        <property name="consumerConfig" ref="consumerProperties"/>
-        <property name="producerConfig" ref="producerProperties"/>
-    </bean>
+    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+          p:remoteTopic="remoteTopic"
+          p:consumerConfig-ref="consumerProperties"
+          p:producerConfig-ref="producerProperties"/>
 </beans>
