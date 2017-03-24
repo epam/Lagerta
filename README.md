@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-[Lathgertha](http://www,github.com/epam/Lathgertha)
+[Lathgertha](http://www.github.com/epam/Lathgertha)
 ==========================================
 
 ...is a project supporting light snapshots creation and management for in-memory data grids and fabrics.
