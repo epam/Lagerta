@@ -1,0 +1,45 @@
+1. Install Python 3.5.x. Optionally add python interpreter to your system path.
+   On Windows it is recommended to check the box "Add Python 3.5 to PATH" while using GUI installer.
+2. Install requirements with command: pip install -r requirements.txt
+3. Prepare config.ini file by image of default one
+4. Start load-test.py. The script accepts the following options:
+        --config=<path> - Sets the path to the configuration ini file
+                          of the script. Default to the file named config.ini
+                          located in the script working directory.
+        --test-name-prefix=<str> - String that will be used to prefix directories
+                                   created for running test parts on remote hosts
+                                   and storing there test logs and statistics report.
+                                   Default to "scal" - shortening to scalability.
+        --redeploy - Flag, if present the script will remove all existing activestore
+                     deployments on the test hosts and reupload the distributive from
+                     the local node to them.
+   Example:
+       python load_test.py --config=C:\conf.ini --test-name-prefix=test --redeploy
+
+Note: If python interpreter is not added to the system path you will need to type the full path
+      to the python executable and run pip with the command: <path-to-python-executable> -m pip ...
+
+Some of the script options that are usually unchanged are defined in "common.py" file,
+where they can be changed to anything that is a valid python code.
+
+The script places activestore distributive (zip and unarchived) in a home directory
+of the user used to login to remote hosts. For each run with a different number
+of servers it creates a separate working directory under the user home named
+with the following pattern: <test-name-prefix>-load-test-<number-of-servers>s
+This directory is used to store test logs.
+
+When script starts statistics driver remotely it changes remote statistics report directory
+from the one set in load-tests.properties file to the "report" located in the aforementioned
+test directory.
+
+At the end of each test run statistics report is downloaded to the directory located under
+the script working directory and as the test working directory on the remote host, e.g.
+"scal-load-test-4s".
+
+If you run the script with such name prefix parameter that the test directory name will
+class with the name of already existing one on some of remote nodes (e.g. from the previous
+script runs) the existing directory content will be moved to directory named with the same
+name plus "_<timestamp>" under the same parent directory.
+
+It might be useful to install script requirements in the separate virtualenv.
+For more info on this topic see: https://docs.python.org/3/library/venv.html

@@ -1,0 +1,3 @@
+
+class HostOfUnknownTypeException(Exception):
+    pass
