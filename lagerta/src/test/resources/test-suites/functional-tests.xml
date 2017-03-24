@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="Functional Tests">
+    <test name="All">
+        <classes>
+            <class name="com.epam.lathgertha.base.jdbc.committer.JDBCCommitterFunctionalTest"/>
+        </classes>
+    </test>
+</suite>
