@@ -16,10 +16,6 @@
 
 package com.epam.lathgertha.resources;
 
-/**
- * @author Evgeniy_Ignatiev
- * @since 14:41 03/22/2017
- */
 public interface Resource {
     void setUp() throws Exception;
     void tearDown() throws Exception;
