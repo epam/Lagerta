@@ -53,8 +53,30 @@ limitations under the License.
         <property name="serviceConfiguration">
             <list>
                 <!--ACS services-->
+                <bean class="org.apache.ignite.services.ServiceConfiguration">
+                    <property name="name" value="#{T(com.epam.lathgertha.services.LeadService).NAME}"/>
+                    <property name="maxPerNodeCount" value="1"/>
+                    <property name="totalCount" value="1"/>
+                    <property name="service" ref="lead"/>
+                </bean>
+                <bean class="org.apache.ignite.services.ServiceConfiguration">
+                    <property name="name" value="#{T(com.epam.lathgertha.services.ReaderService).NAME}"/>
+                    <property name="maxPerNodeCount" value="1"/>
+                    <property name="totalCount" value="3"/>
+                    <property name="service" ref="reader"/>
+                </bean>
             </list>
         </property>
+    </bean>
+
+    <bean id="lead" class="com.epam.lathgertha.services.LeadServiceImpl"/>
+    <bean id="reader" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
+
+    <bean id="stateful-committer" class="com.epam.lathgertha.subscriber.StatefulCommitter"/>
+
+    <bean name="sequential-commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy">
+        <constructor-arg index="0" ref="serializer"/>
+        <constructor-arg index="1" ref="test-committer"/>
     </bean>
 
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>

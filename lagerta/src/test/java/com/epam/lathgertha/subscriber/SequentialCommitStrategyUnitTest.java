@@ -1,10 +1,5 @@
 package com.epam.lathgertha.subscriber;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
@@ -19,14 +14,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 
 
 public class SequentialCommitStrategyUnitTest {
@@ -39,7 +34,7 @@ public class SequentialCommitStrategyUnitTest {
 
     private SequentialCommitStrategy sequentialCommitStrategy;
     private MockProducer producer;
-    private TestCommitter testCommitter;
+    private StatefulCommitter statefulCommitter;
 
     @BeforeClass
     public void init(){
@@ -57,10 +52,10 @@ public class SequentialCommitStrategyUnitTest {
         when(kafkaFactory.producer(any())).thenReturn(producer);
 
         KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitter(kafkaFactory, subscriberConfig);
-        testCommitter = new TestCommitter();
+        statefulCommitter = new StatefulCommitter();
         sequentialCommitStrategy = new SequentialCommitStrategy(
                 serializer,
-                testCommitter,
+                statefulCommitter,
                 kafkaLogCommitter);
     }
 
@@ -95,11 +90,10 @@ public class SequentialCommitStrategyUnitTest {
         List<Long> actualTxIds = wroteData.stream()
                 .map(record -> record.timestamp())
                 .collect(Collectors.toList());
+
         assertEquals(actualTxIds, expectedTxIds);
-
-        assertEquals(testCommitter.writtenKeys, expectedKeys);
-
-        assertEquals(testCommitter.writtenValues, expectedValues);
+        assertEquals(statefulCommitter.getWrittenKeysAndValues().keySet(), new HashSet<>(expectedKeys));
+        assertEquals(statefulCommitter.getWrittenKeysAndValues().values(), expectedValues);
     }
 
     private Map<Long, Map.Entry<TransactionScope, ByteBuffer>> getTransactionsBuffer(String cacheName,
@@ -127,18 +121,4 @@ public class SequentialCommitStrategyUnitTest {
         }
         return transactionsBuffer;
     }
-
-    private static class TestCommitter implements Committer {
-        List<String> cachesNames = new ArrayList<>();
-        List<Object> writtenKeys = new ArrayList<>();
-        List<Object> writtenValues = new ArrayList<>();
-
-        @Override
-        public void commit(List<String> names, List<List<?>> keys, List<List<?>> values) {
-            cachesNames.addAll(names);
-            keys.forEach(list -> this.writtenKeys.addAll(list));
-            values.forEach(list -> this.writtenValues.addAll(list));
-        }
-    }
-
 }
