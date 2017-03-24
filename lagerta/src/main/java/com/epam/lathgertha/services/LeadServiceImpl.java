@@ -16,6 +16,7 @@
 package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.subscriber.lead.Lead;
 import com.epam.lathgertha.subscriber.lead.LeadImpl;
 import org.apache.ignite.services.ServiceContext;
 
@@ -24,7 +25,7 @@ import java.util.UUID;
 
 public class LeadServiceImpl implements LeadService {
 
-    private transient LeadImpl lead;
+    private transient Lead lead;
 
     @Override
     public void cancel(ServiceContext ctx) {

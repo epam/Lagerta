@@ -25,4 +25,8 @@ public interface Lead {
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     void notifyCommitted(List<Long> ids);
+
+    void stop();
+
+    void execute();
 }
