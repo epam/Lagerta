@@ -19,7 +19,7 @@ import com.epam.lathgertha.IgniteConfigurer;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.cluster.SimpleOneProcessClusterManager;
-import com.epam.lathgertha.rules.IgniteClusterResource;
+import com.epam.lathgertha.resources.IgniteClusterResource;
 import com.epam.lathgertha.util.AtomicsHelper;
 import com.epam.lathgertha.util.SerializerImpl;
 import com.google.common.base.Charsets;
@@ -80,12 +80,12 @@ public class JDBCCommitterFunctionalTest {
 
     @BeforeSuite
     public void initCluster() {
-        clusterResource.startCluster();
+        clusterResource.setUp();
     }
 
     @AfterSuite
     public void stopCluster() {
-        clusterResource.stopCluster();
+        clusterResource.tearDown();
     }
 
     @BeforeClass
