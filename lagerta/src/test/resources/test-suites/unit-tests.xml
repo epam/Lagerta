@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="Unit Tests">
+    <test name="All">
+        <classes>
+            <class name="com.epam.lathgertha.capturer.DataCaptureBusUnitTest"/>
+            <class name="com.epam.lathgertha.util.JDBCKeyValueMapperUnitTest"/>
+            <class name="com.epam.lathgertha.common.PeriodicRuleUnitTest"/>
+            <class name="com.epam.lathgertha.common.SchedulerUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.SequentialCommitStrategyUnitTest"/>
+        </classes>
+    </test>
+</suite>
