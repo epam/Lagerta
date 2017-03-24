@@ -27,6 +27,7 @@
     <modules>
         <module>core</module>
         <module>cassandra</module>
+        <module>lagerta</module>
     </modules>
 
     <repositories>
