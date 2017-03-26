@@ -40,7 +40,7 @@ public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
 
     private final KafkaFactory kafkaFactory;
-    private final Lead lead;
+    private final LeadService lead;
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
