@@ -56,18 +56,14 @@ public class JDBCCommitter implements Committer {
     }
 
     @Override
-    public void commit(List<String> names, List<List<?>> keys, List<List<?>> values) {
-        if (names.isEmpty()) {
+    public void commit(Iterator<String> names, Iterator<List> keys, Iterator<List<?>> values) {
+        if (!names.hasNext()) {
             //no data for commit
             return;
         }
-        Iterator<String> cachesIterator = names.iterator();
-        Iterator<List<?>> keysIterator = keys.iterator();
-        Iterator<List<?>> valuesIterator = values.iterator();
-
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
             conn.setAutoCommit(false);
-            executeBatches(cachesIterator, keysIterator, valuesIterator, conn);
+            executeBatches(names, keys, values, conn);
             conn.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -75,7 +71,7 @@ public class JDBCCommitter implements Committer {
     }
 
     private void executeBatches(Iterator<String> cachesIterator,
-                                Iterator<List<?>> keysIterator,
+                                Iterator<List> keysIterator,
                                 Iterator<List<?>> valuesIterator,
                                 Connection conn) throws SQLException {
 
