@@ -18,6 +18,8 @@ limitations under the License.
        xmlns="http://www.springframework.org/schema/beans"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:p="http://www.springframework.org/schema/p"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/context
@@ -27,80 +29,93 @@ limitations under the License.
 
     <context:annotation-config/>
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" scope="prototype">
-        <property name="gridName" value="#{T(java.util.UUID).randomUUID().toString()}"/>
-
-        <property name="cacheConfiguration">
-            <list>
-                <ref bean="someCache"/>
-            </list>
-        </property>
-
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <value>127.0.0.1:47500..47509</value>
-                            </list>
-                        </property>
-                    </bean>
+    <!--Ignite config-->
+    <bean id="discoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses">
+                    <list>
+                        <value>127.0.0.1:47500..47509</value>
+                    </list>
                 </property>
             </bean>
         </property>
-
-        <property name="serviceConfiguration">
-            <list>
-                <!--ACS services-->
-            </list>
-        </property>
     </bean>
 
-    <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
-
-    <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
-    <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
-    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig">
-        <property name="remoteTopic" value="testTopic"/>
-    </bean>
-    <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
-
-    <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory">
-        <constructor-arg index="0" ref="key-transformer"/>
-        <constructor-arg index="1" ref="value-transformer"/>
-        <constructor-arg index="2" ref="subscriber-config"/>
-        <constructor-arg index="3" ref="serializer"/>
-    </bean>
-
-    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager">
-        <constructor-arg index="0" ref="kafka-factory"/>
-        <constructor-arg index="1" ref="key-transformer"/>
-        <constructor-arg index="2" ref="value-transformer"/>
-        <constructor-arg index="3">
-            <util:list>
-                <ref bean="subscriber-config"/>
-            </util:list>
-        </constructor-arg>
-        <constructor-arg index="4" ref="serializer"/>
-    </bean>
-
-    <util:list id="key-value-listeners">
-        <bean class="com.epam.lathgertha.capturer.SynchronousPublisher">
-            <constructor-arg index="0" ref="producers-manager"/>
-        </bean>
+    <bean id="lead" class="com.epam.lathgertha.services.LeadServiceImpl"/>
+    <bean id="reader" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
+    <util:list id="services">
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lathgertha.services.LeadService).NAME}"
+              p:maxPerNodeCount="1"
+              p:totalCount="1"
+              p:service-ref="lead"/>
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
+              p:maxPerNodeCount="1"
+              p:totalCount="3"
+              p:service-ref="reader"/>
     </util:list>
 
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" scope="prototype"
+          p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
+          p:cacheConfiguration-ref="cacheConfig"
+          p:discoverySpi-ref="discoverySpi"
+          p:serviceConfiguration-ref="services"/>
+
     <!-- Caches configuration -->
-    <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="someCache"/>
-        <property name="readThrough" value="true"/>
-        <property name="writeThrough" value="true"/>
-        <property name="cacheMode" value="PARTITIONED"/>
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-        <property name="backups" value="2"/>
-        <property name="cacheStoreFactory">
-            <bean class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
-        </property>
-    </bean>
+    <util:list id="cacheConfig">
+        <ref bean="someCache"/>
+    </util:list>
+
+    <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="someCache"
+          p:readThrough="true"
+          p:writeThrough="true"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"
+          p:cacheStoreFactory-ref="cacheStoreFactory"/>
+    <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
+
+    <!--Internal config-->
+    <bean id="stateful-committer" class="com.epam.lathgertha.subscriber.StatefulCommitter"/>
+
+    <bean id="kafkaLogCommitter" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
+          c:kafkaFactory-ref="kafka-factory"
+          c:subscriberConfig-ref="subscriber-config"/>
+
+    <bean name="sequential-commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+          c:serializer-ref="serializer"
+          c:committer-ref="stateful-committer"
+          c:kafkaLogCommitter-ref="kafkaLogCommitter"/>
+
+    <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
+    <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
+    <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
+    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+          p:remoteTopic="testTopic"/>
+    <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
+
+    <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"/>
+
+    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager"
+          c:kafkaFactory-ref="kafka-factory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:configs-ref="subscriberConfigs"
+          c:serializer-ref="serializer"/>
+
+    <util:list id="subscriberConfigs">
+        <ref bean="subscriber-config"/>
+    </util:list>
+
+    <util:list id="key-value-listeners">
+        <bean class="com.epam.lathgertha.capturer.SynchronousPublisher"
+            c:producers-ref="producers-manager"/>
+    </util:list>
 </beans>
