@@ -23,6 +23,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -134,10 +135,10 @@ public class SequentialCommitStrategyUnitTest {
         List<Object> writtenValues = new ArrayList<>();
 
         @Override
-        public void commit(List<String> names, List<List<?>> keys, List<List<?>> values) {
-            cachesNames.addAll(names);
-            keys.forEach(list -> this.writtenKeys.addAll(list));
-            values.forEach(list -> this.writtenValues.addAll(list));
+        public void commit(Iterator<String> names, Iterator<List> keys, Iterator<List<?>> values) {
+            names.forEachRemaining(name -> cachesNames.add(name));
+            keys.forEachRemaining(list -> writtenKeys.addAll(list));
+            values.forEachRemaining(list -> writtenValues.addAll(list));
         }
     }
 

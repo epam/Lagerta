@@ -178,9 +178,9 @@ public class JDBCCommitterFunctionalTest {
         expectedResult.put(Person.PERSON_NAME, personName);
         expectedResult.put(Person.PERSON_ID, personId);
 
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE),
-                Collections.singletonList(Collections.singletonList(key)),
-                Collections.singletonList(Collections.singletonList(val)));
+        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
+                Collections.<List>singletonList(Collections.singletonList(key)).iterator(),
+                Collections.<List<?>>singletonList(Collections.singletonList(val)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
@@ -203,9 +203,9 @@ public class JDBCCommitterFunctionalTest {
         expectedResult.put(Person.PERSON_NAME, expectedPerson.getName());
         expectedResult.put(Person.PERSON_ID, expectedPerson.getId());
 
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE),
-                Collections.singletonList(Collections.singletonList(key)),
-                Collections.singletonList(Collections.singletonList(expectedBinary)));
+        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
+                Collections.<List>singletonList(Collections.singletonList(key)).iterator(),
+                Collections.<List<?>>singletonList(Collections.singletonList(expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
@@ -238,9 +238,9 @@ public class JDBCCommitterFunctionalTest {
 
         int expectedCountRows = 2;
 
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE),
-                Collections.singletonList(Arrays.asList(keyVal, keyPerson)),
-                Collections.singletonList(Arrays.asList(val, expectedBinary)));
+        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
+                Collections.<List>singletonList(Arrays.asList(keyVal, keyPerson)).iterator(),
+                Collections.<List<?>>singletonList(Arrays.asList(val, expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);

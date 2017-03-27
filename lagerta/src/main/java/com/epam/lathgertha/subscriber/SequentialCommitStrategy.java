@@ -20,7 +20,7 @@ import com.epam.lathgertha.kafka.KafkaLogCommitter;
 import com.epam.lathgertha.util.Serializer;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -40,19 +40,12 @@ public class SequentialCommitStrategy implements CommitStrategy {
     public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer) {
 
         for (Long txId : txIdsToCommit) {
-
-            List<String> cacheNames = new ArrayList<>();
-            List<List<?>>  keys = new ArrayList<>();
-
             Map.Entry<TransactionScope, ByteBuffer> transactionScopeAndSerializedValues = transactionsBuffer.get(txId);
+            List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getKey().getScope();
 
-            TransactionScope transactionScope = transactionScopeAndSerializedValues.getKey();
-            for (Map.Entry<String, List> cacheNameAndKeysList : transactionScope.getScope()) {
-                cacheNames.add(cacheNameAndKeysList.getKey());
-                keys.add(cacheNameAndKeysList.getValue());
-            }
-
-            List<List<?>> values = serializer.<List>deserialize(transactionScopeAndSerializedValues.getValue());
+            Iterator<String> cacheNames = scope.stream().map(Map.Entry::getKey).iterator();
+            Iterator<List> keys = scope.stream().map(Map.Entry::getValue).iterator();
+            Iterator values = serializer.<List>deserialize(transactionScopeAndSerializedValues.getValue()).iterator();
 
             committer.commit(cacheNames, keys, values);
             kafkaLogCommitter.commitTransaction(txId);
