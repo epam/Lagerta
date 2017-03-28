@@ -93,7 +93,8 @@
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="jdbc-committer" class="com.epam.lathgertha.base.jdbc.committer.JDBCCommitter"/>
+    <bean name="jdbc-committer" class="com.epam.lathgertha.resources.FullClusterResource"
+          factory-method="personJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
           c:kafkaFactory-ref="kafka-factory"

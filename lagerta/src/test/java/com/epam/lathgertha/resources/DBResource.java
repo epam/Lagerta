@@ -21,16 +21,16 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBResource implements Resource {
-    private static final String CONNECTION_STR_PATTERN = "jdbc:h2:mem:%s";
+    public static final String CONNECTION_STR_PATTERN = "jdbc:h2:mem:%s";
 
-    private final String dbName;
+    private final String dbUrl;
 
     // Connection to be hold while resource is active to avoid dropping db
     // because all connections were closed.
     private Connection connection;
 
     public DBResource(String dbName) {
-        this.dbName = dbName;
+        this.dbUrl = String.format(CONNECTION_STR_PATTERN, dbName);
     }
 
     @Override
@@ -43,7 +43,11 @@ public class DBResource implements Resource {
         connection.close();
     }
 
+    public String getDBUrl() {
+        return dbUrl;
+    }
+
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(String.format(CONNECTION_STR_PATTERN, dbName));
+        return DriverManager.getConnection(dbUrl);
     }
 }
