@@ -49,12 +49,11 @@ public class PlannerUtilUnitTest {
     private static final String CACHE2 = "cache2";
 
     @Test(dataProvider = PLANNER_INFO)
-    public void planingWorks(
+    public void planningWorks(
             List<ConsumerTxScope> transactions,
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-
         transactions.sort(Comparator.comparingLong(ConsumerTxScope::getTransactionId));
         Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
         assertEquals(plan, expected);
