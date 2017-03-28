@@ -19,23 +19,34 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AppContextOneProcessClusterManager extends DefaultOneProcessClusterManager {
-    private final ApplicationContext applicationContext;
+    private final String configPath;
+    private final List<ConfigurableApplicationContext> contexts = new ArrayList<>();
 
-    public AppContextOneProcessClusterManager(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    public AppContextOneProcessClusterManager(String configPath) {
+        this.configPath = configPath;
     }
 
     /** {@inheritDoc} */
     @Override
     protected Ignite startGrid(int gridNumber, int clusterSize) {
         try {
+            ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext(configPath);
+            contexts.add(applicationContext);
             IgniteConfiguration config = applicationContext.getBean(IgniteConfiguration.class);
             return IgniteSpring.start(config, applicationContext);
         } catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void refreshContexts() {
+        contexts.forEach(ConfigurableApplicationContext::refresh);
     }
 }
