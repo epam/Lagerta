@@ -15,9 +15,10 @@
  */
 package com.epam.lathgertha.subscriber;
 
+import java.util.Iterator;
 import java.util.List;
 
 public interface Committer {
 
-    void commit(List<String> names, List<List<?>> keys, List<List<?>> values);
+    void commit(Iterator<String> names, Iterator<List> keys, Iterator<List<?>> values);
 }

@@ -15,6 +15,7 @@
  */
 package com.epam.lathgertha.subscriber;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,10 +25,11 @@ public class StatefulCommitter implements Committer {
     private final Map<Object, Object> writtenKeysAndValues = new ConcurrentHashMap<>();
 
     @Override
-    public void commit(List<String> names, List<List<?>> keys, List<List<?>> values) {
-        for (int i = 0; i < keys.size(); i++) {
-            List<?> keysList = keys.get(i);
-            List<?> valuesList = values.get(i);
+    public void commit(Iterator<String> names, Iterator<List> keys, Iterator<List<?>> values) {
+        while (names.hasNext()) {
+            names.next();
+            List<?> keysList = keys.next();
+            List<?> valuesList = values.next();
             for (int j = 0; j < keysList.size(); j++) {
                 writtenKeysAndValues.put(keysList.get(j), valuesList.get(j));
             }
