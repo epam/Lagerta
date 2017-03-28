@@ -16,39 +16,22 @@
 package com.epam.lathgertha.subscriber;
 
 import com.epam.lathgertha.capturer.TransactionScope;
-import com.epam.lathgertha.kafka.KafkaLogCommitter;
-import com.epam.lathgertha.util.Serializer;
 
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class SequentialCommitStrategy implements CommitStrategy {
+    private final CommitServitor commitServitor;
 
-    private final Committer committer;
-    private final Serializer serializer;
-    private final KafkaLogCommitter kafkaLogCommitter;
-
-    public SequentialCommitStrategy(Serializer serializer, Committer committer, KafkaLogCommitter kafkaLogCommitter) {
-        this.serializer = serializer;
-        this.committer = committer;
-        this.kafkaLogCommitter = kafkaLogCommitter;
+    public SequentialCommitStrategy(CommitServitor commitServitor) {
+        this.commitServitor = commitServitor;
     }
 
     @Override
     public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer) {
-
         for (Long txId : txIdsToCommit) {
-            Map.Entry<TransactionScope, ByteBuffer> transactionScopeAndSerializedValues = transactionsBuffer.get(txId);
-            List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getKey().getScope();
-
-            Iterator<String> cacheNames = scope.stream().map(Map.Entry::getKey).iterator();
-            Iterator<List> keys = scope.stream().map(Map.Entry::getValue).iterator();
-            Iterator values = serializer.<List>deserialize(transactionScopeAndSerializedValues.getValue()).iterator();
-
-            committer.commit(cacheNames, keys, values);
-            kafkaLogCommitter.commitTransaction(txId);
+            commitServitor.commit(txId, transactionsBuffer);
         }
     }
 }
