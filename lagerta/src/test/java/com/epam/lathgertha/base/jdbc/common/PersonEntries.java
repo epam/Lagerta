@@ -40,7 +40,10 @@ import java.util.stream.Collectors;
 public class PersonEntries {
     private static final Serializer SERIALIZER = new SerializerImpl();
 
-    public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws Exception {
+    public static final String CREATE_TABLE_SQL_RESOURCE = "create_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOUCE = "clear_tables.sql";
+
+    public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
         Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
         actualResults.put(Person.PERSON_ID, resultSet.getInt(Person.PERSON_ID));
         actualResults.put(Person.PERSON_KEY, resultSet.getInt(Person.PERSON_KEY));
