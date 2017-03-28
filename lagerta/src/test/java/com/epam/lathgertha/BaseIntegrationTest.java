@@ -62,12 +62,12 @@ public abstract class BaseIntegrationTest {
         allResources.cleanUpClusters();
     }
 
-    public Ignite mainGrid() {
+    public Ignite ignite() {
         return allResources.igniteCluster().ignite();
     }
 
     public <K, V> IgniteCache<K, V> getCache() {
-        return mainGrid().cache(Person.PERSON_CACHE);
+        return ignite().cache(Person.PERSON_CACHE);
     }
 
     public void writePersonToCache(Ignite ignite, int key, Person person) {
