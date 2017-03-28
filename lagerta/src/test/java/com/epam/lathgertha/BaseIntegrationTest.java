@@ -34,13 +34,18 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class BaseIntegrationTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseIntegrationTest.class);
-    private static final String PERSON_TABLE_SELECT = String.format("SELECT * FROM %s ORDER BY ASC", Person.PERSON_TABLE);
-    private static final long TX_WAIT_TIME = 1_000;
+    private static final String PERSON_TABLE_SELECT = String.format(
+            "SELECT * FROM %s ORDER BY %s ASC",
+            Person.PERSON_TABLE,
+            Person.PERSON_KEY
+    );
+    private static final long TX_WAIT_TIME = 5_000;
 
     private final FullClusterResource allResources = new FullClusterResource();
 
@@ -70,21 +75,26 @@ public abstract class BaseIntegrationTest {
         return ignite().cache(Person.PERSON_CACHE);
     }
 
+    public void writePersonToCache(int key, Person person) {
+        writePersonToCache(ignite(), key, person);
+    }
+
     public void writePersonToCache(Ignite ignite, int key, Person person) {
         IgniteCache<Integer, Person> cache = ignite.cache(Person.PERSON_CACHE);
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(key, person);
+            cache.put(key, ignite.binary().toBinary(person));
             tx.commit();
         }
     }
 
-    private void awaitTransaction() throws InterruptedException {
+    public void awaitTransactions() throws InterruptedException {
         Thread.sleep(TX_WAIT_TIME);
         LOGGER.debug("[T] SLEPT {}", TX_WAIT_TIME);
     }
 
-    public void assertObjectsInDB(Map.Entry<Integer, Person>... persons) throws SQLException {
+    @SafeVarargs
+    public final void assertObjectsInDB(Map.Entry<Integer, Person>... persons) throws SQLException {
         try (Connection connection = allResources.getDBResource().getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
@@ -102,8 +112,12 @@ public abstract class BaseIntegrationTest {
 
         result.put(Person.PERSON_KEY, entry.getKey());
         result.put(Person.PERSON_ID, entry.getValue().getId());
-        result.put(Person.PERSON_NAME, entry.getValue().getName());
-        result.put(Person.PERSON_VAL, null);
+        result.put(Person.PERSON_NAME, null);
+        result.put(Person.PERSON_VAL, entry.getValue());
         return result;
+    }
+
+    public Map.Entry<Integer, Person> entry(int key, Person person) {
+        return new AbstractMap.SimpleImmutableEntry<>(key, person);
     }
 }
