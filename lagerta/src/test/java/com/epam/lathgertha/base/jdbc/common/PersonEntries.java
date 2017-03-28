@@ -39,9 +39,10 @@ import java.util.stream.Collectors;
 
 public class PersonEntries {
     private static final Serializer SERIALIZER = new SerializerImpl();
+    private static final String SQL_BASE_PATH = "/com/epam/lathgertha/base/jdbc/committer/";
 
-    public static final String CREATE_TABLE_SQL_RESOURCE = "create_tables.sql";
-    public static final String DROP_TABLE_SQL_RESOUCE = "clear_tables.sql";
+    public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "clear_tables.sql";
 
     public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
         Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
