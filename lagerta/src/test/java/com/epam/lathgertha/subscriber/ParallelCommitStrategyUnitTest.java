@@ -26,10 +26,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-/**
- * @author Andrei_Yakushin
- * @since 3/27/2017 3:26 PM
- */
 public class ParallelCommitStrategyUnitTest {
     private static final String CACHE_NAME = "cache";
 

@@ -19,8 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * @author Andrei_Yakushin
- * @since 3/27/2017 10:27 AM
+ * Implemented parallel logic to commit batch of transactions.
  */
 public class ParallelCommitStrategy implements CommitStrategy {
     private static final int POOL_COUNT = 5;
@@ -39,6 +38,9 @@ public class ParallelCommitStrategy implements CommitStrategy {
         new ParallelExecutor(buffer).commit(txIdsToCommit);
     }
 
+    /**
+     * Stores state of commit of single batch
+     */
     private class ParallelExecutor {
         private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer;
 
@@ -110,6 +112,9 @@ public class ParallelCommitStrategy implements CommitStrategy {
         }
     }
 
+    /**
+     * Stores single transaction relations
+     */
     private static class TransactionRelation {
         private final long id;
         private AtomicInteger count;

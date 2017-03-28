@@ -10,8 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Andrei_Yakushin
- * @since 3/27/2017 3:15 PM
+ * Utilize logic of single transaction commit and write to local kafka log
  */
 public class CommitServitor {
     private final Committer committer;
