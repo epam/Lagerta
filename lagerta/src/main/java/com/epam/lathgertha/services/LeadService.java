@@ -13,20 +13,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.subscriber.lead;
+package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import org.apache.ignite.services.Service;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface Lead {
+public interface LeadService extends Service {
+    String NAME = "Lead";
 
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     void notifyCommitted(List<Long> ids);
-
-    void stop();
-
-    void execute();
 }
