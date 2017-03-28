@@ -53,7 +53,7 @@ limitations under the License.
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
-              p:totalCount="3"
+              p:totalCount="1"
               p:service-ref="reader"/>
     </util:list>
 

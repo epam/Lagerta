@@ -32,7 +32,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +54,7 @@ public class Reader extends Scheduler {
     private final CommitStrategy commitStrategy;
     private final UUID nodeId;
 
-    private MetadataTransaction metadataTransaction;
+    private ReaderState metadataTransaction;
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
@@ -65,7 +64,7 @@ public class Reader extends Scheduler {
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         nodeId = ignite.cluster().localNode().id();
-        metadataTransaction = new MetadataTransaction();
+        metadataTransaction = new ReaderState(serializer);
     }
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, int countIterateForCommit) {
@@ -101,9 +100,7 @@ public class Reader extends Scheduler {
 
         for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
             TransactionScope transactionScope = serializer.deserialize(record.key());
-            long transactionId = transactionScope.getTransactionId();
-            metadataTransaction.putToBuffer(new SimpleImmutableEntry<>(transactionScope, record.value()));
-            metadataTransaction.getTxIdsAndOffsetMetadata().put(transactionId, record);
+            metadataTransaction.putToBuffer(record);
             lastScopes.add(transactionScope);
         }
 
@@ -125,16 +122,15 @@ public class Reader extends Scheduler {
         final List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
-            Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer = metadataTransaction.getBuffer();
-            commitStrategy.commit(txIdsToCommit, buffer);
+            commitStrategy.commit(txIdsToCommit, metadataTransaction.getBuffer());
             lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.forEach(buffer::remove);
+            txIdsToCommit.forEach(metadataTransaction::removeFromBufferAndAddOffsetForCommit);
 
-            Map<Long, ConsumerRecord> txIdsAndOffsetMetadata = metadataTransaction.getTxIdsAndOffsetMetadata();
-            for (Long txId:txIdsToCommit) {
-                ConsumerRecord recordForTx = txIdsAndOffsetMetadata.remove(txId);
-                metadataTransaction.addOffsetsForPartition(new TopicPartition(recordForTx.topic(),recordForTx.partition()), recordForTx.offset());
-            }
+//            Map<Long, ConsumerRecord> txIdsAndOffsetMetadata = metadataTransaction.getTxIdsAndOffsetMetadata();
+//            for (Long txId:txIdsToCommit) {
+//                ConsumerRecord recordForTx = txIdsAndOffsetMetadata.remove(txId);
+//                metadataTransaction.addOffsetsForPartition(new TopicPartition(recordForTx.topic(),recordForTx.partition()), recordForTx.offset());
+//            }
         }
     }
 }

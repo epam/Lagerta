@@ -38,8 +38,7 @@ public class ReaderFunctionalTest extends BaseFunctionalTest{
             writeValueToKafka(TOPIC, txId, txId, txId);
         }
         int offsetForMaxTxId = listFirstTxIds.indexOf(maxTxId);
-//        while (Reader.CONDITION_COMMIT_TO_KAFKA.getAsBoolean());
-        Thread.sleep(10_000); //wait read records from kafka in Reader
+
         List<ProxyMockConsumer> proxyMockConsumers = kafkaMockFactory.existingOpenedConsumers(TOPIC);
         for (ProxyMockConsumer proxyMockConsumer : proxyMockConsumers) {
             OffsetAndMetadata lastCommitted = proxyMockConsumer.committed(new TopicPartition(TOPIC, 0));
@@ -49,8 +48,7 @@ public class ReaderFunctionalTest extends BaseFunctionalTest{
         for (int txId: Arrays.asList(2, 3, 1)) {
             writeValueToKafka(TOPIC, txId, txId, txId);
         }
-//        while (Reader.CONDITION_COMMIT_TO_KAFKA.getAsBoolean());
-        Thread.sleep(10_000); //wait read records from kafka in Reader
+        Thread.sleep(20_000); //wait read records from kafka in Reader
         checkLastCommittedOffset(offsetForMaxTxId);
     }
 
