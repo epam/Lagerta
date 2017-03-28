@@ -18,20 +18,47 @@ package com.epam.lathgertha.base.jdbc.common;
 import com.epam.lathgertha.base.CacheInBaseDescriptor;
 import com.epam.lathgertha.base.FieldDescriptor;
 import com.epam.lathgertha.base.jdbc.committer.BaseMapper;
+import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.committer.JDBCTransformer;
+import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
 
 import javax.sql.rowset.serial.SerialBlob;
+import java.nio.ByteBuffer;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PersonEntries {
+    private static final Serializer SERIALIZER = new SerializerImpl();
+
+    public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws Exception {
+        Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
+        actualResults.put(Person.PERSON_ID, resultSet.getInt(Person.PERSON_ID));
+        actualResults.put(Person.PERSON_KEY, resultSet.getInt(Person.PERSON_KEY));
+        Blob blob = resultSet.getBlob(Person.PERSON_VAL);
+        Object deserializeVal = null;
+        if (blob != null) {
+            int length = (int) blob.length();
+            deserializeVal = SERIALIZER.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
+        }
+        actualResults.put(Person.PERSON_VAL, deserializeVal);
+        actualResults.put(Person.PERSON_NAME, resultSet.getString(Person.PERSON_NAME));
+        return actualResults;
+    }
+
+    public static JDBCCommitter getPersonOnlyJDBCCommitter(String dbUrl) {
+        return new JDBCCommitter(Collections.singletonList(PersonEntries.getPersonCacheInBaseDescriptor()),
+                Collections.singletonList(PersonEntries.getPersonMapper()), dbUrl, "", "");
+    }
 
     public static List<String> getPersonColumns() {
         return getPersonFieldDescriptor().values()
