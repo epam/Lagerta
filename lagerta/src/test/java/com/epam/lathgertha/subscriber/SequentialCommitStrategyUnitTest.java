@@ -1,5 +1,10 @@
 package com.epam.lathgertha.subscriber;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
@@ -22,11 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 
 
 public class SequentialCommitStrategyUnitTest {
@@ -58,10 +58,11 @@ public class SequentialCommitStrategyUnitTest {
 
         KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitter(kafkaFactory, subscriberConfig);
         statefulCommitter = new StatefulCommitter();
-        sequentialCommitStrategy = new SequentialCommitStrategy(
+        sequentialCommitStrategy = new SequentialCommitStrategy(new CommitServitor(
                 serializer,
                 statefulCommitter,
-                kafkaLogCommitter);
+                kafkaLogCommitter
+        ));
     }
 
     @Test
