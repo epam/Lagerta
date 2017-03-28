@@ -15,13 +15,17 @@
  */
 package com.epam.lathgertha.subscriber;
 
+import com.epam.lathgertha.util.Atomic;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StatefulCommitter implements Committer {
 
+    private final AtomicInteger commitCount = new AtomicInteger(0);
     private final Map<Object, Object> writtenKeysAndValues = new ConcurrentHashMap<>();
 
     @Override
@@ -32,11 +36,16 @@ public class StatefulCommitter implements Committer {
             List<?> valuesList = values.next();
             for (int j = 0; j < keysList.size(); j++) {
                 writtenKeysAndValues.put(keysList.get(j), valuesList.get(j));
+                commitCount.incrementAndGet();
             }
         }
     }
 
     public Map<Object, Object> getWrittenKeysAndValues() {
         return writtenKeysAndValues;
+    }
+
+    public int getCommitCount() {
+        return commitCount.get();
     }
 }

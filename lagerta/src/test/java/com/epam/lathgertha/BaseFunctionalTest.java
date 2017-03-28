@@ -36,7 +36,10 @@ public abstract class BaseFunctionalTest {
     private static final String CACHE_NAME = "someCache";
     private static final String CONFIG_PATH = "/com/epam/lathgertha/functional/config.xml";
     private static final ConfigurableApplicationContext CONTEXT = new ClassPathXmlApplicationContext(CONFIG_PATH);
-    private static IgniteClusterResource clusterResource = new IgniteClusterResource(1, new AppContextOneProcessClusterManager(CONTEXT));
+    private static final AppContextOneProcessClusterManager clusterManager =
+            new AppContextOneProcessClusterManager(CONFIG_PATH);
+    private static final IgniteClusterResource clusterResource =
+            new IgniteClusterResource(2, clusterManager);
 
     protected KafkaMockFactory kafkaMockFactory;
     protected Ignite ignite;
@@ -62,7 +65,7 @@ public abstract class BaseFunctionalTest {
 
     @AfterMethod
     public void clearState() {
-        CONTEXT.refresh();
+        clusterManager.refreshApplicationContexts();
         InputProducer.resetOffsets();
         KafkaMockFactory.clearState();
     }

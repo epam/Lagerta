@@ -57,7 +57,7 @@ limitations under the License.
               p:service-ref="reader"/>
     </util:list>
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" scope="prototype"
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="cacheConfig"
           p:discoverySpi-ref="discoverySpi"
