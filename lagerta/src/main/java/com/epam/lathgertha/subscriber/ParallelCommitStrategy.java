@@ -36,58 +36,78 @@ public class ParallelCommitStrategy implements CommitStrategy {
     @SuppressWarnings("unchecked")
     @Override
     public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
-        Map<Map.Entry<String, Object>, Long> lastOwner = new HashMap<>();
-        Map<Long, TransactionRelation> relationMap = new HashMap<>(txIdsToCommit.size());
-
-        BlockingQueue<TransactionRelation> tasks = new LinkedBlockingQueue<>();
-        txIdsToCommit
-                .stream()
-                .map(txId -> new TransactionRelation(txId, buffer
-                        .get(txId)
-                        .getKey()
-                        .getScope()
-                        .stream()
-                        .flatMap(cacheKeys -> ((Stream<?>) cacheKeys.getValue()
-                                .stream())
-                                .map(key -> compositeKey(cacheKeys.getKey(), key)))
-                        .map(compositeKey -> lastOwner.put(compositeKey, txId))
-                        .distinct()
-                        .filter(Objects::nonNull)
-                        .map(relationMap::get)
-                        .peek(blocker -> blocker.addDependent(txId))
-                        .count()))
-                .peek(relation -> relationMap.put(relation.id, relation))
-                .filter(TransactionRelation::isFree)
-                .forEach(tasks::add);
-
-        relationMap.values().forEach(relation -> relation.fillRelations(relationMap));
-
-        AtomicInteger count = new AtomicInteger(relationMap.size());
-        IntStream
-                .range(0, Math.min(POOL_COUNT, relationMap.size()))
-                .boxed()
-                .map(i -> (Runnable) () -> {
-                    try {
-                        while (count.getAndDecrement() > 0) {
-                            TransactionRelation relation = tasks.take();
-                            commitServitor.commit(relation.getId(), buffer);
-                            relation
-                                    .dependent()
-                                    .stream()
-                                    .filter(TransactionRelation::release)
-                                    .forEach(tasks::add);
-                        }
-                    } catch (InterruptedException e) {
-                        //do nothing
-                    }
-                })
-                .map(pool::submit)
-                .collect(Collectors.toList())
-                .forEach(ForkJoinTask::join);
+        new ParallelExecutor(buffer).commit(txIdsToCommit);
     }
 
-    private static Map.Entry<String, Object> compositeKey(String cacheName, Object o) {
-        return new AbstractMap.SimpleImmutableEntry<>(cacheName, o);
+    private class ParallelExecutor {
+        private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer;
+
+        private final Map<Map.Entry<String, Object>, Long> lastOwner = new HashMap<>();
+        private final Map<Long, TransactionRelation> relationMap = new HashMap<>();
+        private final BlockingQueue<TransactionRelation> tasks = new LinkedBlockingQueue<>();
+        private final AtomicInteger count = new AtomicInteger();
+
+        ParallelExecutor(Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+            this.buffer = buffer;
+        }
+
+        @SuppressWarnings("unchecked")
+        public void commit(List<Long> txIdsToCommit) {
+            txIdsToCommit
+                    .stream()
+                    .map(txId -> relation(txId, buffer))
+                    .peek(relation -> relationMap.put(relation.id, relation))
+                    .filter(TransactionRelation::isFree)
+                    .forEach(tasks::add);
+
+            relationMap.values().forEach(relation -> relation.fillRelations(relationMap));
+
+            count.set(relationMap.size());
+            IntStream
+                    .range(0, Math.min(POOL_COUNT, relationMap.size()))
+                    .boxed()
+                    .map(i -> (Runnable) this::execute)
+                    .map(pool::submit)
+                    .collect(Collectors.toList())
+                    .forEach(ForkJoinTask::join);
+        }
+
+        private TransactionRelation relation(Long txId, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+            return new TransactionRelation(txId, buffer
+                    .get(txId)
+                    .getKey()
+                    .getScope()
+                    .stream()
+                    .flatMap(cacheKeys -> ((Stream<?>) cacheKeys.getValue()
+                            .stream())
+                            .map(key -> compositeKey(cacheKeys.getKey(), key)))
+                    .map(compositeKey -> lastOwner.put(compositeKey, txId))
+                    .distinct()
+                    .filter(Objects::nonNull)
+                    .map(relationMap::get)
+                    .peek(blocker -> blocker.addDependent(txId))
+                    .count());
+        }
+
+        private void execute() {
+            try {
+                while (count.getAndDecrement() > 0) {
+                    TransactionRelation relation = tasks.take();
+                    commitServitor.commit(relation.getId(), buffer);
+                    relation
+                            .dependent()
+                            .stream()
+                            .filter(TransactionRelation::release)
+                            .forEach(tasks::add);
+                }
+            } catch (InterruptedException e) {
+                //do nothing
+            }
+        }
+
+        private Map.Entry<String, Object> compositeKey(String cacheName, Object o) {
+            return new AbstractMap.SimpleImmutableEntry<>(cacheName, o);
+        }
     }
 
     private static class TransactionRelation {
