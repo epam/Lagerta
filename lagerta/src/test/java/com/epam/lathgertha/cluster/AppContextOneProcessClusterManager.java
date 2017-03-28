@@ -46,7 +46,7 @@ public class AppContextOneProcessClusterManager extends DefaultOneProcessCluster
         }
     }
 
-    public void refreshApplicationContexts() {
+    public void refreshContexts() {
         contexts.forEach(ConfigurableApplicationContext::refresh);
     }
 }

@@ -65,7 +65,7 @@ public abstract class BaseFunctionalTest {
 
     @AfterMethod
     public void clearState() {
-        clusterManager.refreshApplicationContexts();
+        clusterManager.refreshContexts();
         InputProducer.resetOffsets();
         KafkaMockFactory.clearState();
     }
