@@ -16,13 +16,10 @@
 
 package com.epam.lathgertha;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import com.epam.lathgertha.resources.ReplicationClusters;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
+import com.epam.lathgertha.base.jdbc.common.Person;
+import com.epam.lathgertha.base.jdbc.common.PersonEntries;
+import com.epam.lathgertha.resources.FullClusterResource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
@@ -33,68 +30,51 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class BaseIntegrationTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseIntegrationTest.class);
+    private static final String PERSON_TABLE_SELECT = String.format("SELECT * FROM %s ORDER BY ASC", Person.PERSON_TABLE);
     private static final long TX_WAIT_TIME = 1_000;
-    private static final long LEAD_WAIT_TIME = 5_000;
-    private static final String CACHE_NAME = "cache";
-    private static final int START_INDEX = 0;
-    private static final int END_INDEX = 100;
 
-    private final ReplicationClusters replicationClusters = new ReplicationClusters();
+    private final FullClusterResource allResources = new FullClusterResource();
 
     @BeforeSuite
     public void setUp() throws Exception {
-        replicationClusters.setUp();
+        allResources.setUp();
+        try (Connection connection = allResources.getDBResource().getConnection()) {
+            JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        }
     }
 
     @AfterSuite
     public void tearDown() {
-        replicationClusters.tearDown();
+        allResources.tearDown();
     }
 
     @AfterMethod
-    public void cleanupResources() {
-        replicationClusters.cleanUpClusters();
+    public void cleanupResources() throws SQLException {
+        allResources.cleanUpClusters();
     }
 
     public Ignite mainGrid() {
-        return replicationClusters.mainCluster().ignite();
-    }
-
-    public Ignite readerGrid() {
-        return replicationClusters.readerCluster().ignite();
+        return allResources.igniteCluster().ignite();
     }
 
     public <K, V> IgniteCache<K, V> getCache() {
-        return mainGrid().cache(CACHE_NAME);
+        return mainGrid().cache(Person.PERSON_CACHE);
     }
 
-    public Map<Integer, Integer> readValuesFromCache(Ignite ignite) {
-        IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-        Set<Integer> keys = IntStream
-            .range(START_INDEX, END_INDEX)
-            .boxed()
-            .collect(Collectors.toSet());
-        return cache.getAll(keys);
-    }
+    public void writePersonToCache(Ignite ignite, int key, Person person) {
+        IgniteCache<Integer, Person> cache = ignite.cache(Person.PERSON_CACHE);
 
-    public void writeAndReplicate() {
-        writeValuesToCache(mainGrid(), START_INDEX, END_INDEX);
-    }
-
-    public void writeAndReplicateSync() throws InterruptedException {
-        writeValuesToCache(mainGrid(), START_INDEX, END_INDEX);
-        awaitTransaction();
-    }
-
-    public void writeValuesToCache(Ignite ignite, int startIdx, int endIdx) {
         try (Transaction tx = ignite.transactions().txStart()) {
-            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-
-            for (int i = startIdx; i < endIdx; i++) {
-                cache.put(i, i);
-            }
+            cache.put(key, person);
             tx.commit();
         }
     }
@@ -104,20 +84,26 @@ public abstract class BaseIntegrationTest {
         LOGGER.debug("[T] SLEPT {}", TX_WAIT_TIME);
     }
 
-    public void assertValuesInCache() {
-        Map<Integer, Integer> updatedValues = readValuesFromCache(mainGrid());
-        Map<Integer, Integer> expectedValues = IntStream
-            .range(START_INDEX, END_INDEX)
-            .boxed()
-            .collect(Collectors.toMap(Function.identity(), Function.identity()));
+    public void assertObjectsInDB(Map.Entry<Integer, Person>... persons) throws SQLException {
+        try (Connection connection = allResources.getDBResource().getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
 
-        AssertJUnit.assertEquals(updatedValues, expectedValues);
-        AssertJUnit.assertEquals(updatedValues, readValuesFromCache(readerGrid()));
+                for (Map.Entry<Integer, Person> entry : persons) {
+                    AssertJUnit.assertTrue(resultSet.next());
+                    AssertJUnit.assertEquals(personEntryToMap(entry), PersonEntries.getResultMapForPerson(resultSet));
+                }
+            }
+        }
     }
 
-    public void awaitLead() throws InterruptedException {
-        LOGGER.info("[T] start waiting lead");
-        Thread.sleep(LEAD_WAIT_TIME);
-        LOGGER.info("[T] finish waiting lead");
+    private static Map<String, Object> personEntryToMap(Map.Entry<Integer, Person> entry) {
+        Map<String, Object> result = new HashMap<>(4);
+
+        result.put(Person.PERSON_KEY, entry.getKey());
+        result.put(Person.PERSON_ID, entry.getValue().getId());
+        result.put(Person.PERSON_NAME, entry.getValue().getName());
+        result.put(Person.PERSON_VAL, null);
+        return result;
     }
 }
