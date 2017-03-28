@@ -85,10 +85,13 @@ limitations under the License.
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
 
-    <bean name="sequential-commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
           c:serializer-ref="serializer"
           c:committer-ref="stateful-committer"
           c:kafkaLogCommitter-ref="kafkaLogCommitter"/>
+
+    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+          c:commitServitor-ref="commit-servitor"/>
 
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
     <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>

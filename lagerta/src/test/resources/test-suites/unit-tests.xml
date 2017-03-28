@@ -7,6 +7,7 @@
             <class name="com.epam.lathgertha.util.JDBCKeyValueMapperUnitTest"/>
             <class name="com.epam.lathgertha.common.PeriodicRuleUnitTest"/>
             <class name="com.epam.lathgertha.common.SchedulerUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.ParallelCommitStrategyUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.SequentialCommitStrategyUnitTest"/>
         </classes>
     </test>

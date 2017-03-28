@@ -23,7 +23,6 @@ import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
@@ -91,7 +90,7 @@ public class DataCapturerBus<K, V> implements CacheStore<K, V> {
      * {@inheritDoc}
      */
     @Override
-    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException {
+    public void loadCache(IgniteBiInClosure<K, V> clo, Object... args) throws CacheLoaderException {
         /* No-op. */
     }
 
