@@ -31,13 +31,15 @@ public final class PlannerUtil {
     private static final Function<UUID, Set<Map.Entry<String, List>>> CLAIMED = key -> new HashSet<>();
     private static final Function<UUID, List<Long>> READY = key -> new ArrayList<>();
 
+    private static final long STEP_TX_ID = 1;
+
     private PlannerUtil() {}
 
     public static Map<UUID, List<Long>> plan(
             List<ConsumerTxScope> transactions,
             CommittedTransactions committed,
             List<Long> inProgress) {
-        long currentId = committed.getLastDenseCommit();
+        long currentId = committed.getLastDenseCommit() + STEP_TX_ID;
 
         Set<Map.Entry<String, List>> blocked = new HashSet<>();
         Map<UUID, Set<Map.Entry<String, List>>> claimed = new HashMap<>();
@@ -61,7 +63,7 @@ public final class PlannerUtil {
                     }
                 }
             }
-            currentId++;
+            currentId = id + STEP_TX_ID;
         }
         return plan;
     }
