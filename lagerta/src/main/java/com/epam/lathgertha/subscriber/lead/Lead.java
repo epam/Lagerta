@@ -22,8 +22,20 @@ import java.util.UUID;
 
 public interface Lead {
 
+    /**
+     * notifies lead that transactions has read
+     *
+     * @param consumerId id of consumer node
+     * @param txScopes   transaction scopes read by the consumer
+     * @return transactions ids that can be committed
+     */
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
+    /**
+     * notifies lead that transactions has committed
+     *
+     * @param ids sorted list of committed ids
+     */
     void notifyCommitted(List<Long> ids);
 
     void stop();

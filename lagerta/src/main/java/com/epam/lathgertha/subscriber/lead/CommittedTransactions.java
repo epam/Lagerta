@@ -15,19 +15,18 @@
  */
 package com.epam.lathgertha.subscriber.lead;
 
+import com.epam.lathgertha.subscriber.util.MergeUtil;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 
 public class CommittedTransactions {
 
     private static final long INITIAL_COMMIT_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
-    private static final double LOG2 = Math.log(2);
 
     private final List<Long> committed = new LinkedList<>();
     private long lastDenseCommit = INITIAL_COMMIT_ID;
@@ -62,56 +61,7 @@ public class CommittedTransactions {
     }
 
     private void mergeCollections() {
-        if (toMerge.isEmpty()) {
-            return;
-        }
-        int size = toMerge.size();
-        double deep = Math.ceil((Math.log(size) / LOG2));
-        int prevStep = 1;
-        for (int i = 0; i < deep; i++) {
-            int step = prevStep * 2;
-            List<ForkJoinTask> tasks = new ArrayList<>();
-            for (int j = 0; j < size - 1; j += step) {
-                final int current = j;
-                final int next = j + prevStep;
-                Runnable task = () -> merge(toMerge.get(current), toMerge.get(next));
-                tasks.add(pool.submit(task));
-            }
-            tasks.forEach(ForkJoinTask::join);
-            prevStep = step;
-        }
-        merge(committed, toMerge.get(0));
+        MergeUtil.mergeCollections(committed, toMerge, Long::compare, pool);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
-    }
-
-    /**
-     * merge two collections into first one
-     */
-    static void merge(List<Long> first, List<Long> second) {
-        ListIterator<Long> firstIter = first.listIterator();
-        ListIterator<Long> secondIter = second.listIterator();
-
-        Long a = getNext(firstIter);
-        Long b = getNext(secondIter);
-
-        while (a != null && b != null) {
-            if (a > b) {
-                firstIter.previous();
-                firstIter.add(b);
-                firstIter.next();
-                b = getNext(secondIter);
-            } else {
-                a = getNext(firstIter);
-            }
-        }
-
-        while (b != null) {
-            firstIter.add(b);
-            b = getNext(secondIter);
-        }
-    }
-
-    private static Long getNext(ListIterator<Long> iter) {
-        return iter.hasNext() ? iter.next() : null;
     }
 }
