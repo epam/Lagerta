@@ -20,8 +20,8 @@ import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReplicationClusters implements Resource {
-    private static final Logger LOG = LoggerFactory.getLogger(ReplicationClusters.class);
+public class FullClusterResource implements Resource {
+    private static final Logger LOG = LoggerFactory.getLogger(FullClusterResource.class);
     private static final String CONFIG_XML = "com/epam/lathgertha/integration/config.xml";
     private static final int CLUSTER_SIZE = 2;
 
