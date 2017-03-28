@@ -16,47 +16,38 @@
 
 package com.epam.lathgertha.resources;
 
-import com.epam.lathgertha.cluster.IgniteClusterManager;
-import com.epam.lathgertha.cluster.XmlOneProcessClusterManager;
+import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ReplicationClusters implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationClusters.class);
-    private static final String CONFIGS_DIR = "com/epam/lathgertha/integration/";
-    private static final String MAIN_CLUSTER_CONFIG_XML = "ignite-main-cluster-config.xml";
-    private static final String READER_CLUSTER_CONFIG_XML = "ignite-reader-cluster-config.xml";
+    private static final String CONFIG_XML = "com/epam/lathgertha/integration/config.xml";
     private static final int CLUSTER_SIZE = 2;
 
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
-    private final EmbeddedKafka mainKafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
-    private final EmbeddedKafka readerKafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2182, 9096);
-    private final IgniteClusterResource mainCluster = createCluster(MAIN_CLUSTER_CONFIG_XML, CLUSTER_SIZE);
-    private final IgniteClusterResource readerCluster = createCluster(READER_CLUSTER_CONFIG_XML, CLUSTER_SIZE);
+    private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
+    private final AppContextOneProcessClusterManager clusterManager = new AppContextOneProcessClusterManager(CONFIG_XML);
+    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE, clusterManager);
 
-    public IgniteClusterResource mainCluster() {
-        return mainCluster;
-    }
-
-    public IgniteClusterResource readerCluster() {
-        return readerCluster;
+    public IgniteClusterResource igniteCluster() {
+        return cluster;
     }
 
     @Override
     public void setUp() throws Exception {
-        setUpResources(tmpDir, mainKafka, readerKafka, mainCluster, readerCluster);
+        setUpResources(tmpDir, kafka, cluster);
     }
 
     @Override
     public void tearDown() {
-        tearDownResources(readerCluster, mainCluster, mainKafka, readerKafka, tmpDir);
+        tearDownResources(cluster, kafka, tmpDir);
     }
 
     public void cleanUpClusters() {
-        mainCluster.clearCluster();
-        readerCluster.clearCluster();
-        mainKafka.deleteAllTopics();
-        readerKafka.deleteAllTopics();
+        clusterManager.refreshContexts();
+        cluster.clearCluster();
+        kafka.deleteAllTopics();
     }
 
     private static void setUpResources(Resource... resources) throws Exception {
@@ -73,14 +64,5 @@ public class ReplicationClusters implements Resource {
                 LOG.error("Exception occurred while releasing resources: ", e);
             }
         }
-    }
-
-    private static IgniteClusterResource createCluster(String configFile, int clusterSize) {
-        IgniteClusterManager clusterManager = new XmlOneProcessClusterManager(getConfigClassPath(configFile));
-        return new IgniteClusterResource(clusterSize, clusterManager);
-    }
-
-    private static String getConfigClassPath(String configFile) {
-        return CONFIGS_DIR + configFile;
     }
 }
