@@ -10,7 +10,6 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import com.epam.lathgertha.capturer.TransactionScope;
-import org.jetbrains.annotations.NotNull;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -91,7 +90,6 @@ public class ParallelCommitStrategyUnitTest {
         }
     }
 
-    @NotNull
     private static <K, V> Map.Entry<K, V> pair(K k, V v) {
         return new AbstractMap.SimpleImmutableEntry<K, V>(k, v);
     }
