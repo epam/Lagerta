@@ -35,10 +35,8 @@
         <prop key="configBasePath">/com/epam/lathgertha/integration/</prop>
     </util:properties>
 
-    <util:properties id="main-consumer-properties" location="${configBasePath}main-consumer.properties"/>
-    <util:properties id="main-producer-properties" location="${configBasePath}main-producer.properties"/>
-    <util:properties id="reader-consumer-properties" location="${configBasePath}reader-consumer.properties"/>
-    <util:properties id="reader-producer-properties" location="${configBasePath}reader-producer.properties"/>
+    <util:properties id="consumer-properties" location="${configBasePath}consumer.properties"/>
+    <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
 
     <bean id="baseIgnite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
@@ -77,15 +75,10 @@
         </property>
     </bean>
 
-    <bean name="main-subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
           p:remoteTopic="remoteTopic"
-          p:consumerConfig-ref="main-consumer-properties"
-          p:producerConfig-ref="main-producer-properties"/>
-
-    <bean name="reader-subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
-          p:remoteTopic="remoteTopic"
-          p:consumerConfig-ref="reader-consumer-properties"
-          p:producerConfig-ref="reader-producer-properties"/>
+          p:consumerConfig-ref="consumer-properties"
+          p:producerConfig-ref="producer-properties"/>
 
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
 
