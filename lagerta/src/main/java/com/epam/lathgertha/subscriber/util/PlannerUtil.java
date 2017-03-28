@@ -19,6 +19,7 @@ import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,21 +86,20 @@ public final class PlannerUtil {
                 .addAll(entry.getValue());
     }
 
-    @SuppressWarnings("unchecked")
     private static boolean isIntersectedWithClaimed(
             UUID consumerId,
             List<Entry<String, List>> scope,
             Map<UUID, Map<String, Set<?>>> claimed) {
-
-        Supplier<Stream<Map<String, Set<?>>>> otherClaimed = () -> claimed.entrySet().stream()
+        return claimed.entrySet().stream()
                 .filter(entry -> !entry.getKey().equals(consumerId))
-                .map(Entry::getValue);
+                .map(Entry::getValue)
+                .anyMatch(map -> isIntersected(map, scope));
+    }
 
-        return scope.stream()
-                .anyMatch(entry -> otherClaimed.get()
-                        .anyMatch(map ->
-                                Optional.ofNullable(map.get(entry.getKey()))
-                                        .map(claimedSet -> entry.getValue().stream().anyMatch(claimedSet::contains))
-                                        .orElse(false)));
+    @SuppressWarnings("unchecked")
+    private static boolean isIntersected(Map<String, Set<?>> map, List<Entry<String, List>> scope) {
+        return scope.stream().anyMatch(entry -> Optional.ofNullable(map.get(entry.getKey()))
+                .map(claimedSet -> !Collections.disjoint(entry.getValue(), claimedSet))
+                .orElse(false));
     }
 }
