@@ -36,10 +36,10 @@ public abstract class BaseFunctionalTest {
     private static final String CACHE_NAME = "someCache";
     private static final String CONFIG_PATH = "/com/epam/lathgertha/functional/config.xml";
     private static final ConfigurableApplicationContext CONTEXT = new ClassPathXmlApplicationContext(CONFIG_PATH);
-    private static final AppContextOneProcessClusterManager clusterManager =
+    private static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
             new AppContextOneProcessClusterManager(CONFIG_PATH);
-    private static final IgniteClusterResource clusterResource =
-            new IgniteClusterResource(2, clusterManager);
+    private static final IgniteClusterResource CLUSTER_RESOURCE =
+            new IgniteClusterResource(2, CLUSTER_MANAGER);
 
     protected KafkaMockFactory kafkaMockFactory;
     protected Ignite ignite;
@@ -48,24 +48,24 @@ public abstract class BaseFunctionalTest {
 
     @BeforeSuite
     public void initCluster() {
-        clusterResource.setUp();
-        ignite = clusterResource.ignite();
+        CLUSTER_RESOURCE.setUp();
+        ignite = CLUSTER_RESOURCE.ignite();
     }
 
     @AfterSuite
     public void stopCluster() {
-        clusterResource.tearDown();
+        CLUSTER_RESOURCE.tearDown();
     }
 
     @BeforeMethod
     public void clearCluster() {
-        clusterResource.clearCluster();
+        CLUSTER_RESOURCE.clearCluster();
         kafkaMockFactory = CONTEXT.getBean(KafkaMockFactory.class);
     }
 
     @AfterMethod
     public void clearState() {
-        clusterManager.refreshContexts();
+        CLUSTER_MANAGER.refreshContexts();
         InputProducer.resetOffsets();
         KafkaMockFactory.clearState();
     }
