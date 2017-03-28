@@ -40,13 +40,13 @@ public class ParallelCommitStrategyUnitTest {
     @DataProvider(name = "test")
     public Object[][] dataProviderForCommit() {
         return new Object[][] {
-                new Object[] {asList(A, A), singletonList(pair(0, 1))},
-                new Object[] {asList(A, B, A), singletonList(pair(0, 2))},
-                new Object[] {asList(A, B, A, B), asList(pair(0, 2), pair(1, 3))},
-                new Object[] {asList(A_B, A_B, A_B), asList(pair(0, 1), pair(1, 2))},
-                new Object[] {asList(A_B, A_C, B_D), asList(pair(0, 1), pair(0, 2))},
-                new Object[] {asList(A_B, A, B, A_B), asList(pair(0, 1), pair(0, 2), pair(1, 3), pair(2, 3))},
-                new Object[] {asList(A_B, B_C, A, C, A_B, B_C), asList(pair(0, 1), pair(0, 2), pair(1, 3), pair(1, 4), pair(2, 4), pair(3, 5), pair(4, 5))},
+                {asList(A, A), singletonList(pair(0, 1))},
+                {asList(A, B, A), singletonList(pair(0, 2))},
+                {asList(A, B, A, B), asList(pair(0, 2), pair(1, 3))},
+                {asList(A_B, A_B, A_B), asList(pair(0, 1), pair(1, 2))},
+                {asList(A_B, A_C, B_D), asList(pair(0, 1), pair(0, 2))},
+                {asList(A_B, A, B, A_B), asList(pair(0, 1), pair(0, 2), pair(1, 3), pair(2, 3))},
+                {asList(A_B, B_C, A, C, A_B, B_C), asList(pair(0, 1), pair(0, 2), pair(1, 3), pair(1, 4), pair(2, 4), pair(3, 5), pair(4, 5))},
         };
     }
 
