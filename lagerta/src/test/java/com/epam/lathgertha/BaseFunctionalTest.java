@@ -18,7 +18,7 @@ package com.epam.lathgertha;
 import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import com.epam.lathgertha.mocks.InputProducer;
 import com.epam.lathgertha.mocks.KafkaMockFactory;
-import com.epam.lathgertha.rules.IgniteClusterResource;
+import com.epam.lathgertha.resources.IgniteClusterResource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -45,12 +45,13 @@ public abstract class BaseFunctionalTest {
 
     @BeforeSuite
     public void initCluster() {
-        ignite = clusterResource.startCluster();
+        clusterResource.setUp();
+        ignite = clusterResource.ignite();
     }
 
     @AfterSuite
     public void stopCluster() {
-        clusterResource.stopCluster();
+        clusterResource.tearDown();
     }
 
     @BeforeMethod
