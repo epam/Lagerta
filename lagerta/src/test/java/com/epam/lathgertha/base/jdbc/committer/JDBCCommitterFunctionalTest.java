@@ -16,13 +16,12 @@
 package com.epam.lathgertha.base.jdbc.committer;
 
 import com.epam.lathgertha.IgniteConfigurer;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.cluster.SimpleOneProcessClusterManager;
 import com.epam.lathgertha.resources.IgniteClusterResource;
 import com.epam.lathgertha.util.AtomicsHelper;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,14 +38,12 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,12 +98,12 @@ public class JDBCCommitterFunctionalTest {
 
     @BeforeMethod()
     public void initState() {
-        executeUpdateQuery("create_tables.sql");
+        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
     }
 
     @AfterMethod
     public void clearBase() {
-        executeUpdateQuery("clear_tables.sql");
+        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.DROP_TABLE_SQL_RESOUCE);
     }
 
     private static File createTempDir() {
@@ -124,18 +121,6 @@ public class JDBCCommitterFunctionalTest {
                 .map(Path::toFile)
                 .forEach(File::delete);
         folder.delete();
-    }
-
-    private void executeUpdateQuery(String resourceName) {
-        URL resource = getClass().getResource(resourceName);
-        try {
-            String query = Resources.toString(resource, Charsets.UTF_8);
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate(query);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @DataProvider(name = DATA_PROVIDER_PRIMITIVES_NAME)
