@@ -25,13 +25,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LeadImpl extends Scheduler implements Lead {
 
     private final List<ConsumerTxScope> allTransactions = new ArrayList<>();
-    private final List<Long> inProgress = new ArrayList<>();
+    private final Set<Long> inProgress = new HashSet<>();
 
     private final Map<UUID, List<Long>> toCommit = new ConcurrentHashMap<>();
 
