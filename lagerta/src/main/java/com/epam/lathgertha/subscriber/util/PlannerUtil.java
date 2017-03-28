@@ -19,38 +19,48 @@ import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class PlannerUtil {
-    private static final Function<UUID, Set<Map.Entry<String, List>>> CLAIMED = key -> new HashSet<>();
+    private static final Function<UUID, Map<String, Set<?>>> CLAIMED = key -> new HashMap<>();
     private static final Function<UUID, List<Long>> READY = key -> new ArrayList<>();
+    private static final Function<String, Set<?>> NEW_HASH_SET = key -> new HashSet();
 
     private static final long STEP_TX_ID = 1;
 
-    private PlannerUtil() {}
+    private PlannerUtil() {
+    }
 
     public static Map<UUID, List<Long>> plan(
             List<ConsumerTxScope> transactions,
             CommittedTransactions committed,
-            List<Long> inProgress) {
+            Set<Long> inProgress) {
         long currentId = committed.getLastDenseCommit() + STEP_TX_ID;
 
-        Set<Map.Entry<String, List>> blocked = new HashSet<>();
-        Map<UUID, Set<Map.Entry<String, List>>> claimed = new HashMap<>();
+        Set<Entry<String, List>> blocked = new HashSet<>();
+        Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
         Map<UUID, List<Long>> plan = new HashMap<>();
+
         for (ConsumerTxScope info : transactions) {
             long id = info.getTransactionId();
             if (id > currentId) {
                 break;
             }
             if (!committed.contains(id)) {
-                List<Map.Entry<String, List>> scope = info.getScope();
+                List<Entry<String, List>> scope = info.getScope();
+
                 if (inProgress.contains(id) || scope.stream().anyMatch(blocked::contains)) {
                     blocked.addAll(scope);
                 } else {
@@ -58,7 +68,8 @@ public final class PlannerUtil {
                     if (isIntersectedWithClaimed(consumerId, scope, claimed)) {
                         blocked.addAll(scope);
                     } else {
-                        claimed.computeIfAbsent(consumerId, CLAIMED).addAll(scope);
+                        Map<String, Set<?>> claimedScope = claimed.computeIfAbsent(consumerId, CLAIMED);
+                        scope.forEach(addToClaimed(claimedScope));
                         plan.computeIfAbsent(consumerId, READY).add(id);
                     }
                 }
@@ -68,12 +79,27 @@ public final class PlannerUtil {
         return plan;
     }
 
+    @SuppressWarnings("unchecked")
+    private static Consumer<Entry<String, List>> addToClaimed(Map<String, Set<?>> claimedScope) {
+        return entry -> claimedScope
+                .computeIfAbsent(entry.getKey(), NEW_HASH_SET)
+                .addAll(entry.getValue());
+    }
+
     private static boolean isIntersectedWithClaimed(
             UUID consumerId,
-            List<Map.Entry<String, List>> scope,
-            Map<UUID, Set<Map.Entry<String, List>>> claimed) {
+            List<Entry<String, List>> scope,
+            Map<UUID, Map<String, Set<?>>> claimed) {
         return claimed.entrySet().stream()
                 .filter(entry -> !entry.getKey().equals(consumerId))
-                .anyMatch(entry -> scope.stream().anyMatch(e -> entry.getValue().contains(e)));
+                .map(Entry::getValue)
+                .anyMatch(map -> isIntersected(map, scope));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean isIntersected(Map<String, Set<?>> map, List<Entry<String, List>> scope) {
+        return scope.stream().anyMatch(entry -> Optional.ofNullable(map.get(entry.getKey()))
+                .map(claimedSet -> !Collections.disjoint(entry.getValue(), claimedSet))
+                .orElse(false));
     }
 }
