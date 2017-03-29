@@ -22,7 +22,9 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class CommittedTransactionsUnitTest {
 

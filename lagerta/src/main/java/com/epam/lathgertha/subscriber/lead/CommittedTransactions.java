@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 public class CommittedTransactions {
 
@@ -31,8 +30,6 @@ public class CommittedTransactions {
     private final List<Long> committed = new LinkedList<>();
     private long lastDenseCommit = INITIAL_COMMIT_ID;
     private List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
-
-    private final ForkJoinPool pool = new ForkJoinPool();
 
     public boolean addAll(List<Long> sortedTransactions) {
         return toMerge.add(sortedTransactions);
@@ -61,7 +58,7 @@ public class CommittedTransactions {
     }
 
     private void mergeCollections() {
-        MergeUtil.mergeCollections(committed, toMerge, Long::compare, pool);
+        MergeUtil.mergeCollections(committed, toMerge, Long::compare);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
     }
 }

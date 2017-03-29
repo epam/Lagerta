@@ -26,7 +26,9 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.UUID;
 
-import static com.epam.lathgertha.subscriber.DataProviderUtil.*;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
 public class ReadTransactionsUnitTest {

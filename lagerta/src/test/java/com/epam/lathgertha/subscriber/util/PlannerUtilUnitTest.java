@@ -29,7 +29,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.epam.lathgertha.subscriber.DataProviderUtil.*;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.NodeTransactionsBuilder;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
 public class PlannerUtilUnitTest {

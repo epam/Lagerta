@@ -21,7 +21,6 @@ import org.testng.annotations.Test;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static org.testng.Assert.assertEquals;
@@ -31,7 +30,6 @@ public class MergeUtilUnitTest {
     private static final String LIST_OF_LONGS = "listOfLongs";
     private static final String LIST_OF_LONG_LISTS = "listOfLongLists";
     private static final Comparator<Long> LONG_COMPARATOR = Long::compareTo;
-    private static final ForkJoinPool POOL = new ForkJoinPool();
 
     @DataProvider(name = LIST_OF_LONGS)
     private Object[][] provideListsOfLongs() {
@@ -68,7 +66,7 @@ public class MergeUtilUnitTest {
 
     @Test(dataProvider = LIST_OF_LONG_LISTS)
     public void multipleListsMerging(List<Long> a, List<List<Long>> b, List<Long> expected) {
-        MergeUtil.mergeCollections(a, b, LONG_COMPARATOR, POOL);
+        MergeUtil.mergeCollections(a, b, LONG_COMPARATOR);
         assertEquals(a, expected);
     }
 }

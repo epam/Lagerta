@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
@@ -37,8 +36,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
     private long lastDenseRead = INITIAL_READ_ID;
     private List<List<ConsumerTxScope>> buffer = new ArrayList<>(INITIAL_CAPACITY);
-
-    private final ForkJoinPool pool = new ForkJoinPool();
 
     public long getLastDenseRead() {
         return lastDenseRead;
@@ -83,8 +80,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         MergeUtil.mergeCollections(
                 allTransactions,
                 buffer,
-                Comparator.comparingLong(ConsumerTxScope::getTransactionId),
-                pool);
+                Comparator.comparingLong(ConsumerTxScope::getTransactionId));
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
 }

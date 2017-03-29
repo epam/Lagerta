@@ -26,6 +26,7 @@ import java.util.concurrent.ForkJoinTask;
 public final class MergeUtil {
 
     private static final double LOG2 = Math.log(2);
+    private static final ForkJoinPool pool = new ForkJoinPool();
 
     /**
      * squashes and merges buffer into container
@@ -33,13 +34,11 @@ public final class MergeUtil {
      * @param container  result list
      * @param buffer     items to merge
      * @param comparator
-     * @param pool       ForkJoinPoll for parallelized merging
      */
     public static <T> void mergeCollections(
             List<T> container,
             List<List<T>> buffer,
-            Comparator<T> comparator,
-            ForkJoinPool pool) {
+            Comparator<T> comparator) {
         if (buffer.isEmpty()) {
             return;
         }
@@ -95,5 +94,4 @@ public final class MergeUtil {
     private static <T> T getNext(ListIterator<T> iter) {
         return iter.hasNext() ? iter.next() : null;
     }
-
 }
