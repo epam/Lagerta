@@ -48,7 +48,7 @@ public class ReaderFunctionalTest extends BaseFunctionalTest{
         for (int txId: Arrays.asList(2, 3, 1)) {
             writeValueToKafka(TOPIC, txId, txId, txId);
         }
-        Thread.sleep(10_000); //wait read records from kafka in Reader
+        Thread.sleep(2_000); //wait read records from kafka in Reader
         checkLastCommittedOffset(offsetForMaxTxId);
     }
 
