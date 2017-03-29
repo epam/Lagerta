@@ -69,11 +69,6 @@
             <version>${ignite.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spark</artifactId>
-            <version>${ignite.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.11</artifactId>
             <version>0.10.1.0</version>
