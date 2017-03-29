@@ -89,9 +89,15 @@
     <bean name="jdbc-committer" class="com.epam.lathgertha.resources.FullClusterResource"
           factory-method="personJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
-          c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"/>
+    <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter">
+        <constructor-arg index="0" ref="kafka-factory"/>
+        <constructor-arg index="1">
+            <bean class="com.epam.lathgertha.kafka.SubscriberConfig"
+                  p:remoteTopic="local-index-topic"
+                  p:consumerConfig-ref="consumer-properties"
+                  p:producerConfig-ref="producer-properties"/>
+        </constructor-arg>
+    </bean>
 
     <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
           c:serializer-ref="serializer"
@@ -130,5 +136,6 @@
           p:cacheMode="PARTITIONED"
           p:atomicityMode="TRANSACTIONAL"
           p:backups="2"
+          p:storeKeepBinary="true"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 </beans>
