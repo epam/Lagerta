@@ -93,11 +93,15 @@ limitations under the License.
     <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
           c:commitServitor-ref="commit-servitor"/>
 
+    <bean id="emptyprops" class="java.util.Properties" />
+
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
     <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
-          p:remoteTopic="testTopic"/>
+          p:remoteTopic="testTopic"
+          p:consumerConfig-ref="emptyprops"
+    />
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
     <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"

@@ -33,7 +33,9 @@ import java.util.Collection;
 import java.util.Collections;
 
 public abstract class BaseFunctionalTest {
-    private static final String CACHE_NAME = "someCache";
+    // configured topic name in config.xml
+    protected final String TOPIC = "testTopic";
+    protected final String CACHE_NAME = "someCache";
     private static final String CONFIG_PATH = "/com/epam/lathgertha/functional/config.xml";
     private static final ConfigurableApplicationContext CONTEXT = new ClassPathXmlApplicationContext(CONFIG_PATH);
     private static final AppContextOneProcessClusterManager CLUSTER_MANAGER =

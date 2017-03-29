@@ -13,31 +13,39 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.subscriber;
+package com.epam.lathgertha.subscriber.reader;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.common.PredicateRule;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.services.LeadService;
-import com.epam.lathgertha.subscriber.lead.Lead;
+import com.epam.lathgertha.subscriber.CommitStrategy;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
+
+    private int commitToKafkaEachIterate = 5;
+    private long currentIterate = 0;
+    private final BooleanSupplier CONDITION_COMMIT_TO_KAFKA = () -> ++currentIterate % commitToKafkaEachIterate == 0;
 
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
@@ -46,7 +54,7 @@ public class Reader extends Scheduler {
     private final CommitStrategy commitStrategy;
     private final UUID nodeId;
 
-    private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer = new HashMap<>();
+    private ReaderState metadataTransaction;
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
@@ -56,18 +64,31 @@ public class Reader extends Scheduler {
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         nodeId = ignite.cluster().localNode().id();
+        metadataTransaction = new ReaderState(serializer);
+    }
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
+                  CommitStrategy commitStrategy, int countIterateForCommit) {
+        this(ignite,kafkaFactory,config,serializer,commitStrategy);
+        this.commitToKafkaEachIterate = countIterateForCommit;
     }
 
     @Override
     public void execute() {
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
-            registerRule(() -> pollAndCommitTransactionsBatch(consumer));
+            registerRule(()-> pollAndCommitTransactionsBatch(consumer) );
+            registerRule(new PredicateRule(() -> commitOnKafka(consumer), CONDITION_COMMIT_TO_KAFKA));
             super.execute();
         }
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer(SubscriberConfig config) {
-        Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
+        Properties consumerConfig = config.getConsumerConfig();
+        String property = consumerConfig.getProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+        if (property == null || property.equalsIgnoreCase(String.valueOf(true))) {
+            consumerConfig.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(false));
+        }
+
+        Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(consumerConfig);
         consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
         return consumer;
     }
@@ -75,25 +96,35 @@ public class Reader extends Scheduler {
     private void pollAndCommitTransactionsBatch(Consumer<ByteBuffer, ByteBuffer> consumer) {
         ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
 
-        List<TransactionScope> scopes = new ArrayList<>();
+        List<TransactionScope> lastScopes = new ArrayList<>();
 
         for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
             TransactionScope transactionScope = serializer.deserialize(record.key());
-            buffer.put(transactionScope.getTransactionId(),
-                    new SimpleImmutableEntry<>(transactionScope, record.value()));
-            scopes.add(transactionScope);
+            metadataTransaction.putToBuffer(record);
+            lastScopes.add(transactionScope);
         }
 
-        approveAndCommitTransactionsBatch(nodeId, scopes);
+        approveAndCommitTransactionsBatch(lastScopes);
     }
 
-    private void approveAndCommitTransactionsBatch(UUID nodeId, List<TransactionScope> scopes) {
+    private void commitOnKafka(Consumer consumer) {
+        Map<TopicPartition, List<Long>> partitionNumAndOffset = metadataTransaction.getPartitionNumAndOffset();
+        for (TopicPartition partition : partitionNumAndOffset.keySet()) {
+            List<Long> offsetsForPartition = partitionNumAndOffset.remove(partition);
+            for (Long offset : offsetsForPartition) {
+                OffsetAndMetadata offsetMetaInfo = new OffsetAndMetadata(offset);
+                consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
+            }
+        }
+    }
+
+    private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         final List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
-            commitStrategy.commit(txIdsToCommit, buffer);
+            commitStrategy.commit(txIdsToCommit, metadataTransaction.getBuffer());
             lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.forEach(buffer::remove);
+            txIdsToCommit.forEach(metadataTransaction::removeFromBuffer);
         }
     }
 }

@@ -111,7 +111,7 @@ public class KafkaMockFactory implements KafkaFactory {
             serializer);
     }
 
-    private List<ProxyMockConsumer> existingOpenedConsumers(String topic) {
+    public List<ProxyMockConsumer> existingOpenedConsumers(String topic) {
         List<ProxyMockConsumer> result = CONSUMERS
                 .stream()
                 .filter(consumer -> !consumer.closed())

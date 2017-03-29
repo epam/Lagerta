@@ -18,7 +18,7 @@ package com.epam.lathgertha.services;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.subscriber.CommitStrategy;
-import com.epam.lathgertha.subscriber.Reader;
+import com.epam.lathgertha.subscriber.reader.Reader;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.resources.IgniteInstanceResource;
