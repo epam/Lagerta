@@ -28,41 +28,45 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ReaderState {
+class ReaderState {
 
-    // partitionNumber - key all partition where read Reader, List<Offsets> - value list offsets read for partition
+    /**
+     * TopicPartition - key all partition where read Reader, List<Offsets> - value list offsets read for partition
+     */
     private Map<TopicPartition, List<Long>> partitionNumAndOffset = new HashMap<>();
+
+    /**
+     * txId - key, TransactionState - read data from kafka for txId
+     */
+    private Map<Long, TransactionState> entryState = new HashMap<>();
+
     private final Serializer serializer;
 
-    ReaderState(Serializer serializer) {
+    public ReaderState(Serializer serializer) {
         this.serializer = serializer;
     }
 
-    private Map<Long, ReaderEntryState> entryState = new HashMap<>();
-
-
-    public void putToBuffer(ConsumerRecord<ByteBuffer, ByteBuffer> record){
-        TransactionScope transactionScope = serializer.deserialize(record.key());
-        long transactionId = transactionScope.getTransactionId();
-        entryState.put(transactionId, new ReaderEntryState(record));
+    public void putToBuffer(ConsumerRecord<ByteBuffer, ByteBuffer> record) {
+        TransactionState transactionState = new TransactionState(record);
+        long transactionId = transactionState.getTransactionScope().getTransactionId();
+        entryState.put(transactionId, transactionState);
     }
 
     public Map<Long, Map.Entry<TransactionScope, ByteBuffer>> getBuffer() {
         return entryState.entrySet().stream().collect(
-                Collectors.toMap((entry) -> entry.getKey(),
-                        (entry) -> entry.getValue().getScope()));
+                Collectors.toMap(Map.Entry::getKey,
+                        (transactionState) -> transactionState.getValue().getScopeAndValue()));
     }
 
-    public Map.Entry<TransactionScope, ByteBuffer> removeFromBufferAndAddOffsetForCommit(Long txId) {
-        ReaderEntryState entryState = this.entryState.remove(txId);
+    public void removeFromBuffer(Long txId) {
+        TransactionState entryState = this.entryState.remove(txId);
         TopicPartition topicPartition = entryState.getTopicPartition();
-        List<Long> offsets = partitionNumAndOffset.get(topicPartition);
-        if(offsets==null){
-            offsets = new ArrayList<>();
-            partitionNumAndOffset.put(topicPartition,offsets);
-        }
-        offsets.add(entryState.getOffset());
-        return entryState.getScope();
+        addOffsetForTopicPartition(topicPartition, entryState.getOffset());
+    }
+
+    public void addOffsetForTopicPartition(TopicPartition topicPartition, Long offset) {
+        List<Long> offsets = partitionNumAndOffset.computeIfAbsent(topicPartition, k -> new ArrayList<>());
+        offsets.add(offset);
     }
 
     public Map<TopicPartition, List<Long>> getPartitionNumAndOffset() {
@@ -70,50 +74,29 @@ public class ReaderState {
     }
 
 
-    public class ReaderEntryState{
-        ConsumerRecord<ByteBuffer, ByteBuffer> record;
+    private class TransactionState {
+        private ConsumerRecord<ByteBuffer, ByteBuffer> record;
+        private TransactionScope transactionScope;
 
-        // txId - key read from kafka, offset and partition num - value where read txId
-//        private Map<Long, ConsumerRecord<ByteBuffer, ByteBuffer>> txIdsAndOffsetMetadata = new HashMap<>();
-//
-//        // txId - key read from kafka, Map.Entry<TransactionScope, ByteBuffer> - scope of transaction and value for csope
-//        private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer = new HashMap<>();
-
-
-        public ReaderEntryState(ConsumerRecord<ByteBuffer, ByteBuffer> record) {
+        TransactionState(ConsumerRecord<ByteBuffer, ByteBuffer> record) {
             this.record = record;
+            transactionScope = serializer.deserialize(record.key());
         }
 
-        public long getOffset(){
+        TransactionScope getTransactionScope() {
+            return transactionScope;
+        }
+
+        long getOffset() {
             return record.offset();
         }
 
-        public TopicPartition getTopicPartition(){
-            return new TopicPartition(record.topic(),record.partition());
+        TopicPartition getTopicPartition() {
+            return new TopicPartition(record.topic(), record.partition());
         }
 
-        public Map.Entry<TransactionScope, ByteBuffer> getScope(){
-            TransactionScope transactionScope = serializer.deserialize(record.key());
+        Map.Entry<TransactionScope, ByteBuffer> getScopeAndValue() {
             return new AbstractMap.SimpleImmutableEntry<>(transactionScope, record.value());
         }
-
-
     }
-
-
-//    public Map.Entry<TransactionScope, ByteBuffer> removeFromBufferAndAddOffsetForCommit(Long txId){
-//        return buffer.remove(txId);
-//    }
-//
-//    public Map<Long, ConsumerRecord> getTxIdsAndOffsetMetadata() {
-//        return txIdsAndOffsetMetadata;
-//    }
-//
-//    public Map<TopicPartition, List<Long>> getPartitionNumAndOffset() {
-//        return partitionNumAndOffset;
-//    }
-//
-//    public Map<Long, Map.Entry<TransactionScope, ByteBuffer>> getBuffer() {
-//        return buffer;
-//    }
 }

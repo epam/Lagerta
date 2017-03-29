@@ -69,7 +69,7 @@ public class Reader extends Scheduler {
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, int countIterateForCommit) {
         this(ignite,kafkaFactory,config,serializer,commitStrategy);
-        commitToKafkaEachIterate = countIterateForCommit;
+        this.commitToKafkaEachIterate = countIterateForCommit;
     }
 
     @Override
@@ -124,13 +124,7 @@ public class Reader extends Scheduler {
         if (!txIdsToCommit.isEmpty()) {
             commitStrategy.commit(txIdsToCommit, metadataTransaction.getBuffer());
             lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.forEach(metadataTransaction::removeFromBufferAndAddOffsetForCommit);
-
-//            Map<Long, ConsumerRecord> txIdsAndOffsetMetadata = metadataTransaction.getTxIdsAndOffsetMetadata();
-//            for (Long txId:txIdsToCommit) {
-//                ConsumerRecord recordForTx = txIdsAndOffsetMetadata.remove(txId);
-//                metadataTransaction.addOffsetsForPartition(new TopicPartition(recordForTx.topic(),recordForTx.partition()), recordForTx.offset());
-//            }
+            txIdsToCommit.forEach(metadataTransaction::removeFromBuffer);
         }
     }
 }
