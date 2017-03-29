@@ -50,7 +50,7 @@
                 </executions>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src\test\resources\test-suites\integration-suite.xml</suiteXmlFile>
+                        <suiteXmlFile>src\test\resources\test-suites\integration-tests.xml</suiteXmlFile>
                     </suiteXmlFiles>
                 </configuration>
             </plugin>
