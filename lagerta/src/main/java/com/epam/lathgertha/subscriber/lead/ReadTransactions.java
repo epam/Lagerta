@@ -45,7 +45,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         compress();
         Iterator<ConsumerTxScope> iterator = allTransactions.iterator();
         while (iterator.hasNext()) {
-            if (committed.getLastDenseCommit() == iterator.next().getTransactionId()) {
+            long commit = committed.getLastDenseCommit();
+            if (iterator.next().getTransactionId() <= commit) {
                 iterator.remove();
             } else {
                 break;
@@ -62,7 +63,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
 
     @Override
     public Iterator<ConsumerTxScope> iterator() {
-        return allTransactions.iterator();
+        return allTransactions.stream()
+                .filter(tx -> tx.getTransactionId() <= lastDenseRead)
+                .iterator();
     }
 
     private void compress() {

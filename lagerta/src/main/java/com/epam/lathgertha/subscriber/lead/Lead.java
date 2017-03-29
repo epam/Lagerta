@@ -23,7 +23,7 @@ import java.util.UUID;
 public interface Lead {
 
     /**
-     * notifies lead that transactions has read
+     * notifies lead that transactions has been read
      *
      * @param consumerId id of consumer node
      * @param txScopes   transaction scopes read by the consumer
@@ -32,7 +32,7 @@ public interface Lead {
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     /**
-     * notifies lead that transactions has committed
+     * notifies lead that transactions has been committed
      *
      * @param ids sorted list of committed ids
      */

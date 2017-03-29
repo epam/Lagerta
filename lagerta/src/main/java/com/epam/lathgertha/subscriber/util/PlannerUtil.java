@@ -51,9 +51,6 @@ public final class PlannerUtil {
 
         for (ConsumerTxScope info : read) {
             long id = info.getTransactionId();
-            if (id > read.getLastDenseRead()) {
-                break;
-            }
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
                 if (inProgress.contains(id) || scope.stream().anyMatch(blocked::contains)) {

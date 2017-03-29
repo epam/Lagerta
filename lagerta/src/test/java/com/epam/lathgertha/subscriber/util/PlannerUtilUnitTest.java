@@ -15,6 +15,7 @@
  */
 package com.epam.lathgertha.subscriber.util;
 
+import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
 import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 import com.google.common.collect.Lists;
@@ -90,55 +91,39 @@ public class PlannerUtilUnitTest {
 
     // (a1 -> a2) + (a3 -> a4)
     private Object[] parallelSequencesSameCache() {
-        ReadTransactions transactions = new ReadTransactions();
-        transactions.addAllOnNode(A, list(
+        return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE1, 2)),
                 txScope(3, cacheScope(CACHE1, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2) + (a3 -> a4)
     private Object[] parallelSequencesDifferentCache() {
-        ReadTransactions transactions = new ReadTransactions();
-        transactions.addAllOnNode(A, list(
+        return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE2, 2)),
                 txScope(3, cacheScope(CACHE2, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> a3) + (a2 -> a4)
     private Object[] sequenceWithFork() {
-        ReadTransactions transactions = new ReadTransactions();
-        transactions.addAllOnNode(A, list(
+        return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
                 txScope(1, cacheScope(CACHE1, 1, 2)),
                 txScope(2, cacheScope(CACHE1, 2)),
                 txScope(3, cacheScope(CACHE1, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> a3) + (a4 -> a5 -> a3)
     private Object[] sequenceWithJoin() {
-        ReadTransactions transactions = new ReadTransactions();
-        transactions.addAllOnNode(A, list(
+        return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE2, 2)),
                 txScope(3, cacheScope(CACHE1, 2),
                         cacheScope(CACHE2, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> b1)
@@ -256,7 +241,15 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 
-    private Map<UUID, List<Long>> nodeTransactions(UUID nodeId, long... txIds) {
+    private static Object[] sequence(List<TransactionScope> list) {
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list);
+        transactions.pruneCommitted(EMPTY_COMMITTED);
+        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
+    }
+
+    private static Map<UUID, List<Long>> nodeTransactions(UUID nodeId, long... txIds) {
         return NodeTransactionsBuilder.builder().nodeTransactions(nodeId, txIds).build();
     }
 }

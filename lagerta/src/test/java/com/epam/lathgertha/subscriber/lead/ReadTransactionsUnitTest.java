@@ -17,6 +17,8 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.subscriber.ConsumerTxScope;
+import com.google.common.collect.Lists;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -24,7 +26,9 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
@@ -37,7 +41,8 @@ public class ReadTransactionsUnitTest {
     private static final UUID NODE = java.util.UUID.randomUUID();
     private static final String CACHE = "cacheName";
 
-    private static final CommittedTransactions committed = Mockito.mock(CommittedTransactions.class);
+    private static final CommittedTransactions COMMITTED = Mockito.mock(CommittedTransactions.class);
+    private static final List<Map.Entry<String, List>> CACHE_SCOPE = Mockito.mock(List.class);
 
     private static final long LAST_DENSE_COMMITTED = 1L;
     private static final long EXPECTED_LAST_DENSE_READ = 4L;
@@ -46,7 +51,7 @@ public class ReadTransactionsUnitTest {
 
     @BeforeClass
     public static void setUpClass() {
-        Mockito.when(committed.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
+        Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
     }
 
     @BeforeMethod
@@ -56,14 +61,26 @@ public class ReadTransactionsUnitTest {
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
     private Object[][] provideListsOfTransactions() {
-        List<List<TransactionScope>> commonSizeLists = list(
+        List<ConsumerTxScope> denseRead = list(
+                consumerTxScope(2),
+                consumerTxScope(3),
+                consumerTxScope(4));
+        return new Object[][]{
+                {commonSizeLists(), denseRead},
+                {diffSizeLists(), denseRead}};
+    }
+
+    private List<List<TransactionScope>> commonSizeLists() {
+        return list(
                 list(txScope(0, cacheScope(CACHE, 0L, 6L)),
                         txScope(1, cacheScope(CACHE, 5L, 7L))),
                 list(txScope(2, cacheScope(CACHE, 1L, 2L)),
                         txScope(3, cacheScope(CACHE, 100L, 101L))),
                 list(txScope(4, cacheScope(CACHE, 3L, 4L))));
+    }
 
-        List<List<TransactionScope>> diffSizeLists = list(
+    private List<List<TransactionScope>> diffSizeLists() {
+        return list(
                 list(txScope(0, cacheScope(CACHE, 0L, 15L, 100L, 101L, 102L))),
                 list(txScope(1, cacheScope(CACHE))),
                 list(txScope(2, cacheScope(CACHE, 1L, 2L, 10L, 103L))),
@@ -73,14 +90,34 @@ public class ReadTransactionsUnitTest {
                 list(txScope(9, cacheScope(CACHE, 50L, 77L, 78L, 104L))),
                 list(txScope(11, cacheScope(CACHE, 51L, 79L, 80L, 97L, 105L, 106L))),
                 list(txScope(12, cacheScope(CACHE, 6L, 7L, 42L, 49L))));
-        return new Object[][]{{commonSizeLists}, {diffSizeLists}};
     }
 
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
-    public void pruningWorksWithAddManyLists(List<List<TransactionScope>> transactions) {
+    public void pruningWorksWithAddManyLists(
+            List<List<TransactionScope>> transactions,
+            List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(committed);
+        read.pruneCommitted(COMMITTED);
         long commitAfterCompress = read.getLastDenseRead();
         assertEquals(commitAfterCompress, EXPECTED_LAST_DENSE_READ);
+    }
+
+    @Test(dataProvider = LIST_OF_TRANSACTIONS)
+    public void iteratorReturnsReadDenseTransactions(
+            List<List<TransactionScope>> transactions,
+            List<ConsumerTxScope> expectedDenseRead) {
+        transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
+        read.pruneCommitted(COMMITTED);
+        List<Long> actual = Lists.newArrayList(read.iterator()).stream()
+                .map(ConsumerTxScope::getTransactionId)
+                .collect(Collectors.toList());
+        List<Long> expected = expectedDenseRead.stream()
+                .map(ConsumerTxScope::getTransactionId)
+                .collect(Collectors.toList());
+        assertEquals(actual, expected);
+    }
+
+    private static ConsumerTxScope consumerTxScope(long transactionId) {
+        return new ConsumerTxScope(NODE, transactionId, CACHE_SCOPE);
     }
 }
