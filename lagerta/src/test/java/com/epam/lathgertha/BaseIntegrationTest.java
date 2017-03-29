@@ -101,7 +101,11 @@ public abstract class BaseIntegrationTest {
 
                 for (Map.Entry<Integer, Person> entry : persons) {
                     AssertJUnit.assertTrue(resultSet.next());
-                    AssertJUnit.assertEquals(personEntryToMap(entry), PersonEntries.getResultMapForPerson(resultSet));
+
+                    Map<String, Object> expectedMap = personEntryToMap(entry);
+                    Map<String, Object> actualMap = PersonEntries.getResultMapForPerson(resultSet);
+
+                    AssertJUnit.assertEquals(expectedMap, actualMap);
                 }
             }
         }
@@ -109,11 +113,12 @@ public abstract class BaseIntegrationTest {
 
     private static Map<String, Object> personEntryToMap(Map.Entry<Integer, Person> entry) {
         Map<String, Object> result = new HashMap<>(4);
+        Person person = entry.getValue();
 
         result.put(Person.PERSON_KEY, entry.getKey());
-        result.put(Person.PERSON_ID, entry.getValue().getId());
-        result.put(Person.PERSON_NAME, null);
-        result.put(Person.PERSON_VAL, entry.getValue());
+        result.put(Person.PERSON_ID, person.getId());
+        result.put(Person.PERSON_NAME, person.getName());
+        result.put(Person.PERSON_VAL, null);
         return result;
     }
 
