@@ -26,7 +26,7 @@ import java.util.concurrent.ForkJoinTask;
 public final class MergeUtil {
 
     private static final double LOG2 = Math.log(2);
-    private static final ForkJoinPool pool = new ForkJoinPool();
+    private static final ForkJoinPool pool = ForkJoinPool.commonPool();
 
     /**
      * squashes and merges buffer into container
