@@ -44,8 +44,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     public void pruneCommitted(CommittedTransactions committed) {
         compress();
         Iterator<ConsumerTxScope> iterator = allTransactions.iterator();
+        long commit = committed.getLastDenseCommit();
         while (iterator.hasNext()) {
-            long commit = committed.getLastDenseCommit();
             if (iterator.next().getTransactionId() <= commit) {
                 iterator.remove();
             } else {
