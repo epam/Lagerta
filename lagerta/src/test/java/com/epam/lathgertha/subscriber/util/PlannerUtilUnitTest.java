@@ -15,25 +15,25 @@
  */
 package com.epam.lathgertha.subscriber.util;
 
-import com.epam.lathgertha.subscriber.ConsumerTxScope;
+import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import static com.epam.lathgertha.subscriber.DataProviderUtil.NodeTransactionsBuilder;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
+import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
 public class PlannerUtilUnitTest {
@@ -48,13 +48,15 @@ public class PlannerUtilUnitTest {
 
     private static final String CACHE2 = "cache2";
 
+    private static final CommittedTransactions EMPTY_COMMITTED = new CommittedTransactions();
+    private static final HashSet<Long> EMPTY_IN_PROGRESS = Sets.newHashSet();
+
     @Test(dataProvider = PLANNER_INFO)
     public void planningWorks(
-            List<ConsumerTxScope> transactions,
+            ReadTransactions transactions,
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        transactions.sort(Comparator.comparingLong(ConsumerTxScope::getTransactionId));
         Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
         assertEquals(plan, expected);
     }
@@ -78,193 +80,176 @@ public class PlannerUtilUnitTest {
 
     // (a1 -> a2)
     private Object[] simpleSequence() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0L, cacheScope(CACHE1, 1L)),
+                txScope(1L, cacheScope(CACHE1, 1L))));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0L, 1L);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2) + (a3 -> a4)
     private Object[] parallelSequencesSameCache() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(A, 2, scope(CACHE1, 2)),
-                consumerTx(A, 3, scope(CACHE1, 2))
-        );
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return sequence(list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1)),
+                txScope(2, cacheScope(CACHE1, 2)),
+                txScope(3, cacheScope(CACHE1, 2))));
     }
 
     // (a1 -> a2) + (a3 -> a4)
     private Object[] parallelSequencesDifferentCache() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(A, 2, scope(CACHE2, 2)),
-                consumerTx(A, 3, scope(CACHE2, 2))
-        );
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return sequence(list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1)),
+                txScope(2, cacheScope(CACHE2, 2)),
+                txScope(3, cacheScope(CACHE2, 2))));
     }
 
     // (a1 -> a2 -> a3) + (a2 -> a4)
     private Object[] sequenceWithFork() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1, 2)),
-                consumerTx(A, 2, scope(CACHE1, 2)),
-                consumerTx(A, 3, scope(CACHE1, 2))
-        );
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return sequence(list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1, 2)),
+                txScope(2, cacheScope(CACHE1, 2)),
+                txScope(3, cacheScope(CACHE1, 2))));
     }
 
     // (a1 -> a2 -> a3) + (a4 -> a5 -> a3)
     private Object[] sequenceWithJoin() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(A, 2, scope(CACHE2, 2)),
-                consumerTx(A, 3, scope(CACHE1, 2), scope(CACHE2, 1))
-        );
-        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return sequence(list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1)),
+                txScope(2, cacheScope(CACHE2, 2)),
+                txScope(3, cacheScope(CACHE1, 2),
+                        cacheScope(CACHE2, 1))));
     }
 
     // (a1 -> a2 -> b1)
     private Object[] elementBlocked() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(B, 2, scope(CACHE1, 1))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1))));
+        transactions.addAllOnNode(B, list(
+                txScope(2, cacheScope(CACHE1, 1))));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (b1 -> a1 -> a2)
     private Object[] sequenceBlocked() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(B, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(A, 2, scope(CACHE1, 1))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(B, list(
+                txScope(0, cacheScope(CACHE1, 1))));
+        transactions.addAllOnNode(A, list(
+                txScope(1, cacheScope(CACHE1, 1)),
+                txScope(2, cacheScope(CACHE1, 1))));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 0);
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> a3) + (b1 -> a2)
     private Object[] sequenceWithBlockedElement() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1)),
-                consumerTx(A, 3, scope(CACHE1, 1, 2)),
-                consumerTx(B, 2, scope(CACHE1, 2))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1)),
+                txScope(3, cacheScope(CACHE1, 1, 2))));
+        transactions.addAllOnNode(B, list(
+                txScope(2, cacheScope(CACHE1, 2))));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1)
                 .nodeTransactions(B, 2)
                 .build();
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> a3) + (a2 -> a4) + (b1 -> a4)
     private Object[] sequenceWithBlockedFork() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1, 2)),
-                consumerTx(A, 2, scope(CACHE1, 1)),
-                consumerTx(A, 4, scope(CACHE1, 2), scope(CACHE2, 1)),
-                consumerTx(B, 3, scope(CACHE2, 1))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1, 2)),
+                txScope(2, cacheScope(CACHE1, 1)),
+                txScope(4, cacheScope(CACHE1, 2),
+                        cacheScope(CACHE2, 1))));
+        transactions.addAllOnNode(B, list(
+                txScope(3, cacheScope(CACHE2, 1))));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2)
                 .nodeTransactions(B, 3)
                 .build();
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2 -> a3) + (a4 -> a5 -> a3) + (b1 -> a3)
     private Object[] sequenceWithBlockedJoin() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE1, 1)),
-                consumerTx(A, 1, scope(CACHE1, 1, 2)),
-                consumerTx(A, 2, scope(CACHE2, 1)),
-                consumerTx(A, 3, scope(CACHE2, 1)),
-                consumerTx(A, 5, scope(CACHE1, 1), scope(CACHE2, 1, 2)),
-                consumerTx(B, 4, scope(CACHE2, 2))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE1, 1)),
+                txScope(1, cacheScope(CACHE1, 1, 2)),
+                txScope(2, cacheScope(CACHE2, 1)),
+                txScope(3, cacheScope(CACHE2, 1)),
+                txScope(5, cacheScope(CACHE1, 1),
+                        cacheScope(CACHE2, 1, 2))));
+        transactions.addAllOnNode(B, list(
+                txScope(4, cacheScope(CACHE2, 2))
+        ));
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2, 3)
                 .nodeTransactions(B, 4)
                 .build();
-        return new Object[]{transactions, new CommittedTransactions(), Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2) + (b1 -> a2)
     private Object[] sequenceBlockedFromOutsideCommitted() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE2, 1)),
-                consumerTx(A, 2, scope(CACHE2, 1, 2)),
-                consumerTx(B, 1, scope(CACHE2, 2))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE2, 1)),
+                txScope(2, cacheScope(CACHE2, 1, 2))));
+        transactions.addAllOnNode(B, list(
+                txScope(1, cacheScope(CACHE2, 2))));
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(0L));
         committed.compress();
+        transactions.pruneCommitted(committed);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
-        return new Object[]{transactions, committed, Sets.<Long>newHashSet(), expected};
+        return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
 
     // (a1 -> a2) + (b1 -> a2)
     private Object[] sequenceBlockedFromOutsideCommittedAndInProgress() {
-        List<ConsumerTxScope> transactions = Lists.newArrayList(
-                consumerTx(A, 0, scope(CACHE2, 1)),
-                consumerTx(A, 2, scope(CACHE2, 1, 2)),
-                consumerTx(B, 1, scope(CACHE2, 2))
-        );
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list(
+                txScope(0, cacheScope(CACHE2, 1)),
+                txScope(2, cacheScope(CACHE2, 1, 2))));
+        transactions.addAllOnNode(B, list(
+                txScope(1, cacheScope(CACHE2, 2))));
         HashSet<Long> inProgress = Sets.newHashSet(0L, 1L);
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
+        transactions.pruneCommitted(committed);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 
-    private Map<UUID, List<Long>> nodeTransactions(UUID nodeId, long... txIds) {
+    private static Object[] sequence(List<TransactionScope> list) {
+        ReadTransactions transactions = new ReadTransactions();
+        transactions.addAllOnNode(A, list);
+        transactions.pruneCommitted(EMPTY_COMMITTED);
+        Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
+        return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
+    }
+
+    private static Map<UUID, List<Long>> nodeTransactions(UUID nodeId, long... txIds) {
         return NodeTransactionsBuilder.builder().nodeTransactions(nodeId, txIds).build();
-    }
-
-    @SafeVarargs
-    private static ConsumerTxScope consumerTx(UUID consumerId, long txId, Map.Entry<String, List>... cacheScopes) {
-        return new ConsumerTxScope(consumerId, txId, Lists.newArrayList(cacheScopes));
-    }
-
-    private static Map.Entry<String, List> scope(String cacheName, Object... keys) {
-        return new AbstractMap.SimpleImmutableEntry<>(cacheName, Lists.newArrayList(keys));
-    }
-}
-
-class NodeTransactionsBuilder {
-
-    private Map<UUID, List<Long>> map;
-
-    private NodeTransactionsBuilder(Map<UUID, List<Long>> map) {
-        this.map = map;
-    }
-
-    static NodeTransactionsBuilder builder() {
-        return new NodeTransactionsBuilder(new HashMap<>());
-    }
-
-    Map<UUID, List<Long>> build() {
-        return map;
-    }
-
-    NodeTransactionsBuilder nodeTransactions(UUID uuid, long... txIds) {
-        List<Long> txs = Arrays.stream(txIds).boxed().collect(Collectors.toList());
-        map.put(uuid, txs);
-        return this;
     }
 }
