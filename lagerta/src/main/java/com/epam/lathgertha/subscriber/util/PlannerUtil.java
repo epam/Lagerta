@@ -17,6 +17,7 @@ package com.epam.lathgertha.subscriber.util;
 
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,37 +31,28 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 public final class PlannerUtil {
     private static final Function<UUID, Map<String, Set<?>>> CLAIMED = key -> new HashMap<>();
     private static final Function<UUID, List<Long>> READY = key -> new ArrayList<>();
     private static final Function<String, Set<?>> NEW_HASH_SET = key -> new HashSet();
 
-    private static final long STEP_TX_ID = 1;
-
     private PlannerUtil() {
     }
 
     public static Map<UUID, List<Long>> plan(
-            List<ConsumerTxScope> transactions,
+            ReadTransactions read,
             CommittedTransactions committed,
             Set<Long> inProgress) {
-        long currentId = committed.getLastDenseCommit() + STEP_TX_ID;
 
         Set<Entry<String, List>> blocked = new HashSet<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
         Map<UUID, List<Long>> plan = new HashMap<>();
 
-        for (ConsumerTxScope info : transactions) {
+        for (ConsumerTxScope info : read) {
             long id = info.getTransactionId();
-            if (id > currentId) {
-                break;
-            }
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
-
                 if (inProgress.contains(id) || scope.stream().anyMatch(blocked::contains)) {
                     blocked.addAll(scope);
                 } else {
@@ -74,7 +66,6 @@ public final class PlannerUtil {
                     }
                 }
             }
-            currentId = id + STEP_TX_ID;
         }
         return plan;
     }

@@ -15,22 +15,21 @@
  */
 package com.epam.lathgertha.subscriber.lead;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class CommittedTransactionsUnitTest {
 
     private static final String LIST_OF_TRANSACTIONS = "listOfTransactions";
-    private static final String LIST_OF_LONGS = "listOfLongs";
+    private static final long EXPECTED_LAST_DENSE_COMMITTED = 7L;
 
     private CommittedTransactions committed;
 
@@ -41,13 +40,13 @@ public class CommittedTransactionsUnitTest {
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
     private Object[][] provideListsOfTransactions() {
-        List<List<Long>> commonSizeLists = Arrays.asList(
+        List<List<Long>> commonSizeLists = list(
                 list(0L, 6L),
                 list(5L, 7L),
                 list(1L, 2L),
                 list(100L, 101L),
                 list(3L, 4L));
-        List<List<Long>> diffSizeLists = Arrays.asList(
+        List<List<Long>> diffSizeLists = list(
                 list(0L, 15L, 100L, 101L, 102L),
                 list(),
                 list(1L, 2L, 10L, 103L),
@@ -61,35 +60,12 @@ public class CommittedTransactionsUnitTest {
         return new Object[][]{{commonSizeLists}, {diffSizeLists}};
     }
 
-    private List<Long> list(Long... longs) {
-        return new ArrayList<>(Arrays.asList(longs));
-    }
-
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
     public void compressWorksWithMergedManyLists(List<List<Long>> transactions) {
         transactions.forEach(committed::addAll);
         committed.compress();
         long commitAfterCompress = committed.getLastDenseCommit();
-        assertEquals(commitAfterCompress, 7L);
-    }
-
-    @DataProvider(name = LIST_OF_LONGS)
-    private Object[][] provideListsOfLongs() {
-        List<Long> expected = Arrays.asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
-        return new Object[][]{
-                {list(0L, 3L, 5L, 7L), list(1L, 2L, 4L, 6L), expected},
-                {list(0L, 3L, 7L), list(1L, 2L, 4L, 5L, 6L), expected},
-                {list(2L, 10L, 11L), list(0L, 5L), list(0L, 2L, 5L, 10L, 11L)},
-                {list(), list(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L), expected},
-                {list(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L), list(), expected},
-                {list(), list(), list()}
-        };
-    }
-
-    @Test(dataProvider = LIST_OF_LONGS)
-    public void listsMerging(List<Long> a, List<Long> b, List<Long> expected) {
-        CommittedTransactions.merge(a, b);
-        assertEquals(a, expected);
+        assertEquals(commitAfterCompress, EXPECTED_LAST_DENSE_COMMITTED);
     }
 
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
