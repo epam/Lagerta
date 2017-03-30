@@ -48,9 +48,9 @@ public final class MergeUtil {
         for (int i = 0; i < deep; i++) {
             int step = prevStep * 2;
             List<ForkJoinTask> tasks = new ArrayList<>();
-            for (int j = 0; j < size - 1; j += step) {
-                final int current = j;
-                final int next = j + prevStep;
+            for (int j = prevStep; j < size; j += step) {
+                final int current = j - prevStep;
+                final int next = j;
                 Runnable task = () -> merge(buffer.get(current), buffer.get(next), comparator);
                 tasks.add(pool.submit(task));
             }
