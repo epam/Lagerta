@@ -62,7 +62,7 @@ public class ParallelCommitStrategyUnitTest {
 
         CommitServitor servitor = mock(CommitServitor.class);
         List<Long> actual = Collections.synchronizedList(new ArrayList<>());
-        doAnswer(mock -> (Long) mock.getArguments()[0] != 1 && actual.add((Long) mock.getArguments()[0]))
+        doAnswer(mock -> actual.add((Long) mock.getArguments()[0]))
                 .when(servitor)
                 .commit(anyLong(), anyMap());
 
