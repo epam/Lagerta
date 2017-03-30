@@ -26,6 +26,8 @@ public interface Lead {
 
     void notifyCommitted(List<Long> ids);
 
+    void notifyFailed(Long id);
+
     void stop();
 
     void execute();

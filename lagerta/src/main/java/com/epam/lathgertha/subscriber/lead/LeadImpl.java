@@ -59,6 +59,11 @@ public class LeadImpl extends Scheduler implements Lead {
         });
     }
 
+    @Override
+    public void notifyFailed(Long id) {
+        //todo
+    }
+
     private void addTransaction(UUID consumerId, TransactionScope txScopes) {
         allTransactions.add(new ConsumerTxScope(consumerId, txScopes.getTransactionId(), txScopes.getScope()));
     }
