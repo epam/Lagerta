@@ -10,7 +10,9 @@
             <class name="com.epam.lathgertha.subscriber.ParallelCommitStrategyUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.SequentialCommitStrategyUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.lead.CommittedTransactionsUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.lead.ReadTransactionsUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.util.PlannerUtilUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.util.MergeUtilUnitTest"/>
         </classes>
     </test>
 </suite>

@@ -73,7 +73,6 @@ public class IgniteClusterResource implements Resource {
 
     @Override
     public void tearDown() {
-        root.services().cancelAll();
         clusterManager.stopCluster();
     }
 
