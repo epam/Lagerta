@@ -16,7 +16,8 @@
 package com.epam.lathgertha.cluster;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Implementation of {@link IgniteClusterManager} which reads its configuration from XML file instead of Java.
@@ -31,6 +32,7 @@ public class XmlOneProcessClusterManager extends DefaultOneProcessClusterManager
     /** {@inheritDoc} */
     @Override
     protected Ignite startGrid(int gridNumber, int clusterSize) {
-        return Ignition.start(configName);
+        ApplicationContext context = new ClassPathXmlApplicationContext(configName);
+        return context.getBean(Ignite.class);
     }
 }
