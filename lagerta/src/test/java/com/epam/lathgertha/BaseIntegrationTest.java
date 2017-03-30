@@ -83,7 +83,7 @@ public abstract class BaseIntegrationTest {
         IgniteCache<Integer, Person> cache = ignite.cache(Person.PERSON_CACHE);
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(key, ignite.binary().toBinary(person));
+            cache.put(key, person);
             tx.commit();
         }
     }
