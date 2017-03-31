@@ -33,8 +33,8 @@ public class FullClusterResource implements Resource {
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
     private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
     private final DBResource dbResource = new DBResource(DB_NAME);
-    private final AppContextOneProcessClusterManager clusterManager = new AppContextOneProcessClusterManager(CONFIG_XML);
-    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE, clusterManager);
+    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE,
+            new AppContextOneProcessClusterManager(CONFIG_XML));
 
     public static JDBCCommitter personJDBCCommitter() {
         return PersonEntries.getPersonOnlyJDBCCommitter(String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME));
@@ -59,7 +59,6 @@ public class FullClusterResource implements Resource {
     }
 
     public void cleanUpClusters() throws SQLException {
-        clusterManager.refreshContexts();
         cluster.clearCluster();
         dbResource.tearDown();
         kafka.deleteAllTopics();
