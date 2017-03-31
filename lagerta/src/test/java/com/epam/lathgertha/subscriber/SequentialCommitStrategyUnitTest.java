@@ -17,6 +17,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -77,7 +78,7 @@ public class SequentialCommitStrategyUnitTest {
         List<Long> expectedKeys = Collections.singletonList(1L);
         List<String> expectedValues = Collections.singletonList("value1");
 
-        Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer = getTransactionsBuffer(CACHE_NAME,
+        Map<Long, TransactionData> transactionsBuffer = getTransactionsBuffer(CACHE_NAME,
                 1, expectedKeys, expectedValues);
         sequentialCommitStrategy.commit(expectedTxIds, transactionsBuffer);
 
@@ -91,7 +92,7 @@ public class SequentialCommitStrategyUnitTest {
         List<Long> expectedKeys = LongStream.range(0, countTx).boxed().collect(Collectors.toList());
         List<String> expectedValues = expectedKeys.stream().map(k -> "value" + k).collect(Collectors.toList());
 
-        Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer = getTransactionsBuffer(CACHE_NAME,
+        Map<Long, TransactionData> transactionsBuffer = getTransactionsBuffer(CACHE_NAME,
                 countTx, expectedKeys, expectedValues);
         sequentialCommitStrategy.commit(expectedTxIds, transactionsBuffer);
         checkExpectedResults(expectedTxIds, expectedKeys, expectedValues);
@@ -108,12 +109,12 @@ public class SequentialCommitStrategyUnitTest {
         assertEquals(statefulCommitter.getWrittenKeysAndValues().values(), expectedValues);
     }
 
-    private Map<Long, Map.Entry<TransactionScope, ByteBuffer>> getTransactionsBuffer(String cacheName,
+    private Map<Long, TransactionData> getTransactionsBuffer(String cacheName,
                                                                                      int countTx,
                                                                                      List<?> expectedKeys,
                                                                                      List<?> expectedValues
     ) {
-        Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer = new HashMap<>(countTx);
+        Map<Long, TransactionData> transactionsBuffer = new HashMap<>(countTx);
         for (int i = 0; i < countTx; i++) {
             Map.Entry<String, List> cacheScope =
                     new AbstractMap.SimpleEntry<String, List>(
@@ -124,10 +125,10 @@ public class SequentialCommitStrategyUnitTest {
             ByteBuffer serializedCacheValue = serializer.serialize(
                     Collections.singletonList(Collections.singletonList(expectedValues.get(i)))
             );
-            Map.Entry<TransactionScope, ByteBuffer> transactionScopeAndSerializedValues =
-                    new AbstractMap.SimpleEntry<TransactionScope, ByteBuffer>(
+            TransactionData transactionScopeAndSerializedValues =
+                    new TransactionData(
                             txScope,
-                            serializedCacheValue
+                            serializedCacheValue,new TopicPartition(TOPIC,0),0L
                     );
             transactionsBuffer.put((long) i, transactionScopeAndSerializedValues);
         }

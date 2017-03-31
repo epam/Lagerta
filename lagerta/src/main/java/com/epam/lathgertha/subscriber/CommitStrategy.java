@@ -15,13 +15,10 @@
  */
 package com.epam.lathgertha.subscriber;
 
-import com.epam.lathgertha.capturer.TransactionScope;
-
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
 public interface CommitStrategy {
 
-    void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer);
+    void commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer);
 }
