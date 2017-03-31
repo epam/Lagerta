@@ -58,6 +58,7 @@ public abstract class DefaultOneProcessClusterManager implements IgniteClusterMa
     /** {@inheritDoc} */
     @Override
     public void stopCluster() {
+        servers.get(0).services().cancelAll();
         for (Ignite server : servers) {
             server.executorService().shutdownNow();
             server.close();
