@@ -38,25 +38,36 @@
     <util:properties id="consumer-properties" location="${configBasePath}consumer.properties"/>
     <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
 
-    <bean id="baseIgnite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="caches"
           p:discoverySpi-ref="discovery-spi"
           p:serviceConfiguration-ref="services"/>
 
-    <bean id="lead" class="com.epam.lathgertha.services.LeadServiceImpl"/>
-    <bean id="reader" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
+    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
+          p:configuration-ref="ignite.cfg"/>
+
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
+    <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
+          c:ignite-ref="ignite-bean"
+          c:kafkaFactory-ref="kafka-factory"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"
+          c:commitStrategy-ref="commit-strategy"/>
+
+    <bean id="lead-service" class="com.epam.lathgertha.services.LeadServiceImpl"/>
+    <bean id="reader-service" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
     <util:list id="services">
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.LeadService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="1"
-              p:service-ref="lead"/>
+              p:service-ref="lead-service"/>
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="3"
-              p:service-ref="reader"/>
+              p:service-ref="reader-service"/>
     </util:list>
 
     <util:list id="caches">
@@ -80,7 +91,10 @@
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
 
-    <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
+    <bean name="id-sequencer" class="com.epam.lathgertha.kafka.KafkaIdSequencer"
+          c:topic="txIdTopic"
+          c:kafkaFactory-ref="kafka-factory"
+          c:subscriberConfig-ref="subscriber-config"/>
 
     <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
@@ -102,7 +116,8 @@
     <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
           c:serializer-ref="serializer"
           c:committer-ref="jdbc-committer"
-          c:kafkaLogCommitter-ref="kafka-log-committer"/>
+          c:kafkaLogCommitter-ref="kafka-log-committer"
+          c:ignite-ref="ignite-bean"/>
 
     <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
           c:commitServitor-ref="commit-servitor"/>
