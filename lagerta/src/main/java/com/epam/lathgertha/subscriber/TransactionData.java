@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 public class TransactionData {
 
     private final TransactionScope transactionScope;
-    private final ByteBuffer  value;
+    private final ByteBuffer value;
     private final TopicPartition topicPartition;
     private final Long offset;
 

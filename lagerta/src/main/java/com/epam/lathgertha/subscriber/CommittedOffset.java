@@ -29,8 +29,7 @@ public class CommittedOffset {
     static final long INITIAL_COMMIT_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
-    private List<Long> read = new LinkedList<>();
-
+    private final List<Long> read = new LinkedList<>();
     private final List<Long> committed = new LinkedList<>();
     private long lastDenseCommit = INITIAL_COMMIT_ID;
     private List<Long> toMerge = new ArrayList<>(INITIAL_CAPACITY);

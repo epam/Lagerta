@@ -25,25 +25,25 @@ import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-public class ReaderFunctionalTest extends BaseFunctionalTest{
+public class ReaderFunctionalTest extends BaseFunctionalTest {
 
     @Test
     public void execute() throws Exception {
         TopicPartition expectedTopicPartition = new TopicPartition(TOPIC, 0);
         int maxOffset = 7;
         List<Integer> listFirstTxIds = Arrays.asList(4, 5, 6, 7);
-        for( int txId: listFirstTxIds) {
+        for (int txId : listFirstTxIds) {
             writeValueToKafka(TOPIC, txId, txId, txId);
         }
         Thread.sleep(2_000); //wait read records from kafka in Reader
         assertNull(kafkaMockFactory.getLastCommittedOffset(expectedTopicPartition));
 //        checkLastCommittedOffset(expectedTopicPartition,0);
 
-        for (int txId: Arrays.asList(0, 2, 1)) {
+        for (int txId : Arrays.asList(0, 2, 1)) {
             writeValueToKafka(TOPIC, txId, txId, txId);
         }
         Thread.sleep(2_000); //wait read records from kafka in Reader
-        checkLastCommittedOffset(expectedTopicPartition,0);
+        checkLastCommittedOffset(expectedTopicPartition, 0);
 
         writeValueToKafka(TOPIC, 3, 3, 3);
         Thread.sleep(2_000); //wait read records from kafka in Reader

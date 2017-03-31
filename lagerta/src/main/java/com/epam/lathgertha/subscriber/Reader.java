@@ -38,15 +38,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
 
 import static org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
-
     private int commitIterationPeriod = 5;
-    private long currentIteration = 0;
 
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
@@ -68,12 +65,19 @@ public class Reader extends Scheduler {
         nodeId = ignite.cluster().localNode().id();
     }
 
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
+                  CommitStrategy commitStrategy, int commitIterationPeriod) {
+        this(ignite,kafkaFactory,config,serializer,commitStrategy);
+        this.commitIterationPeriod = commitIterationPeriod;
+    }
+
     @Override
     public void execute() {
-        BooleanSupplier conditionCommitToKafka = () -> ++currentIteration % commitIterationPeriod == 0;
+
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer), conditionCommitToKafka));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer),
+                    IterateCondition.getConditionCommitToKafka(commitIterationPeriod)));
             super.execute();
         }
     }
