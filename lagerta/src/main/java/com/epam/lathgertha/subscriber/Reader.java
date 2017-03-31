@@ -45,8 +45,8 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMI
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
 
-    private int commitToKafkaEachIterate = 5;
-    private long currentIterate = 0;
+    private int commitIterationPeriod = 5;
+    private long currentIteration = 0;
 
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
@@ -70,7 +70,7 @@ public class Reader extends Scheduler {
 
     @Override
     public void execute() {
-        BooleanSupplier conditionCommitToKafka = () -> ++currentIterate % commitToKafkaEachIterate == 0;
+        BooleanSupplier conditionCommitToKafka = () -> ++currentIteration % commitIterationPeriod == 0;
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
             registerRule(new PredicateRule(() -> commitOffsets(consumer), conditionCommitToKafka));

@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-
 public class CommittedOffset {
 
     static final long INITIAL_COMMIT_ID = -1L;
@@ -35,7 +34,6 @@ public class CommittedOffset {
     private final List<Long> committed = new LinkedList<>();
     private long lastDenseCommit = INITIAL_COMMIT_ID;
     private List<Long> toMerge = new ArrayList<>(INITIAL_CAPACITY);
-
 
     public void notifyRead(Long offset) {
         read.add(offset);

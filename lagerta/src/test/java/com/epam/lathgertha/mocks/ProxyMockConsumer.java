@@ -72,9 +72,7 @@ public class ProxyMockConsumer<K, V> extends MockConsumer<K, V> {
     public Map<TopicPartition, OffsetAndMetadata> getLastCommitted() {
         Set<TopicPartition> topicPartitions = assignment();
         Map<TopicPartition, OffsetAndMetadata> result = new HashMap<>();
-        for (TopicPartition topicPartition : topicPartitions) {
-            result.put(topicPartition, super.committed(topicPartition));
-        }
+        topicPartitions.forEach(topicPartition -> result.put(topicPartition, super.committed(topicPartition)));
         return result;
     }
 }
