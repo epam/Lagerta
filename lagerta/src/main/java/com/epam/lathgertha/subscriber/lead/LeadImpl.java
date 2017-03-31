@@ -56,6 +56,11 @@ public class LeadImpl extends Scheduler implements Lead {
         });
     }
 
+    @Override
+    public void notifyFailed(Long id) {
+        //todo
+    }
+
     private void plan() {
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {

@@ -42,19 +42,22 @@ limitations under the License.
         </property>
     </bean>
 
-    <bean id="lead" class="com.epam.lathgertha.services.LeadServiceImpl"/>
-    <bean id="reader" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
+    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
+          p:configuration-ref="ignite.cfg"/>
+
+    <bean id="leadService" class="com.epam.lathgertha.services.LeadServiceImpl"/>
+    <bean id="readerService" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
     <util:list id="services">
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.LeadService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="1"
-              p:service-ref="lead"/>
+              p:service-ref="leadService"/>
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="3"
-              p:service-ref="reader"/>
+              p:service-ref="readerService"/>
     </util:list>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
@@ -79,6 +82,15 @@ limitations under the License.
     <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
 
     <!--Internal config-->
+    <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
+          c:ignite-ref="ignite-bean"
+          c:kafkaFactory-ref="kafka-factory"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"
+          c:commitStrategy-ref="commit-strategy"/>
+
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl"/>
+
     <bean id="stateful-committer" class="com.epam.lathgertha.subscriber.StatefulCommitter"/>
 
     <bean id="kafkaLogCommitter" class="com.epam.lathgertha.kafka.KafkaLogCommitter"

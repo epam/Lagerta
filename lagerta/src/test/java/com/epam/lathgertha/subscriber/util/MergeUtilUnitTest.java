@@ -19,6 +19,7 @@ package com.epam.lathgertha.subscriber.util;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -60,7 +61,6 @@ public class MergeUtilUnitTest {
                 {list(), list(list(0L), list(1L, 2L, 3L, 4L, 5L, 6L, 7L)), expected},
                 {list(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L), list(), expected},
                 {list(), list(), list()}
-                // todo add more cases?
         };
     }
 
@@ -68,5 +68,19 @@ public class MergeUtilUnitTest {
     public void multipleListsMerging(List<Long> a, List<List<Long>> b, List<Long> expected) {
         MergeUtil.mergeCollections(a, b, LONG_COMPARATOR);
         assertEquals(a, expected);
+    }
+
+    @Test
+    public void mergeEvenCountOfListsInBuffer() {
+        List<List<Long>> buffer = Collections.nCopies(258, list());
+        MergeUtil.mergeCollections(list(), buffer, LONG_COMPARATOR);
+        assertEquals(list(), list());
+    }
+
+    @Test
+    public void mergeOddCountOfListsInBuffer() {
+        List<List<Long>> buffer = Collections.nCopies(257, list());
+        MergeUtil.mergeCollections(list(), buffer, LONG_COMPARATOR);
+        assertEquals(list(), list());
     }
 }

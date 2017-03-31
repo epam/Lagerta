@@ -95,12 +95,19 @@ public class ParallelCommitStrategy implements CommitStrategy {
             try {
                 while (count.getAndDecrement() > 0) {
                     TransactionRelation relation = tasks.take();
-                    commitServitor.commit(relation.getId(), buffer);
-                    relation
-                            .dependent()
-                            .stream()
-                            .filter(TransactionRelation::release)
-                            .forEach(tasks::add);
+                    if (relation.isAlive() && commitServitor.commit(relation.getId(), buffer)) {
+                        relation
+                                .dependent()
+                                .stream()
+                                .filter(TransactionRelation::release)
+                                .forEach(tasks::add);
+                    } else {
+                        relation
+                                .dependent()
+                                .stream()
+                                .peek(TransactionRelation::kill)
+                                .forEach(tasks::add);
+                    }
                 }
             } catch (InterruptedException e) {
                 //do nothing
@@ -120,16 +127,17 @@ public class ParallelCommitStrategy implements CommitStrategy {
         private AtomicInteger count;
         private final List<Long> dependentIds;
         private final List<TransactionRelation> dependent;
+        private volatile boolean alive;
 
         TransactionRelation(long id, long count) {
             this.id = id;
             this.count = new AtomicInteger((int) count);
             dependentIds = new ArrayList<>();
             dependent = new ArrayList<>();
-
+            alive = true;
         }
 
-        public long getId() {
+        long getId() {
             return id;
         }
 
@@ -151,6 +159,14 @@ public class ParallelCommitStrategy implements CommitStrategy {
 
         boolean isFree() {
             return count.get() == 0;
+        }
+
+        void kill() {
+            alive = false;
+        }
+
+        public boolean isAlive() {
+            return alive;
         }
     }
 }

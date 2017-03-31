@@ -16,9 +16,6 @@
 package com.epam.lathgertha.cluster;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSpring;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -36,14 +33,9 @@ public class AppContextOneProcessClusterManager extends DefaultOneProcessCluster
     /** {@inheritDoc} */
     @Override
     protected Ignite startGrid(int gridNumber, int clusterSize) {
-        try {
-            ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext(configPath);
-            contexts.add(applicationContext);
-            IgniteConfiguration config = applicationContext.getBean(IgniteConfiguration.class);
-            return IgniteSpring.start(config, applicationContext);
-        } catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+        ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext(configPath);
+        contexts.add(applicationContext);
+        return applicationContext.getBean(Ignite.class);
     }
 
     public void refreshContexts() {

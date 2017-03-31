@@ -15,32 +15,14 @@
  */
 package com.epam.lathgertha.services;
 
-import com.epam.lathgertha.kafka.KafkaFactory;
-import com.epam.lathgertha.kafka.SubscriberConfig;
-import com.epam.lathgertha.subscriber.CommitStrategy;
 import com.epam.lathgertha.subscriber.Reader;
-import com.epam.lathgertha.util.Serializer;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.SpringResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.services.ServiceContext;
+import org.springframework.context.ApplicationContext;
 
 public class ReaderServiceImpl implements ReaderService {
-
-    @IgniteInstanceResource
-    private transient Ignite ignite;
-
-    @SpringResource(resourceClass = KafkaFactory.class)
-    private transient KafkaFactory kafkaFactory;
-
-    @SpringResource(resourceClass = SubscriberConfig.class)
-    private transient SubscriberConfig config;
-
-    @SpringResource(resourceClass = Serializer.class)
-    private transient Serializer serializer;
-
-    @SpringResource(resourceClass = CommitStrategy.class)
-    private transient CommitStrategy commitStrategy;
+    @SpringApplicationContextResource
+    private transient ApplicationContext context;
 
     private transient Reader reader;
 
@@ -51,11 +33,12 @@ public class ReaderServiceImpl implements ReaderService {
 
     @Override
     public void init(ServiceContext ctx) throws Exception {
-        reader = new Reader(ignite, kafkaFactory, config, serializer, commitStrategy);
+        //do nothing
     }
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
+        reader = context.getBean(Reader.class);
         reader.execute();
     }
 }

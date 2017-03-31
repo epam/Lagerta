@@ -1,6 +1,7 @@
 package com.epam.lathgertha.subscriber;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -12,6 +13,8 @@ import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.mocks.KafkaMockFactory;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.testng.annotations.BeforeClass;
@@ -22,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,10 +61,13 @@ public class SequentialCommitStrategyUnitTest {
 
         KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitter(kafkaFactory, subscriberConfig);
         statefulCommitter = new StatefulCommitter();
+        Ignite ignite = mock(Ignite.class);
+        doReturn(mock(IgniteServices.class)).when(ignite).services();
         sequentialCommitStrategy = new SequentialCommitStrategy(new CommitServitor(
                 serializer,
                 statefulCommitter,
-                kafkaLogCommitter
+                kafkaLogCommitter,
+                ignite
         ));
     }
 

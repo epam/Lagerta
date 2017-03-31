@@ -17,13 +17,16 @@ package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.lead.Lead;
-import com.epam.lathgertha.subscriber.lead.LeadImpl;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.services.ServiceContext;
+import org.springframework.context.ApplicationContext;
 
 import java.util.List;
 import java.util.UUID;
 
 public class LeadServiceImpl implements LeadService {
+    @SpringApplicationContextResource
+    private transient ApplicationContext context;
 
     private transient Lead lead;
 
@@ -34,11 +37,12 @@ public class LeadServiceImpl implements LeadService {
 
     @Override
     public void init(ServiceContext ctx) throws Exception {
-        lead = new LeadImpl();
+        //do nothing
     }
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
+        lead = context.getBean(Lead.class);
         lead.execute();
     }
 
@@ -50,5 +54,10 @@ public class LeadServiceImpl implements LeadService {
     @Override
     public void notifyCommitted(List<Long> ids) {
         lead.notifyCommitted(ids);
+    }
+
+    @Override
+    public void notifyFailed(Long id) {
+        lead.notifyFailed(id);
     }
 }

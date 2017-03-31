@@ -20,7 +20,6 @@ import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.services.LeadService;
-import com.epam.lathgertha.subscriber.lead.Lead;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.apache.kafka.clients.consumer.Consumer;
