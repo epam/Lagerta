@@ -31,7 +31,9 @@ public class SequentialCommitStrategy implements CommitStrategy {
     @Override
     public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer) {
         for (Long txId : txIdsToCommit) {
-            commitServitor.commit(txId, transactionsBuffer);
+            if (!commitServitor.commit(txId, transactionsBuffer)) {
+                break;
+            }
         }
     }
 }

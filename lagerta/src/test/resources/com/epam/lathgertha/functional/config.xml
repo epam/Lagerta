@@ -42,7 +42,7 @@ limitations under the License.
         </property>
     </bean>
 
-    <bean id="igntie-bean" class="org.apache.ignite.IgniteSpringBean"
+    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
           p:configuration-ref="ignite.cfg"/>
 
     <bean id="leadService" class="com.epam.lathgertha.services.LeadServiceImpl"/>
@@ -83,7 +83,7 @@ limitations under the License.
 
     <!--Internal config-->
     <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
-          c:ignite-ref="igntie-bean"
+          c:ignite-ref="ignite-bean"
           c:kafkaFactory-ref="kafka-factory"
           c:config-ref="subscriber-config"
           c:serializer-ref="serializer"

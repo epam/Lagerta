@@ -27,4 +27,6 @@ public interface LeadService extends Service {
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     void notifyCommitted(List<Long> ids);
+
+    void notifyFailed(Long id);
 }

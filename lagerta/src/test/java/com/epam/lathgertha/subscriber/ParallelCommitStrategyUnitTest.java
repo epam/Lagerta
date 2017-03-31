@@ -49,7 +49,7 @@ public class ParallelCommitStrategyUnitTest {
         };
     }
 
-    @Test(dataProvider = "test", timeOut = 1000L)
+    @Test(dataProvider = "test")
     public void testCommit(List<List<Object>> changes, List<Map.Entry<Integer, Integer>> expectedBefore) {
         ByteBuffer buffer = ByteBuffer.allocate(0);
 
