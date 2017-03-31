@@ -19,11 +19,14 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.MockConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,5 +67,14 @@ public class ProxyMockConsumer<K, V> extends MockConsumer<K, V> {
     public void addRecord(ConsumerRecord<K, V> record) {
         super.addRecord(record);
         hasRecords.set(true);
+    }
+
+    public Map<TopicPartition, OffsetAndMetadata> getLastCommitted() {
+        Set<TopicPartition> topicPartitions = assignment();
+        Map<TopicPartition, OffsetAndMetadata> result = new HashMap<>();
+        for (TopicPartition topicPartition : topicPartitions) {
+            result.put(topicPartition, super.committed(topicPartition));
+        }
+        return result;
     }
 }

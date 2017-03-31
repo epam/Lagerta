@@ -66,6 +66,14 @@ limitations under the License.
           p:discoverySpi-ref="discoverySpi"
           p:serviceConfiguration-ref="services"/>
 
+    <bean id="consumer-props" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="enable.auto.commit">false</prop>
+            </props>
+        </property>
+    </bean>
+
     <!-- Caches configuration -->
     <util:list id="cacheConfig">
         <ref bean="someCache"/>
@@ -109,7 +117,9 @@ limitations under the License.
     <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
-          p:remoteTopic="testTopic"/>
+           p:remoteTopic="testTopic"
+           p:consumerConfig-ref="consumer-props"
+    />
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
     <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"
