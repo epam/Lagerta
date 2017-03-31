@@ -57,7 +57,7 @@ public abstract class BaseIntegrationTest {
         }
     }
 
-    @AfterSuite
+    @AfterSuite(alwaysRun = true)
     public void tearDown() {
         allResources.tearDown();
     }
