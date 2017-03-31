@@ -32,9 +32,4 @@ public class SubscriberIntegrationTest extends BaseIntegrationTest {
 
         assertObjectsInDB(entry(1, secondPerson));
     }
-
-    @Test
-    public void parallelTransactions() {
-        // ToDo
-    }
 }
