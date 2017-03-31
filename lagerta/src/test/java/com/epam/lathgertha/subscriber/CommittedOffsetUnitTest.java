@@ -28,10 +28,10 @@ public class CommittedOffsetUnitTest {
     @Test
     public void lastDenseCommitForNotCommittedTransaction() throws Exception {
         CommittedOffset committedOffset = new CommittedOffset();
-        List<Long> readOffsets = Arrays.asList(0L,1L,2L,3L);
+        List<Long> readOffsets = Arrays.asList(0L, 1L, 2L, 3L);
         readOffsets.forEach(committedOffset::notifyRead);
         committedOffset.compress();
-        assertEquals(committedOffset.getLastDenseCommit(),-1L);
+        assertEquals(committedOffset.getLastDenseCommit(), CommittedOffset.INITIAL_COMMIT_ID);
     }
 
     @Test
@@ -50,18 +50,18 @@ public class CommittedOffsetUnitTest {
         CommittedOffset committedOffset = new CommittedOffset();
         List<Long> readOffsets = Arrays.asList(0L, 1L, 2L, 3L);
         readOffsets.forEach(committedOffset::notifyRead);
-        List<Long> committedOffsets = Arrays.asList(2L, 3L);
+        List<Long> committedOffsets = Arrays.asList(3L, 2L);
 
         committedOffsets.forEach(committedOffset::notifyCommit);
         committedOffset.compress();
-        assertEquals(committedOffset.getLastDenseCommit(),-1L);
+        assertEquals(committedOffset.getLastDenseCommit(), CommittedOffset.INITIAL_COMMIT_ID);
 
         committedOffset.notifyCommit(0L);
         committedOffset.compress();
-        assertEquals(committedOffset.getLastDenseCommit(),0L);
+        assertEquals(committedOffset.getLastDenseCommit(), 0L);
 
         committedOffset.notifyCommit(1L);
         committedOffset.compress();
-        assertEquals(committedOffset.getLastDenseCommit(),3L);
+        assertEquals(committedOffset.getLastDenseCommit(), 3L);
     }
 }

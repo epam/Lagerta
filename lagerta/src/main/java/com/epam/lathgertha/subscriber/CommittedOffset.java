@@ -16,17 +16,18 @@
 
 package com.epam.lathgertha.subscriber;
 
+import com.epam.lathgertha.subscriber.util.MergeUtil;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 
 public class CommittedOffset {
 
-    private static final long INITIAL_COMMIT_ID = -1L;
+    static final long INITIAL_COMMIT_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
     private List<Long> read = new LinkedList<>();
@@ -50,17 +51,17 @@ public class CommittedOffset {
 
     public void compress() {
         mergeCollections();
-        Iterator<Long> iterator = read.iterator();
+        Iterator<Long> iteratorRead = read.iterator();
         Iterator<Long> iteratorCommitted = committed.iterator();
-        while (iterator.hasNext() && iteratorCommitted.hasNext()) {
-            Long next = iterator.next();
+        while (iteratorRead.hasNext() && iteratorCommitted.hasNext()) {
+            Long nextRead = iteratorRead.next();
             Long nextCommitted = iteratorCommitted.next();
-            if (next < nextCommitted) {
+            if (nextRead < nextCommitted) {
                 break;
             } else {
-                iterator.remove();
+                iteratorRead.remove();
                 iteratorCommitted.remove();
-                lastDenseCommit = next;
+                lastDenseCommit = nextRead;
             }
         }
     }
@@ -70,39 +71,7 @@ public class CommittedOffset {
             return;
         }
         Collections.sort(toMerge);
-        merge(committed, toMerge);
+        MergeUtil.merge(committed, toMerge, Long::compareTo);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
     }
-
-    /**
-     * merge two collections into first one
-     */
-    static void merge(List<Long> first, List<Long> second) {
-        ListIterator<Long> firstIter = first.listIterator();
-        ListIterator<Long> secondIter = second.listIterator();
-
-        Long a = getNext(firstIter);
-        Long b = getNext(secondIter);
-
-        while (a != null && b != null) {
-            if (a.compareTo(b) > 0) {
-                firstIter.previous();
-                firstIter.add(b);
-                firstIter.next();
-                b = getNext(secondIter);
-            } else {
-                a = getNext(firstIter);
-            }
-        }
-
-        while (b != null) {
-            firstIter.add(b);
-            b = getNext(secondIter);
-        }
-    }
-
-    private static Long getNext(ListIterator<Long> iter) {
-        return iter.hasNext() ? iter.next() : null;
-    }
-
 }

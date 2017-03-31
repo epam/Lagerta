@@ -125,11 +125,12 @@ public class Reader extends Scheduler {
         if (!txIdsToCommit.isEmpty()) {
             commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.stream().map(buffer::remove).forEach(e-> getCommittedOffset(e.getTopicPartition()).notifyCommit(e.getOffset()));
+            txIdsToCommit.stream().map(buffer::remove).forEach(e ->
+                    getCommittedOffset(e.getTopicPartition()).notifyCommit(e.getOffset()));
         }
     }
 
     private CommittedOffset getCommittedOffset(TopicPartition topicPartition) {
-        return committedOffsetMap.computeIfAbsent(topicPartition,k-> new CommittedOffset());
+        return committedOffsetMap.computeIfAbsent(topicPartition, k -> new CommittedOffset());
     }
 }

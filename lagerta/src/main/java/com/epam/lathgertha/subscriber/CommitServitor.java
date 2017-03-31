@@ -28,7 +28,7 @@ public class CommitServitor {
     }
 
     @SuppressWarnings("unchecked")
-    protected void commit(Long txId, Map<Long, TransactionData> buffer) {
+    protected boolean commit(Long txId, Map<Long, TransactionData> buffer) {
         try {
             TransactionData transactionScopeAndSerializedValues = buffer.get(txId);
             List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getTransactionScope().getScope();
