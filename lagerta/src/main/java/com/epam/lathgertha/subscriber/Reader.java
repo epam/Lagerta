@@ -83,14 +83,6 @@ public class Reader extends Scheduler {
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer(SubscriberConfig config) {
-        Properties consumerConfig = config.getConsumerConfig();
-        String property = consumerConfig.getProperty(ENABLE_AUTO_COMMIT_CONFIG);
-        if (property == null || property.equalsIgnoreCase(String.valueOf(true))) {
-            throw new IllegalArgumentException(
-                    ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG + " property should be false, please check property of consumer"
-            );
-        }
-
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
         consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
         return consumer;
