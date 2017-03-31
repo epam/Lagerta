@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2017 EPAM Systems.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ -->
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <context:annotation-config/>
+
+    <!--Ignite config-->
+    <bean id="discoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses">
+                    <list>
+                        <value>127.0.0.1:47500..47509</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
+          p:configuration-ref="ignite.cfg"/>
+
+    <bean id="leadService" class="com.epam.lathgertha.services.LeadServiceImpl"/>
+    <bean id="readerService" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
+    <util:list id="services">
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lathgertha.services.LeadService).NAME}"
+              p:maxPerNodeCount="1"
+              p:totalCount="1"
+              p:service-ref="leadService"/>
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
+              p:maxPerNodeCount="1"
+              p:totalCount="3"
+              p:service-ref="readerService"/>
+    </util:list>
+
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
+          p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
+          p:cacheConfiguration-ref="cacheConfig"
+          p:discoverySpi-ref="discoverySpi"
+          p:serviceConfiguration-ref="services"/>
+
+    <!-- Caches configuration -->
+    <util:list id="cacheConfig">
+        <ref bean="someCache"/>
+    </util:list>
+
+    <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="someCache"
+          p:readThrough="true"
+          p:writeThrough="true"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"
+          p:cacheStoreFactory-ref="cacheStoreFactory"/>
+    <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
+
+    <!--Internal config-->
+    <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
+          c:ignite-ref="ignite-bean"
+          c:kafkaFactory-ref="kafka-factory"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"
+          c:commitStrategy-ref="commit-strategy"/>
+
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl"/>
+
+    <bean id="stateful-committer" class="com.epam.lathgertha.subscriber.StatefulCommitter"/>
+
+    <bean id="kafkaLogCommitter" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
+          c:kafkaFactory-ref="kafka-factory"
+          c:subscriberConfig-ref="subscriber-config"/>
+
+    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
+          c:serializer-ref="serializer"
+          c:committer-ref="stateful-committer"
+          c:kafkaLogCommitter-ref="kafkaLogCommitter"/>
+
+    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+          c:commitServitor-ref="commit-servitor"/>
+
+    <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
+    <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
+    <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
+    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+          p:remoteTopic="testTopic"/>
+    <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
+
+    <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"/>
+
+    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager"
+          c:kafkaFactory-ref="kafka-factory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:configs-ref="subscriberConfigs"
+          c:serializer-ref="serializer"/>
+
+    <util:list id="subscriberConfigs">
+        <ref bean="subscriber-config"/>
+    </util:list>
+
+    <util:list id="key-value-listeners">
+        <bean class="com.epam.lathgertha.capturer.SynchronousPublisher"
+            c:producers-ref="producers-manager"/>
+    </util:list>
+</beans>
