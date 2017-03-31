@@ -112,8 +112,10 @@ public class Reader extends Scheduler {
         for (TopicPartition partition : committedOffsetMap.keySet()) {
             CommittedOffset offsetsForPartition = committedOffsetMap.get(partition);
             offsetsForPartition.compress();
-            OffsetAndMetadata offsetMetaInfo = new OffsetAndMetadata(offsetsForPartition.getLastDenseCommit());
-            consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
+            if (offsetsForPartition.getLastDenseCommit() >= 0) {
+                OffsetAndMetadata offsetMetaInfo = new OffsetAndMetadata(offsetsForPartition.getLastDenseCommit());
+                consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
+            }
         }
     }
 
