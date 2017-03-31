@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,10 @@ public class Reader extends Scheduler {
             scopes.add(transactionScope);
         }
 
+        if (!scopes.isEmpty()) {
+            scopes.sort(Comparator.comparingLong(TransactionScope::getTransactionId));
+        }
+
         approveAndCommitTransactionsBatch(nodeId, scopes);
     }
 
@@ -90,6 +95,7 @@ public class Reader extends Scheduler {
         final List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
+            txIdsToCommit.sort(Comparator.comparingLong(Long::longValue));
             commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(txIdsToCommit);
             txIdsToCommit.forEach(buffer::remove);
