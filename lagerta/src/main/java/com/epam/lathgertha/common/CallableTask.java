@@ -1,5 +1,6 @@
 package com.epam.lathgertha.common;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 /**
@@ -10,7 +11,7 @@ public class CallableTask<V, T> {
     private final Scheduler scheduler;
     private final BiFunction<V, T, V> appender;
 
-    private volatile V value;
+    private final AtomicReference<V> value = new AtomicReference<>(null);
 
     public CallableTask(Scheduler scheduler, BiFunction<V, T, V> appender) {
         this.scheduler = scheduler;
@@ -18,11 +19,11 @@ public class CallableTask<V, T> {
     }
 
     public void append(T value) {
-        this.value = appender.apply(this.value, value);
+        this.value.set(appender.apply(this.value.get(), value));
     }
 
     public V call(Runnable runnable) throws Exception {
         scheduler.pushTask(runnable);
-        return value;
+        return value.getAndSet(null);
     }
 }

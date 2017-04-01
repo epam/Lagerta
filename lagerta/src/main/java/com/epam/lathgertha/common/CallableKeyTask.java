@@ -19,12 +19,11 @@ public class CallableKeyTask<V, K, T> {
     }
 
     public void append(K key, T value) {
-        V old = this.value.remove(key);
-        this.value.put(key, appender.apply(old, key, value));
+        this.value.put(key, appender.apply(this.value.remove(key), key, value));
     }
 
-    public V call(K key, Runnable runnable) throws Exception {
+    public V call(K key, Runnable runnable) {
         scheduler.pushTask(runnable);
-        return value.get(key);
+        return value.remove(key);
     }
 }
