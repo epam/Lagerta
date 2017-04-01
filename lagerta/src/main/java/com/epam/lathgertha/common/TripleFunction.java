@@ -7,6 +7,7 @@ import java.util.function.Function;
  * @author Andrei_Yakushin
  * @since 01.04.2017 8:02
  */
+@FunctionalInterface
 public interface TripleFunction<A, B, C, R> {
     R apply(A a, B b, C c);
 
