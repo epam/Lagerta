@@ -6,11 +6,11 @@ import java.util.function.BiFunction;
  * @author Andrei_Yakushin
  * @since 01.04.2017 7:43
  */
-public class CallableTask<T, V> {
+public class CallableTask<V, T> {
     private final Scheduler scheduler;
     private final BiFunction<V, T, V> appender;
 
-    private V value;
+    private volatile V value;
 
     public CallableTask(Scheduler scheduler, BiFunction<V, T, V> appender) {
         this.scheduler = scheduler;
