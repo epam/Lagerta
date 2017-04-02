@@ -24,7 +24,6 @@ import com.epam.lathgertha.services.LeadService;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -36,15 +35,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
-
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
-    private int commitIterationPeriod = 5;
+    private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
 
+    private final IterateCondition iterateCondition;
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
     private final SubscriberConfig config;
@@ -57,27 +54,25 @@ public class Reader extends Scheduler {
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
+        this(ignite, kafkaFactory, config, serializer, commitStrategy, DEFAULT_COMMIT_ITERATION_PERIOD);
+    }
+
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
+                  CommitStrategy commitStrategy, int commitIterationPeriod) {
         this.kafkaFactory = kafkaFactory;
         this.lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         nodeId = ignite.cluster().localNode().id();
-    }
-
-    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, int commitIterationPeriod) {
-        this(ignite,kafkaFactory,config,serializer,commitStrategy);
-        this.commitIterationPeriod = commitIterationPeriod;
+        this.iterateCondition = new IterateCondition(commitIterationPeriod);
     }
 
     @Override
     public void execute() {
-
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer),
-                    IterateCondition.getConditionCommitToKafka(commitIterationPeriod)));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer), iterateCondition.getConditionCommitToKafka()));
             super.execute();
         }
     }

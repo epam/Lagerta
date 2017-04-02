@@ -126,7 +126,7 @@ public class KafkaMockFactory implements KafkaFactory {
     }
 
     /**
-     * don't support multiply subscribe on topic partition
+     * Don't support multiple subscribe on topic partition.
      */
     public Long getLastCommittedOffset(TopicPartition topicPartition) {
         List<ProxyMockConsumer> proxyMockConsumers = existingOpenedConsumers(topicPartition.topic());
