@@ -135,13 +135,13 @@ public class LeadImplFatUnitTest {
     }
 
     private List<Long> notifyRead(UUID uuid, List<TransactionScope> scope) {
-        dynamicRule.setPredicate(() -> this.read.getLastDenseRead() > -1);
+        dynamicRule.setPredicate(() -> read.getLastDenseRead() > -1);
         return lead.notifyRead(uuid, scope);
     }
 
     private void notifyCommitted(List<Long> committed) {
         lead.notifyCommitted(committed);
-        dynamicRule.setPredicate(() -> lead.toCommit.size() > 0 ||
+        dynamicRule.setPredicate(() -> committed.isEmpty() ||
                 committed.stream().anyMatch(commit::contains));
     }
 
