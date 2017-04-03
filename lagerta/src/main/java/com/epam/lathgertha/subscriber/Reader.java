@@ -116,6 +116,7 @@ public class Reader extends Scheduler {
                 consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
             }
         }
+    }
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
