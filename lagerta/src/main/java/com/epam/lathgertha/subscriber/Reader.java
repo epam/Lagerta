@@ -30,8 +30,10 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,8 +100,12 @@ public class Reader extends Scheduler {
             scopes.add(transactionScope);
             getCommittedOffset(topicPartition).notifyRead(record.offset());
         }
+        if (!scopes.isEmpty()) {
+            scopes.sort(Comparator.comparingLong(TransactionScope::getTransactionId));
+        }
         approveAndCommitTransactionsBatch(scopes);
     }
+
 
     private void commitOffsets(Consumer consumer) {
         for (TopicPartition partition : committedOffsetMap.keySet()) {
@@ -110,12 +116,12 @@ public class Reader extends Scheduler {
                 consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
             }
         }
-    }
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
+            txIdsToCommit.sort(Long::compareTo);
             commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(txIdsToCommit);
             txIdsToCommit.stream().map(buffer::remove).forEach(e ->
