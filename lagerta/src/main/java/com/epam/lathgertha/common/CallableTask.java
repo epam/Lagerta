@@ -42,4 +42,8 @@ public class CallableTask<R, V> {
         scheduler.pushTask(runnable);
         return value.getAndSet(null);
     }
+
+    public R call() throws Exception {
+        return value.getAndSet(null);
+    }
 }

@@ -43,4 +43,8 @@ public class CallableKeyTask<R, K, V> {
         scheduler.pushTask(runnable);
         return value.remove(key);
     }
+
+    public R call(K key) {
+        return value.remove(key);
+    }
 }
