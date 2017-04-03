@@ -33,15 +33,24 @@ public class LeadImpl extends Scheduler implements Lead {
     private final Set<Long> inProgress = new HashSet<>();
     private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
-    private final CommittedTransactions committed = new CommittedTransactions();
-    private final ReadTransactions readTransactions = new ReadTransactions();
+    private final CommittedTransactions committed;
+    private final ReadTransactions readTransactions;
 
-    public LeadImpl() {
-        registerRule(committed::compress);
-        registerRule(() -> readTransactions.pruneCommitted(committed));
+    LeadImpl(ReadTransactions readTransactions, CommittedTransactions committed) {
+        this.readTransactions = readTransactions;
+        this.committed = committed;
+        registerRule(this.committed::compress);
+        registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
         registerRule(this::plan);
     }
 
+    public LeadImpl() {
+        this(new ReadTransactions(), new CommittedTransactions());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
         List<Long> result = !txScopes.isEmpty()
@@ -50,6 +59,9 @@ public class LeadImpl extends Scheduler implements Lead {
         return result == null ? Collections.emptyList() : result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void notifyCommitted(List<Long> ids) {
         pushTask(() -> {
@@ -58,6 +70,9 @@ public class LeadImpl extends Scheduler implements Lead {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void notifyFailed(Long id) {
         //todo

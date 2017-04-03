@@ -71,8 +71,11 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private void compress() {
         mergeCollections();
         for (ConsumerTxScope next : allTransactions) {
-            if (lastDenseRead + 1 == next.getTransactionId()) {
-                lastDenseRead = next.getTransactionId();
+            long nextId = next.getTransactionId();
+            if (lastDenseRead >= nextId) {
+                // skip
+            } else if (lastDenseRead + 1 == nextId) {
+                lastDenseRead = nextId;
             } else {
                 break;
             }
