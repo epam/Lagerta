@@ -103,8 +103,8 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
-            approveAndCommitTransactionsBatch(scopes);
         }
+        approveAndCommitTransactionsBatch(scopes);
     }
 
 

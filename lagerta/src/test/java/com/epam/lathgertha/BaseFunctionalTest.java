@@ -21,8 +21,6 @@ import com.epam.lathgertha.mocks.KafkaMockFactory;
 import com.epam.lathgertha.resources.IgniteClusterResource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
@@ -37,7 +35,6 @@ public abstract class BaseFunctionalTest {
     protected final String TOPIC = "testTopic";
     protected final String CACHE_NAME = "someCache";
     private static final String CONFIG_PATH = "/com/epam/lathgertha/functional/config.xml";
-    private static final ConfigurableApplicationContext CONTEXT = new ClassPathXmlApplicationContext(CONFIG_PATH);
     private static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
             new AppContextOneProcessClusterManager(CONFIG_PATH);
     private static final IgniteClusterResource CLUSTER_RESOURCE =
@@ -60,16 +57,15 @@ public abstract class BaseFunctionalTest {
     }
 
     @BeforeMethod
-    public void clearCluster() {
-        CLUSTER_RESOURCE.clearCluster();
-        kafkaMockFactory = CONTEXT.getBean(KafkaMockFactory.class);
+    public void setUp() {
+        kafkaMockFactory = CLUSTER_MANAGER.getBean(KafkaMockFactory.class);
     }
 
     @AfterMethod
     public void clearState() {
-        CLUSTER_MANAGER.refreshContexts();
         InputProducer.resetOffsets();
         KafkaMockFactory.clearState();
+        CLUSTER_RESOURCE.clearCluster();
     }
 
     protected int getNextTxId() {
@@ -82,6 +78,12 @@ public abstract class BaseFunctionalTest {
 
     protected void writeValueToKafka(String topic, int id, int key, int value) {
         InputProducer producer = kafkaMockFactory.inputProducer(topic, 0);
+        Collection<Cache.Entry<?, ?>> updates = Collections.singletonList(new CacheEntryImpl<>(key, value));
+        producer.send(id, Collections.singletonMap(CACHE_NAME, updates));
+    }
+
+    protected void writeValueToKafka(String topic, int id, int key, int value, int kafkaPartition) {
+        InputProducer producer = kafkaMockFactory.inputProducer(topic, kafkaPartition);
         Collection<Cache.Entry<?, ?>> updates = Collections.singletonList(new CacheEntryImpl<>(key, value));
         producer.send(id, Collections.singletonMap(CACHE_NAME, updates));
     }
