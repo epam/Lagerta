@@ -20,8 +20,8 @@ import java.util.function.BooleanSupplier;
 
 public class PeriodicIterationCondition implements BooleanSupplier {
 
-    private long currentIteration;
     private final int iterationPeriod;
+    private long currentIteration;
 
     public PeriodicIterationCondition(int iterationPeriod) {
         this.iterationPeriod = iterationPeriod;
