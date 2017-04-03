@@ -61,7 +61,7 @@ public class PersonEntries {
 
     public static JDBCCommitter getPersonOnlyJDBCCommitter(String dbUrl) {
         return new JDBCCommitter(Collections.singletonList(PersonEntries.getPersonCacheInBaseDescriptor()),
-                Collections.singletonList(PersonEntries.getPersonMapper()), dbUrl, "", "");
+                Collections.singletonList(PersonEntries.getPersonMapper(Person.PERSON_CACHE)), dbUrl, "", "");
     }
 
     public static List<String> getPersonColumns() {
@@ -81,13 +81,17 @@ public class PersonEntries {
     }
 
     public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor() {
-        CacheInBaseDescriptor personMapper = new CacheInBaseDescriptor(Person.PERSON_CACHE, Person.PERSON_TABLE,
+        return getPersonCacheInBaseDescriptor(Person.PERSON_CACHE);
+    }
+
+    public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor(String cacheName) {
+        CacheInBaseDescriptor personMapper = new CacheInBaseDescriptor(cacheName, Person.PERSON_TABLE,
                 new ArrayList<FieldDescriptor>(getPersonFieldDescriptor().values()));
         return personMapper;
     }
 
-    public static BaseMapper getPersonMapper() {
-        return new PersonMapper();
+    public static BaseMapper getPersonMapper(String cacheName) {
+        return new PersonMapper(cacheName);
     }
 
     private static FieldDescriptor PERSON_ID_DESCRIPTOR = new FieldDescriptor() {
@@ -147,10 +151,15 @@ public class PersonEntries {
     };
 
     private static class PersonMapper implements BaseMapper {
+        private final String cacheName;
+
+        public PersonMapper(String cacheName) {
+            this.cacheName = cacheName;
+        }
 
         @Override
         public String getCacheName() {
-            return Person.PERSON_CACHE;
+            return cacheName;
         }
 
         private static String getParametersTemplate(int count) {
