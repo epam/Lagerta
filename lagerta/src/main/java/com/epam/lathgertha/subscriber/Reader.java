@@ -47,13 +47,13 @@ public class Reader extends Scheduler {
     private static final Comparator<TransactionScope> SCOPE_COMPARATOR = Comparator.comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
 
-    private final BooleanSupplier commitToKafkaSupplier;
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID nodeId;
+    private final BooleanSupplier commitToKafkaSupplier;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
@@ -99,7 +99,7 @@ public class Reader extends Scheduler {
             buffer.put(transactionScope.getTransactionId(),
                     new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
             scopes.add(transactionScope);
-            getCommittedOffset(topicPartition).notifyRead(record.offset());
+            committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
@@ -117,12 +117,13 @@ public class Reader extends Scheduler {
             lead.notifyCommitted(txIdsToCommit);
             txIdsToCommit.stream()
                     .map(buffer::remove)
-                    .forEach(entry -> getCommittedOffset(entry.getTopicPartition()).notifyCommit(entry.getOffset()));
+                    .forEach(entry -> {
+                        CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());
+                        if (offset != null) {
+                            offset.notifyCommit(entry.getOffset());
+                        }
+                    });
         }
-    }
-
-    private CommittedOffset getCommittedOffset(TopicPartition topicPartition) {
-        return committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET);
     }
 
     private void commitOffsets(Consumer consumer) {
