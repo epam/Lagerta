@@ -30,7 +30,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,18 +38,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
+    private static final Comparator<TransactionScope> SCOPE_COMPARATOR = Comparator.comparingLong(TransactionScope::getTransactionId);
+    private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
 
-    private final BooleanSupplier commitToKafkaSupplier;
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID nodeId;
+    private final BooleanSupplier commitToKafkaSupplier;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
@@ -64,7 +67,7 @@ public class Reader extends Scheduler {
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier) {
         this.kafkaFactory = kafkaFactory;
-        this.lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
+        lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
@@ -74,14 +77,14 @@ public class Reader extends Scheduler {
 
     @Override
     public void execute() {
-        try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
+        try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
             registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
             super.execute();
         }
     }
 
-    private Consumer<ByteBuffer, ByteBuffer> createConsumer(SubscriberConfig config) {
+    private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
         consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
         return consumer;
@@ -89,34 +92,21 @@ public class Reader extends Scheduler {
 
     private void pollAndCommitTransactionsBatch(Consumer<ByteBuffer, ByteBuffer> consumer) {
         ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
-
-        List<TransactionScope> scopes = new ArrayList<>();
-
+        List<TransactionScope> scopes = new ArrayList<>(records.count());
         for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
             TransactionScope transactionScope = serializer.deserialize(record.key());
             TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
             buffer.put(transactionScope.getTransactionId(),
                     new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
             scopes.add(transactionScope);
-            getCommittedOffset(topicPartition).notifyRead(record.offset());
+            committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
         }
         if (!scopes.isEmpty()) {
-            scopes.sort(Comparator.comparingLong(TransactionScope::getTransactionId));
-        }
-        approveAndCommitTransactionsBatch(scopes);
-    }
-
-
-    private void commitOffsets(Consumer consumer) {
-        for (TopicPartition partition : committedOffsetMap.keySet()) {
-            CommittedOffset offsetsForPartition = committedOffsetMap.get(partition);
-            offsetsForPartition.compress();
-            if (offsetsForPartition.getLastDenseCommit() >= 0) {
-                OffsetAndMetadata offsetMetaInfo = new OffsetAndMetadata(offsetsForPartition.getLastDenseCommit());
-                consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
-            }
+            scopes.sort(SCOPE_COMPARATOR);
+            approveAndCommitTransactionsBatch(scopes);
         }
     }
+
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
@@ -125,12 +115,25 @@ public class Reader extends Scheduler {
             txIdsToCommit.sort(Long::compareTo);
             commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.stream().map(buffer::remove).forEach(e ->
-                    getCommittedOffset(e.getTopicPartition()).notifyCommit(e.getOffset()));
+            txIdsToCommit.stream()
+                    .map(buffer::remove)
+                    .forEach(entry -> {
+                        CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());
+                        if (offset != null) {
+                            offset.notifyCommit(entry.getOffset());
+                        }
+                    });
         }
     }
 
-    private CommittedOffset getCommittedOffset(TopicPartition topicPartition) {
-        return committedOffsetMap.computeIfAbsent(topicPartition, k -> new CommittedOffset());
+    private void commitOffsets(Consumer consumer) {
+        Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
+                .peek(entry -> entry.getValue().compress())
+                .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
+                );
+        consumer.commitSync(offsets);
     }
 }
