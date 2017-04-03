@@ -23,7 +23,6 @@ public class PeriodicIterationCondition implements BooleanSupplier {
     private long currentIteration;
     private final int iterationPeriod;
 
-
     public PeriodicIterationCondition(int iterationPeriod) {
         this.iterationPeriod = iterationPeriod;
     }
@@ -31,6 +30,6 @@ public class PeriodicIterationCondition implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return  ++currentIteration % iterationPeriod == 0;
+        return ++currentIteration % iterationPeriod == 0;
     }
 }
