@@ -109,7 +109,7 @@ public class Reader extends Scheduler {
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes).getToCommit();
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);

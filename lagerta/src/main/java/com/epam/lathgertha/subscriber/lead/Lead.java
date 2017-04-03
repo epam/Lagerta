@@ -29,7 +29,7 @@ public interface Lead {
      * @param txScopes   sorted transaction scopes read by the consumer
      * @return transactions ids that can be committed
      */
-    List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
+    NotifyMessage notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     /**
      * notifies lead that transactions has been committed

@@ -16,6 +16,7 @@
 package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.subscriber.lead.NotifyMessage;
 import com.epam.lathgertha.subscriber.lead.Lead;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.services.ServiceContext;
@@ -47,7 +48,7 @@ public class LeadServiceImpl implements LeadService {
     }
 
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
+    public NotifyMessage notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
         return lead.notifyRead(consumerId, txScopes);
     }
 

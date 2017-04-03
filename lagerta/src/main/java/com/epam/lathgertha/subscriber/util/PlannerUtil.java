@@ -17,6 +17,7 @@ package com.epam.lathgertha.subscriber.util;
 
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.NotifyMessage;
 import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 
 import java.util.ArrayList;
@@ -34,20 +35,20 @@ import java.util.function.Function;
 
 public final class PlannerUtil {
     private static final Function<UUID, Map<String, Set<?>>> CLAIMED = key -> new HashMap<>();
-    private static final Function<UUID, List<Long>> READY = key -> new ArrayList<>();
+    private static final Function<UUID, NotifyMessage> READY = key -> new NotifyMessage();
     private static final Function<String, Set<?>> NEW_HASH_SET = key -> new HashSet();
 
     private PlannerUtil() {
     }
 
-    public static Map<UUID, List<Long>> plan(
+    public static Map<UUID, NotifyMessage> plan(
             ReadTransactions read,
             CommittedTransactions committed,
             Set<Long> inProgress) {
 
         Set<Entry<String, List>> blocked = new HashSet<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
-        Map<UUID, List<Long>> plan = new HashMap<>();
+        Map<UUID, NotifyMessage> plan = new HashMap<>();
 
         for (ConsumerTxScope info : read) {
             long id = info.getTransactionId();
