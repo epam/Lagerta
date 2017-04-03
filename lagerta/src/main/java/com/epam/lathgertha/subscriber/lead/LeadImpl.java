@@ -16,6 +16,8 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.common.CallableKeyListTask;
+import com.epam.lathgertha.common.CallableKeyTask;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 
@@ -25,12 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class LeadImpl extends Scheduler implements Lead {
 
     private final Set<Long> inProgress = new HashSet<>();
-    private final Map<UUID, List<Long>> toCommit = new ConcurrentHashMap<>();
+    private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
     private final CommittedTransactions committed = new CommittedTransactions();
     private final ReadTransactions readTransactions = new ReadTransactions();
@@ -43,10 +44,10 @@ public class LeadImpl extends Scheduler implements Lead {
 
     @Override
     public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
+        List<Long> result = null;
         if (!txScopes.isEmpty()) {
-            pushTask(() -> readTransactions.addAllOnNode(consumerId, txScopes));
+            result = toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes));
         }
-        List<Long> result = toCommit.remove(consumerId);
         return result == null ? Collections.emptyList() : result;
     }
 
@@ -67,11 +68,7 @@ public class LeadImpl extends Scheduler implements Lead {
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
             inProgress.addAll(entry.getValue());
-            List<Long> old = toCommit.remove(entry.getKey());
-            if (old != null) {
-                entry.getValue().addAll(old);
-            }
-            toCommit.put(entry.getKey(), entry.getValue());
+            toCommit.append(entry.getKey(), entry.getValue());
         }
     }
 }
