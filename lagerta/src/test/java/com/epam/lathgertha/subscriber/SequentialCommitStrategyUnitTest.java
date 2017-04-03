@@ -110,9 +110,9 @@ public class SequentialCommitStrategyUnitTest {
     }
 
     private Map<Long, TransactionData> getTransactionsBuffer(String cacheName,
-                                                                                     int countTx,
-                                                                                     List<?> expectedKeys,
-                                                                                     List<?> expectedValues
+                                                             int countTx,
+                                                             List<?> expectedKeys,
+                                                             List<?> expectedValues
     ) {
         Map<Long, TransactionData> transactionsBuffer = new HashMap<>(countTx);
         for (int i = 0; i < countTx; i++) {

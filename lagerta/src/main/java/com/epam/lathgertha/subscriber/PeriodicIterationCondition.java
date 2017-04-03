@@ -18,19 +18,19 @@ package com.epam.lathgertha.subscriber;
 
 import java.util.function.BooleanSupplier;
 
-public class IterateCondition {
+public class PeriodicIterationCondition implements BooleanSupplier {
 
-    private long currentIteration = 0;
-    private final int commitIterationPeriod;
+    private long currentIteration;
+    private final int iterationPeriod;
 
 
-    public IterateCondition(int commitIterationPeriod) {
-        this.commitIterationPeriod = commitIterationPeriod;
+    public PeriodicIterationCondition(int iterationPeriod) {
+        this.iterationPeriod = iterationPeriod;
     }
 
 
-    public BooleanSupplier getConditionCommitToKafka() {
-        return () -> ++currentIteration % commitIterationPeriod == 0;
-
+    @Override
+    public boolean getAsBoolean() {
+        return  ++currentIteration % iterationPeriod == 0;
     }
 }

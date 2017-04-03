@@ -36,12 +36,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
 
-    private final IterateCondition iterateCondition;
+    private final BooleanSupplier commitToKafkaSupplier;
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
     private final SubscriberConfig config;
@@ -54,25 +55,26 @@ public class Reader extends Scheduler {
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
-        this(ignite, kafkaFactory, config, serializer, commitStrategy, DEFAULT_COMMIT_ITERATION_PERIOD);
+        this(ignite, kafkaFactory, config, serializer, commitStrategy,
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD));
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, int commitIterationPeriod) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier) {
         this.kafkaFactory = kafkaFactory;
         this.lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         nodeId = ignite.cluster().localNode().id();
-        this.iterateCondition = new IterateCondition(commitIterationPeriod);
+        this.commitToKafkaSupplier = commitToKafkaSupplier;
     }
 
     @Override
     public void execute() {
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer(config)) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer), iterateCondition.getConditionCommitToKafka()));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
             super.execute();
         }
     }
