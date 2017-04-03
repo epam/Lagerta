@@ -16,8 +16,6 @@
 
 package com.epam.lathgertha.resources;
 
-import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
-import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +25,17 @@ import java.sql.SQLException;
 public class FullClusterResource implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(FullClusterResource.class);
     private static final String CONFIG_XML = "com/epam/lathgertha/integration/config.xml";
-    private static final String DB_NAME = "testDb";
     private static final int CLUSTER_SIZE = 2;
+
+    private final DBResource dbResource;
 
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
     private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
-    private final DBResource dbResource = new DBResource(DB_NAME);
     private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE,
             new AppContextOneProcessClusterManager(CONFIG_XML));
 
-    public static JDBCCommitter personJDBCCommitter() {
-        return PersonEntries.getPersonOnlyJDBCCommitter(String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME));
+    public FullClusterResource(String dbName) {
+        dbResource = new DBResource(dbName);
     }
 
     public IgniteClusterResource igniteCluster() {
