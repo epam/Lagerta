@@ -1,8 +1,5 @@
 package com.epam.lathgertha.subscriber;
 
-import com.epam.lathgertha.capturer.TransactionScope;
-
-import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,8 +31,8 @@ public class ParallelCommitStrategy implements CommitStrategy {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void commit(List<Long> txIdsToCommit, Map<Long, TransactionData> buffer) {
-        new ParallelExecutor(buffer).commit(txIdsToCommit);
+    public List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> buffer) {
+        return new ParallelExecutor(buffer).commit(txIdsToCommit);
     }
 
     /**
@@ -48,13 +45,14 @@ public class ParallelCommitStrategy implements CommitStrategy {
         private final Map<Long, TransactionRelation> relationMap = new HashMap<>();
         private final BlockingQueue<TransactionRelation> tasks = new LinkedBlockingQueue<>();
         private final AtomicInteger count = new AtomicInteger();
+        private volatile boolean deadHasRisen = false;
 
         ParallelExecutor(Map<Long, TransactionData> buffer) {
             this.buffer = buffer;
         }
 
         @SuppressWarnings("unchecked")
-        public void commit(List<Long> txIdsToCommit) {
+        public List<Long> commit(List<Long> txIdsToCommit) {
             txIdsToCommit
                     .stream()
                     .map(txId -> relation(txId, buffer))
@@ -72,6 +70,14 @@ public class ParallelCommitStrategy implements CommitStrategy {
                     .map(pool::submit)
                     .collect(Collectors.toList())
                     .forEach(ForkJoinTask::join);
+
+            return deadHasRisen
+                    ? txIdsToCommit.stream()
+                    .map(relationMap::get)
+                    .filter(TransactionRelation::isAlive)
+                    .map(TransactionRelation::getId)
+                    .collect(Collectors.toList())
+                    : txIdsToCommit;
         }
 
         private TransactionRelation relation(Long txId, Map<Long, TransactionData> buffer) {
@@ -95,19 +101,23 @@ public class ParallelCommitStrategy implements CommitStrategy {
             try {
                 while (count.getAndDecrement() > 0) {
                     TransactionRelation relation = tasks.take();
-                    if (relation.isAlive() && commitServitor.commit(relation.getId(), buffer)) {
-                        relation
-                                .dependent()
-                                .stream()
-                                .filter(TransactionRelation::release)
-                                .forEach(tasks::add);
-                    } else {
-                        relation
-                                .dependent()
-                                .stream()
-                                .peek(TransactionRelation::kill)
-                                .forEach(tasks::add);
+                    boolean alive = relation.isAlive();
+                    if (alive) {
+                        if (commitServitor.commit(relation.getId(), buffer)) {
+                            relation
+                                    .dependent()
+                                    .stream()
+                                    .filter(TransactionRelation::release)
+                                    .forEach(tasks::add);
+                            continue;
+                        }
+                        deadHasRisen = true;
                     }
+                    relation
+                            .dependent()
+                            .stream()
+                            .peek(TransactionRelation::kill)
+                            .forEach(tasks::add);
                 }
             } catch (InterruptedException e) {
                 //do nothing
