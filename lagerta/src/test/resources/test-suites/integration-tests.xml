@@ -19,7 +19,8 @@
 <suite name="Integration Tests">
     <test name="All">
         <classes>
-            <!--Test classes-->
+            <!--ToDo: Fix cleanup procedure of kafka to make the pass. - 47-->
+            <!--<class name="com.epam.lathgertha.subscriber.SubscriberIntegrationTest"/>-->
         </classes>
     </test>
 </suite>

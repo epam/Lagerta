@@ -16,14 +16,12 @@
 package com.epam.lathgertha.base.jdbc.committer;
 
 import com.epam.lathgertha.IgniteConfigurer;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.cluster.SimpleOneProcessClusterManager;
 import com.epam.lathgertha.resources.IgniteClusterResource;
 import com.epam.lathgertha.util.AtomicsHelper;
-import com.epam.lathgertha.util.SerializerImpl;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,16 +38,12 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,7 +62,6 @@ public class JDBCCommitterFunctionalTest {
     private static String dbUrl;
 
     private static JDBCCommitter jdbcCommitter;
-    private static SerializerImpl serializer;
 
     private static IgniteClusterResource clusterResource = new IgniteClusterResource(1, new SimpleOneProcessClusterManager(prepareIgniteConfig()));
 
@@ -95,7 +88,6 @@ public class JDBCCommitterFunctionalTest {
         File tmpFile = File.createTempFile("h2_functional", "test", testFolder);
         dbUrl = "jdbc:h2:file:" + tmpFile.getAbsolutePath();
         connection = DriverManager.getConnection(dbUrl, "", "");
-        serializer = new SerializerImpl();
     }
 
     @AfterClass
@@ -106,12 +98,12 @@ public class JDBCCommitterFunctionalTest {
 
     @BeforeMethod()
     public void initState() {
-        executeUpdateQuery("create_tables.sql");
+        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
     }
 
     @AfterMethod
     public void clearBase() {
-        executeUpdateQuery("clear_tables.sql");
+        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.DROP_TABLE_SQL_RESOUCE);
     }
 
     private static File createTempDir() {
@@ -131,33 +123,6 @@ public class JDBCCommitterFunctionalTest {
         folder.delete();
     }
 
-    private void executeUpdateQuery(String resourceName) {
-        URL resource = getClass().getResource(resourceName);
-        try {
-            String query = Resources.toString(resource, Charsets.UTF_8);
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate(query);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws Exception {
-        Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
-        actualResults.put(Person.PERSON_ID, resultSet.getInt(Person.PERSON_ID));
-        actualResults.put(Person.PERSON_KEY, resultSet.getInt(Person.PERSON_KEY));
-        Blob blob = resultSet.getBlob(Person.PERSON_VAL);
-        Object deserializeVal = null;
-        if (blob != null) {
-            int length = (int) blob.length();
-            deserializeVal = serializer.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
-        }
-        actualResults.put(Person.PERSON_VAL, deserializeVal);
-        actualResults.put(Person.PERSON_NAME, resultSet.getString(Person.PERSON_NAME));
-        return actualResults;
-    }
-
     @DataProvider(name = DATA_PROVIDER_PRIMITIVES_NAME)
     public static Object[][] primitives() {
         return new Object[][]{
@@ -171,7 +136,7 @@ public class JDBCCommitterFunctionalTest {
 
     @Test(dataProvider = DATA_PROVIDER_PRIMITIVES_NAME)
     public void valPrimitivesCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
-        jdbcCommitter = getPersonOnlyJDBCCommitter();
+        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
         Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
         expectedResult.put(Person.PERSON_KEY, key);
         expectedResult.put(Person.PERSON_VAL, val);
@@ -185,12 +150,12 @@ public class JDBCCommitterFunctionalTest {
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
         Assert.assertTrue(resultSet.next(), "Return empty result");
-        Assert.assertEquals(getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
     }
 
     @Test
     public void binaryObjectEntityCommitted() throws Exception {
-        jdbcCommitter = getPersonOnlyJDBCCommitter();
+        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
         Ignite ignite = clusterResource.ignite();
@@ -211,12 +176,12 @@ public class JDBCCommitterFunctionalTest {
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
 
         Assert.assertTrue(resultSet.next(), "Return empty result");
-        Assert.assertEquals(getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
     }
 
     @Test
     public void binaryObjectAndValEntriesCommitted() throws Exception {
-        jdbcCommitter = getPersonOnlyJDBCCommitter();
+        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
         int keyVal = 22;
         int val = 10;
         int keyPerson = 23;
@@ -246,15 +211,10 @@ public class JDBCCommitterFunctionalTest {
         ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
         List<Map<String, Object>> resultList = new ArrayList<>(expectedCountRows);
         while (resultSet.next()) {
-            resultList.add(getResultMapForPerson(resultSet));
+            resultList.add(PersonEntries.getResultMapForPerson(resultSet));
         }
         Assert.assertEquals(resultList.size(), expectedCountRows);
         Assert.assertEquals(resultList.get(0), expectedResultForVal, "Return incorrect result");
         Assert.assertEquals(resultList.get(1), expectedResultForPerson, "Return incorrect result");
-    }
-
-    private JDBCCommitter getPersonOnlyJDBCCommitter() {
-        return new JDBCCommitter(Collections.singletonList(PersonEntries.getPersonCacheInBaseDescriptor()),
-                Collections.singletonList(PersonEntries.getPersonMapper()), dbUrl, "", "");
     }
 }
