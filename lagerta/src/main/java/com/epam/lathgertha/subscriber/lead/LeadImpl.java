@@ -46,7 +46,7 @@ public class LeadImpl extends Scheduler implements Lead {
     public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
         List<Long> result = !txScopes.isEmpty()
                 ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
-                : null;
+                : toCommit.call(consumerId);
         return result == null ? Collections.emptyList() : result;
     }
 
