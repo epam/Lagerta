@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import org.apache.kafka.common.TopicPartition;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -54,10 +55,12 @@ public class ParallelCommitStrategyUnitTest {
         ByteBuffer buffer = ByteBuffer.allocate(0);
 
         List<Long> txIdsToCommit = LongStream.range(0, changes.size()).boxed().collect(Collectors.toList());
-        Map<Long, Map.Entry<TransactionScope, ByteBuffer>> input = new HashMap<>(changes.size());
+        Map<Long, TransactionData> input = new HashMap<>(changes.size());
         for (int i = 0; i < changes.size(); i++) {
+
             List<Map.Entry<String, List>> list = singletonList(pair(CACHE_NAME, changes.get(i)));
-            input.put((long) i, pair(new TransactionScope((long) i, list), buffer));
+            TransactionData data = new TransactionData(new TransactionScope((long) i, list), buffer, new TopicPartition("topic", 0), 0L);
+            input.put((long) i, data);
         }
 
         CommitServitor servitor = mock(CommitServitor.class);

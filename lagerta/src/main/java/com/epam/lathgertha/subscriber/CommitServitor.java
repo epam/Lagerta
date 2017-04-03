@@ -28,10 +28,10 @@ public class CommitServitor {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean commit(Long txId, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+    protected boolean commit(Long txId, Map<Long, TransactionData> buffer) {
         try {
-            Map.Entry<TransactionScope, ByteBuffer> transactionScopeAndSerializedValues = buffer.get(txId);
-            List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getKey().getScope();
+            TransactionData transactionScopeAndSerializedValues = buffer.get(txId);
+            List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getTransactionScope().getScope();
 
             Iterator<String> cacheNames = scope.stream().map(Map.Entry::getKey).iterator();
             Iterator<List> keys = scope.stream().map(Map.Entry::getValue).iterator();

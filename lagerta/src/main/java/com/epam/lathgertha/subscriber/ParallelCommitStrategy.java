@@ -34,7 +34,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+    public void commit(List<Long> txIdsToCommit, Map<Long, TransactionData> buffer) {
         new ParallelExecutor(buffer).commit(txIdsToCommit);
     }
 
@@ -42,14 +42,14 @@ public class ParallelCommitStrategy implements CommitStrategy {
      * Stores state of commit of single batch
      */
     private class ParallelExecutor {
-        private final Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer;
+        private final Map<Long, TransactionData> buffer;
 
         private final Map<Map.Entry<String, Object>, Long> lastOwner = new HashMap<>();
         private final Map<Long, TransactionRelation> relationMap = new HashMap<>();
         private final BlockingQueue<TransactionRelation> tasks = new LinkedBlockingQueue<>();
         private final AtomicInteger count = new AtomicInteger();
 
-        ParallelExecutor(Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+        ParallelExecutor(Map<Long, TransactionData> buffer) {
             this.buffer = buffer;
         }
 
@@ -74,10 +74,10 @@ public class ParallelCommitStrategy implements CommitStrategy {
                     .forEach(ForkJoinTask::join);
         }
 
-        private TransactionRelation relation(Long txId, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> buffer) {
+        private TransactionRelation relation(Long txId, Map<Long, TransactionData> buffer) {
             return new TransactionRelation(txId, buffer
                     .get(txId)
-                    .getKey()
+                    .getTransactionScope()
                     .getScope()
                     .stream()
                     .flatMap(cacheKeys -> ((Stream<?>) cacheKeys.getValue()

@@ -15,9 +15,6 @@
  */
 package com.epam.lathgertha.subscriber;
 
-import com.epam.lathgertha.capturer.TransactionScope;
-
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +26,7 @@ public class SequentialCommitStrategy implements CommitStrategy {
     }
 
     @Override
-    public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer) {
+    public void commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer) {
         for (Long txId : txIdsToCommit) {
             if (!commitServitor.commit(txId, transactionsBuffer)) {
                 break;
