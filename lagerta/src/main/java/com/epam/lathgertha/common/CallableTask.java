@@ -29,8 +29,13 @@ public class CallableTask<R, V> {
         this.appender = appender;
     }
 
+    /**
+     * Add value to response. Do not call this method from different threads.
+     *
+     * @param value to add to result.
+     */
     public void append(V value) {
-        this.value.set(appender.apply(this.value.get(), value));
+        this.value.set(appender.apply(this.value.getAndSet(null), value));
     }
 
     public R call(Runnable runnable) throws Exception {

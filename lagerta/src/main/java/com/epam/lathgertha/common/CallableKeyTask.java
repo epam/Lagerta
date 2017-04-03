@@ -29,6 +29,12 @@ public class CallableKeyTask<R, K, V> {
         this.appender = appender;
     }
 
+    /**
+     * Add value to response. Do not call this method from different threads.
+     *
+     * @param key add <tt>value</tt> by the <tt>key</tt>
+     * @param value to add to result by <tt>key</tt>
+     */
     public void append(K key, V value) {
         this.value.put(key, appender.apply(this.value.remove(key), key, value));
     }
