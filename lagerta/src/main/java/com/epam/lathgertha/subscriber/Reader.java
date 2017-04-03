@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
@@ -125,13 +126,13 @@ public class Reader extends Scheduler {
     }
 
     private void commitOffsets(Consumer consumer) {
-        for (TopicPartition partition : committedOffsetMap.keySet()) {
-            CommittedOffset offsetsForPartition = committedOffsetMap.get(partition);
-            offsetsForPartition.compress();
-            if (offsetsForPartition.getLastDenseCommit() >= 0) {
-                OffsetAndMetadata offsetMetaInfo = new OffsetAndMetadata(offsetsForPartition.getLastDenseCommit());
-                consumer.commitSync(Collections.singletonMap(partition, offsetMetaInfo));
-            }
-        }
+        Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
+                .peek(entry -> entry.getValue().compress())
+                .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
+                );
+        consumer.commitSync(offsets);
     }
 }
