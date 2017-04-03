@@ -18,22 +18,22 @@ package com.epam.lathgertha.common;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
-public class CallableTask<V, T> {
+public class CallableTask<R, V> {
     private final Scheduler scheduler;
-    private final BiFunction<V, T, V> appender;
+    private final BiFunction<R, V, R> appender;
 
-    private final AtomicReference<V> value = new AtomicReference<>(null);
+    private final AtomicReference<R> value = new AtomicReference<>(null);
 
-    public CallableTask(Scheduler scheduler, BiFunction<V, T, V> appender) {
+    public CallableTask(Scheduler scheduler, BiFunction<R, V, R> appender) {
         this.scheduler = scheduler;
         this.appender = appender;
     }
 
-    public void append(T value) {
+    public void append(V value) {
         this.value.set(appender.apply(this.value.get(), value));
     }
 
-    public V call(Runnable runnable) throws Exception {
+    public R call(Runnable runnable) throws Exception {
         scheduler.pushTask(runnable);
         return value.getAndSet(null);
     }
