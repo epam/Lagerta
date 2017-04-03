@@ -72,6 +72,7 @@
 
     <util:list id="caches">
         <ref bean="cache"/>
+        <ref bean="binary-cache"/>
     </util:list>
 
     <bean name="discovery-spi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -100,7 +101,7 @@
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="jdbc-committer" class="com.epam.lathgertha.resources.FullClusterResource"
+    <bean name="jdbc-committer" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter">
@@ -145,7 +146,16 @@
 
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lathgertha.base.jdbc.common.Person).PERSON_CACHE}"
+          p:name="#{T(com.epam.lathgertha.BaseIntegrationTest).CACHE_NAME}"
+          p:readThrough="true"
+          p:writeThrough="true"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"
+          p:cacheStoreFactory-ref="cache-store-factory"/>
+
+    <bean id="binary-cache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="#{T(com.epam.lathgertha.BaseIntegrationTest).BINARY_KEEPING_CACHE_NAME}"
           p:readThrough="true"
           p:writeThrough="true"
           p:cacheMode="PARTITIONED"
