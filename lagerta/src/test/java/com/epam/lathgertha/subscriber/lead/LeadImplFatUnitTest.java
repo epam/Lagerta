@@ -17,6 +17,7 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -30,7 +31,6 @@ import java.util.function.BooleanSupplier;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
-import static org.testng.Assert.assertEquals;
 
 public class LeadImplFatUnitTest {
 
@@ -42,14 +42,16 @@ public class LeadImplFatUnitTest {
 
     private LeadImpl lead;
     private ReadTransactions read;
+    private CommittedTransactions commit;
     private DynamicRule dynamicRule;
 
     @BeforeMethod
     public void setUp() throws Exception {
         read = new ReadTransactions();
+        commit = new CommittedTransactions();
         dynamicRule = new DynamicRule();
         dynamicRule.setPredicate(() -> true);
-        lead = new LeadImpl(read, new CommittedTransactions());
+        lead = new LeadImpl(read, commit);
         lead.registerRule(dynamicRule);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
@@ -59,7 +61,7 @@ public class LeadImplFatUnitTest {
         lead.stop();
     }
 
-    // (a1 -> a2) + (b1 -> a2)
+    // (0 -> 2) + (1 -> 2)
     @Test
     public void sequenceBlockedFromOutside() {
         List<TransactionScope> aScope = list(
@@ -79,24 +81,68 @@ public class LeadImplFatUnitTest {
                 () -> assertEquals(notifyRead(A, list()), list(2L)));
     }
 
-    //    (a1 -> a2 -> a3) + (a2 -> a4) + (a5 -> a6 -> a7) + (a8 -> a9 -> a7)
-    //      + (a10 -> b1 -> a11) + (a12 -> a13) + (b2 -> a13)
+    //    (0 -> 1 -> 2) + (1 -> 3) + (4 -> 5 -> 6) + (7 -> 8 -> 9)
+    //      + (9 -> 10 -> 11) + (12 -> 14) + (13 -> 14)
     @Test
     public void forksJoinsAndBlockedPaths() {
+        List<TransactionScope> aScope = list(
+                txScope(0, cacheScope(CACHE1, 1L)),
+                txScope(1, cacheScope(CACHE1, 1L, 2L)),
+                txScope(2, cacheScope(CACHE1, 1L)),
+                txScope(3, cacheScope(CACHE1, 2L)),
 
+                txScope(4, cacheScope(CACHE1, 3L)),
+                txScope(5, cacheScope(CACHE1, 3L)),
+                txScope(6, cacheScope(CACHE1, 3L, 4L)),
+                txScope(7, cacheScope(CACHE1, 4L)),
+                txScope(8, cacheScope(CACHE1, 4L)),
+
+                txScope(9, cacheScope(CACHE1, 5L)),
+                txScope(11, cacheScope(CACHE1, 5L)),
+
+                txScope(12, cacheScope(CACHE2, 1L)),
+                txScope(14, cacheScope(CACHE2, 1L, 2L)));
+
+        List<TransactionScope> bScope = list(
+                txScope(10, cacheScope(CACHE1, 5L)),
+                txScope(13, cacheScope(CACHE2, 2L)));
+
+        List<Long> expectedFirstCommits = list(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 12L, 14L);
         applyStatements(
-
+                () -> notifyRead(A, aScope),
+                () -> notifyRead(B, bScope),
+                () -> notifyCommitted(list()),
+                () -> assertEquals(notifyRead(B, list()), list(13L)),
+                () -> assertEquals(notifyRead(B, list()), list()),
+                () -> assertEquals(notifyRead(A, list()), expectedFirstCommits),
+                () -> assertEquals(notifyRead(A, list()), list()),
+                () -> notifyCommitted(list(13L)),
+                () -> assertEquals(notifyRead(B, list()), list()),
+                () -> notifyCommitted(expectedFirstCommits),
+                () -> assertEquals(notifyRead(A, list()), list()),
+                () -> assertEquals(notifyRead(B, list()), list(10L)),
+                () -> notifyCommitted(list(10L)),
+                () -> assertEquals(notifyRead(A, list()), list(11L)),
+                () -> notifyCommitted(list(11L)),
+                () -> Assert.assertTrue(commit.getLastDenseCommit() == 14L)
         );
     }
 
-    private List<Long> notifyRead(UUID uuid, List<TransactionScope> aScope) {
-        dynamicRule.setPredicate(() -> read.getLastDenseRead() >= 0);
-        return lead.notifyRead(uuid, aScope);
+    private static void assertEquals(List<Long> actual, List<Long> expected) {
+        actual.sort(Long::compareTo);
+        expected.sort(Long::compareTo);
+        Assert.assertEquals(actual, expected);
+    }
+
+    private List<Long> notifyRead(UUID uuid, List<TransactionScope> scope) {
+        dynamicRule.setPredicate(() -> this.read.getLastDenseRead() > -1);
+        return lead.notifyRead(uuid, scope);
     }
 
     private void notifyCommitted(List<Long> committed) {
         lead.notifyCommitted(committed);
-        dynamicRule.setPredicate(() -> lead.toCommit.size() > 0);
+        dynamicRule.setPredicate(() -> lead.toCommit.size() > 0 ||
+                committed.stream().anyMatch(commit::contains));
     }
 
     private void applyStatements(Runnable... statements) {

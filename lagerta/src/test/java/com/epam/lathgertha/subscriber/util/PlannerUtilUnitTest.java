@@ -78,7 +78,7 @@ public class PlannerUtilUnitTest {
                 sequenceBlockedFromOutsideCommittedAndInProgress()};
     }
 
-    // (a1 -> a2)
+    // (0 -> 1)
     private Object[] simpleSequence() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -89,7 +89,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2) + (a3 -> a4)
+    // (0 -> 1) + (2 -> 3)
     private Object[] parallelSequencesSameCache() {
         return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
@@ -98,7 +98,7 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE1, 2))));
     }
 
-    // (a1 -> a2) + (a3 -> a4)
+    // (0 -> 1) + (2 -> 3)
     private Object[] parallelSequencesDifferentCache() {
         return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
@@ -107,7 +107,7 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE2, 2))));
     }
 
-    // (a1 -> a2 -> a3) + (a2 -> a4)
+    // (0 -> 1 -> 2) + (1 -> 3)
     private Object[] sequenceWithFork() {
         return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
@@ -116,17 +116,16 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE1, 2))));
     }
 
-    // (a1 -> a2 -> a3) + (a4 -> a5 -> a3)
+    // (0 -> 1) + (2 -> 3)
     private Object[] sequenceWithJoin() {
         return sequence(list(
                 txScope(0, cacheScope(CACHE1, 1)),
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE2, 2)),
-                txScope(3, cacheScope(CACHE1, 2),
-                        cacheScope(CACHE2, 1))));
+                txScope(3, cacheScope(CACHE1, 2), cacheScope(CACHE2, 1))));
     }
 
-    // (a1 -> a2 -> b1)
+    // (0 -> 1 -> 2)
     private Object[] elementBlocked() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -139,7 +138,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (b1 -> a1 -> a2)
+    // (0 -> 1 -> 2)
     private Object[] sequenceBlocked() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(B, list(
@@ -152,7 +151,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2 -> a3) + (b1 -> a2)
+    // (0 -> 1 -> 3) + (2 -> 3)
     private Object[] sequenceWithBlockedElement() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -169,7 +168,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2 -> a3) + (a2 -> a4) + (b1 -> a4)
+    // (0 -> 1 -> 2) + (2 -> 4) + (3 -> 4)
     private Object[] sequenceWithBlockedFork() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -188,7 +187,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2 -> a3) + (a4 -> a5 -> a3) + (b1 -> a3)
+    // (0 -> 1 -> 5) + (2 -> 3 -> 5) + (4 -> 5)
     private Object[] sequenceWithBlockedJoin() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -209,7 +208,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2) + (b1 -> a2)
+    // (0 -> 2) + (1 -> 2)
     private Object[] sequenceBlockedFromOutsideCommitted() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
@@ -225,7 +224,7 @@ public class PlannerUtilUnitTest {
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
 
-    // (a1 -> a2) + (b1 -> a2)
+    // (0 -> 2) + (1 -> 2)
     private Object[] sequenceBlockedFromOutsideCommittedAndInProgress() {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list(
