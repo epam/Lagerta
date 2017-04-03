@@ -18,18 +18,29 @@ package com.epam.lathgertha.subscriber;
 
 import com.epam.lathgertha.BaseIntegrationTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SubscriberIntegrationTest extends BaseIntegrationTest {
-    @Test
-    public void sequentialTransactions() throws Exception {
+    private static final String CACHE_INFO_PROVIDER = "cacheInfoProvider";
+
+    @DataProvider(name = CACHE_INFO_PROVIDER)
+    public Object[][] provideCacheInformation() {
+        return new Object[][] {
+                {CACHE_NAME, false},
+                {BINARY_KEEPING_CACHE_NAME, true}
+        };
+    }
+
+    @Test(dataProvider = CACHE_INFO_PROVIDER)
+    public void sequentialTransactions(String cacheName, boolean asBinary) throws Exception {
         Person firstPerson = new Person(0, "firstName");
         Person secondPerson = new Person(1, "secondName");
 
-        writePersonToCache(1, firstPerson);
-        writePersonToCache(1, secondPerson);
+        writePersonToCache(cacheName, 1, firstPerson);
+        writePersonToCache(cacheName, 1, secondPerson);
         awaitTransactions();
 
-        assertObjectsInDB(entry(1, secondPerson));
+        assertObjectsInDB(asBinary, entry(1, secondPerson));
     }
 }
