@@ -95,7 +95,7 @@ public class Reader extends Scheduler {
         final List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
-            txIdsToCommit.sort(Comparator.comparingLong(Long::longValue));
+            txIdsToCommit.sort(Long::compareTo);
             commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(txIdsToCommit);
             txIdsToCommit.forEach(buffer::remove);
