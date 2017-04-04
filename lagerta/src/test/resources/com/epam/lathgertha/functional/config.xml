@@ -82,6 +82,8 @@ limitations under the License.
     <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
 
     <!--Internal config-->
+    <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
+
     <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
           c:ignite-ref="ignite-bean"
           c:kafkaFactory-ref="kafka-factory"
