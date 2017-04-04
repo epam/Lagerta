@@ -61,7 +61,7 @@ public class ParallelCommitStrategyUnitTest {
     @Test(dataProvider = "test")
     public void testCommit(
             List<List<Object>> changes,
-            int deadTransaction,
+            long deadTransaction,
             List<Integer> expectedCommitted,
             List<Map.Entry<Integer, Integer>> expectedBefore
     ) {
@@ -78,7 +78,7 @@ public class ParallelCommitStrategyUnitTest {
 
         CommitServitor servitor = mock(CommitServitor.class);
         List<Long> actual = Collections.synchronizedList(new ArrayList<>());
-        doAnswer(mock -> !mock.getArguments()[0].equals((long) deadTransaction) && actual.add((Long) mock.getArguments()[0]))
+        doAnswer(mock -> !mock.getArguments()[0].equals(deadTransaction) && actual.add((Long) mock.getArguments()[0]))
                 .when(servitor)
                 .commit(anyLong(), anyMap());
 
@@ -87,6 +87,10 @@ public class ParallelCommitStrategyUnitTest {
 
         Assert.assertEquals(actualCommitted, expectedCommitted.stream().map(Integer::longValue).collect(toList()));
 
+        checkBefore(expectedBefore, actual);
+    }
+
+    private void checkBefore(List<Map.Entry<Integer, Integer>> expectedBefore, List<Long> actual) {
         for (Map.Entry<Integer, Integer> entry : expectedBefore) {
             Iterator<Long> iterator = actual.iterator();
             while (iterator.hasNext() && entry.getKey().longValue() != iterator.next());
