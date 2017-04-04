@@ -66,7 +66,6 @@
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
-              p:totalCount="3"
               p:service-ref="reader-service"/>
     </util:list>
 
@@ -89,12 +88,12 @@
 
     <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
 
-    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
 
-    <bean name="id-sequencer" class="com.epam.lathgertha.kafka.KafkaIdSequencer"
+    <bean name="id-sequencer" class="com.epam.lathgertha.kafka.PerTestKafkaIdSequencer" scope="prototype"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
@@ -106,23 +105,23 @@
     <bean name="jdbc-committer" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter">
+    <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter" scope="prototype">
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
-            <bean class="com.epam.lathgertha.kafka.SubscriberConfig"
+            <bean class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
                   p:remoteTopic="local-index-topic"
                   p:consumerConfig-ref="consumer-properties"
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>
     </bean>
 
-    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
+    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor" scope="prototype"
           c:serializer-ref="serializer"
           c:committer-ref="jdbc-committer"
           c:kafkaLogCommitter-ref="kafka-log-committer"
           c:ignite-ref="ignite-bean"/>
 
-    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy" scope="prototype"
           c:commitServitor-ref="commit-servitor"/>
 
     <bean name="kafka-factory" class="com.epam.lathgertha.kafka.KafkaFactoryImpl"/>
@@ -131,15 +130,15 @@
         <ref bean="subscriber-config"/>
     </util:list>
 
-    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager"
+    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager" scope="prototype"
           c:kafkaFactory-ref="kafka-factory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
           c:serializer-ref="serializer"/>
 
-    <util:list id="key-value-listeners">
-        <bean class="com.epam.lathgertha.capturer.SynchronousPublisher">
+    <util:list id="key-value-listeners" scope="prototype">
+        <bean class="com.epam.lathgertha.capturer.SynchronousPublisher" scope="prototype">
             <constructor-arg index="0" ref="producers-manager"/>
         </bean>
     </util:list>
