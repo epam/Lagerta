@@ -16,14 +16,23 @@
 
 package com.epam.lathgertha.resources;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DBResource implements Resource {
+    private static final Logger LOG = LoggerFactory.getLogger(DBResource.class);
+
     public static final String CONNECTION_STR_PATTERN = "jdbc:h2:mem:%s";
 
     private final String dbUrl;
+
+    private final List<Connection> connections = new ArrayList<>();
 
     // Connection to be hold while resource is active to avoid dropping db
     // because all connections were closed.
@@ -41,13 +50,23 @@ public class DBResource implements Resource {
     @Override
     public void tearDown() throws SQLException {
         connection.close();
+        for (Connection connection : connections) {
+            if (!connection.isClosed()) {
+                LOG.warn("Some connections aren't closed yet.");
+            }
+        }
+        connections.clear();
     }
 
-    public String getDBUrl() {
-        return dbUrl;
+    public void reset() throws SQLException {
+        tearDown();
+        setUp();
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(dbUrl);
+        Connection connection = DriverManager.getConnection(dbUrl);
+
+        connections.add(connection);
+        return connection;
     }
 }
