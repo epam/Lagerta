@@ -112,6 +112,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
                             continue;
                         }
                         deadHasRisen = true;
+                        relation.kill();
                     }
                     relation
                             .dependent()
