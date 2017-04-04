@@ -56,7 +56,6 @@ limitations under the License.
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lathgertha.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
-              p:totalCount="3"
               p:service-ref="readerService"/>
     </util:list>
 
@@ -69,6 +68,8 @@ limitations under the License.
     <!-- Caches configuration -->
     <util:list id="cacheConfig">
         <ref bean="someCache"/>
+        <ref bean="txCommitCache"/>
+        <ref bean="committedTransactionsCountCache"/>
     </util:list>
 
     <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration"
@@ -79,6 +80,16 @@ limitations under the License.
           p:atomicityMode="TRANSACTIONAL"
           p:backups="2"
           p:cacheStoreFactory-ref="cacheStoreFactory"/>
+    <bean id="txCommitCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="txCommitCache"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"/>
+    <bean id="committedTransactionsCountCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="committedTransactionsCountCache"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"/>
     <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
 
     <!--Internal config-->
@@ -92,23 +103,26 @@ limitations under the License.
           c:commitStrategy-ref="commit-strategy"
           c:commitToKafkaSupplier-ref="commitToKafkaCondition"/>
 
-    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl"/>
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
 
-    <bean id="stateful-committer" class="com.epam.lathgertha.subscriber.StatefulCommitter"/>
+    <bean id="inCacheCommitter" class="com.epam.lathgertha.subscriber.InCacheCommitter" scope="prototype"
+          c:ignite-ref="ignite-bean"/>
 
     <bean id="commitToKafkaCondition" class="com.epam.lathgertha.subscriber.PeriodicIterationCondition" scope="prototype"
           c:iterationPeriod="1"/>
 
-    <bean id="kafkaLogCommitter" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
+    <bean id="InCacheKafkaLogCommitter" class="com.epam.lathgertha.subscriber.InCacheKafkaLogCommitter" scope="prototype"
           c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"/>
+          c:subscriberConfig-ref="subscriber-config"
+          c:ignite-ref="ignite-bean"/>
 
-    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor"
+    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor" scope="prototype"
           c:serializer-ref="serializer"
-          c:committer-ref="stateful-committer"
-          c:kafkaLogCommitter-ref="kafkaLogCommitter"/>
+          c:committer-ref="inCacheCommitter"
+          c:kafkaLogCommitter-ref="InCacheKafkaLogCommitter"
+          c:ignite-ref="ignite-bean"/>
 
-    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy"
+    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy" scope="prototype"
           c:commitServitor-ref="commit-servitor"/>
 
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
