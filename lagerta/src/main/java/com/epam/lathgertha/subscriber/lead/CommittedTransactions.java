@@ -28,7 +28,7 @@ public class CommittedTransactions {
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<Long> committed = new LinkedList<>();
-    private long lastDenseCommit = INITIAL_COMMIT_ID;
+    private volatile long lastDenseCommit = INITIAL_COMMIT_ID;
     private List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
 
     public boolean addAll(List<Long> sortedTransactions) {

@@ -17,7 +17,6 @@ package com.epam.lathgertha.subscriber.util;
 
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
-import com.epam.lathgertha.subscriber.lead.NotifyMessage;
 import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.NodeTransactionsBuilder;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
@@ -59,8 +57,8 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        Map<UUID, NotifyMessage> plan = PlannerUtil.plan(transactions, committed, inProgress);
-        assertEquals(plan.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getToCommit())), expected);
+        Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
+        assertEquals(plan, expected);
     }
 
     @DataProvider(name = PLANNER_INFO)

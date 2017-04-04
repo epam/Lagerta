@@ -16,7 +16,6 @@
 package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.capturer.TransactionScope;
-import com.epam.lathgertha.subscriber.lead.NotifyMessage;
 import org.apache.ignite.services.Service;
 
 import java.util.List;
@@ -25,9 +24,11 @@ import java.util.UUID;
 public interface LeadService extends Service {
     String NAME = "Lead";
 
-    NotifyMessage notifyRead(UUID consumerId, List<TransactionScope> txScopes);
+    List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
 
     void notifyCommitted(List<Long> ids);
 
     void notifyFailed(Long id);
+
+    long getLastDenseCommitted();
 }
