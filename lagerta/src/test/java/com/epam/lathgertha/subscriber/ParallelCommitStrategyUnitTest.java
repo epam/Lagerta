@@ -89,10 +89,10 @@ public class ParallelCommitStrategyUnitTest {
 
         Assert.assertEquals(actualCommitted, expectedCommitted.stream().map(Integer::longValue).collect(toList()));
 
-        checkBefore(expectedBefore, actual);
+        checkOrder(expectedBefore, actual);
     }
 
-    private void checkBefore(List<Map.Entry<Integer, Integer>> expectedBefore, List<Long> actual) {
+    private void checkOrder(List<Map.Entry<Integer, Integer>> expectedBefore, List<Long> actual) {
         for (Map.Entry<Integer, Integer> entry : expectedBefore) {
             Iterator<Long> iterator = actual.iterator();
             while (iterator.hasNext() && entry.getKey().longValue() != iterator.next());
