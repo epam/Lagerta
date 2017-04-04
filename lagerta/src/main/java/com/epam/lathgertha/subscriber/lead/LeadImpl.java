@@ -31,8 +31,8 @@ import static com.epam.lathgertha.subscriber.lead.NotifyMessage.EMPTY_NOTIFY_MES
 public class LeadImpl extends Scheduler implements Lead {
 
     private final Set<Long> inProgress = new HashSet<>();
-    private final CallableKeyTask<NotifyMessage, UUID, NotifyMessage> toCommit = new CallableKeyTask<>(this,
-            (old, key, append) -> old.append(append));
+    private final CallableKeyTask<NotifyMessage, UUID, NotifyMessage> toNotify = new CallableKeyTask<>(this,
+            (old, key, append) -> (old == null ? new NotifyMessage() : old).append(append));
 
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
@@ -55,8 +55,8 @@ public class LeadImpl extends Scheduler implements Lead {
     @Override
     public NotifyMessage notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
         NotifyMessage result = !txScopes.isEmpty()
-                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
-                : toCommit.call(consumerId);
+                ? toNotify.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
+                : toNotify.call(consumerId);
         return result == null ? EMPTY_NOTIFY_MESSAGE : result;
     }
 
@@ -83,7 +83,7 @@ public class LeadImpl extends Scheduler implements Lead {
         Map<UUID, NotifyMessage> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         for (Map.Entry<UUID, NotifyMessage> entry : ready.entrySet()) {
             inProgress.addAll(entry.getValue().getToCommit());
-            toCommit.append(entry.getKey(), entry.getValue());
+            toNotify.append(entry.getKey(), entry.getValue());
         }
     }
 }

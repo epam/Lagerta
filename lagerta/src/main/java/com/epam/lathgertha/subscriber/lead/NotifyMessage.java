@@ -59,4 +59,7 @@ public class NotifyMessage implements Serializable {
         toCommit.add(id);
     }
 
+    public void delete(Long id) {
+        toRemove.add(id);
+    }
 }
