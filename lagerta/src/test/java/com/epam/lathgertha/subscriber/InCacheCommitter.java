@@ -26,8 +26,7 @@ public class InCacheCommitter implements Committer {
 
     public static final String TX_COMMIT_CACHE_NAME = "txCommitCache";
 
-    private IgniteCache<Object, Object> cache;
-
+    private final IgniteCache<Object, Object> cache;
 
     private InCacheCommitter(Ignite ignite) {
         cache = ignite.cache(TX_COMMIT_CACHE_NAME);

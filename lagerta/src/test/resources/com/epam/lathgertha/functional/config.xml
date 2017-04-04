@@ -103,7 +103,7 @@ limitations under the License.
     <bean id="commitToKafkaCondition" class="com.epam.lathgertha.subscriber.PeriodicIterationCondition" scope="prototype"
           c:iterationPeriod="1"/>
 
-    <bean id="kafkaLogCommitter" class="com.epam.lathgertha.kafka.KafkaLogCommitter"
+    <bean id="kafkaLogCommitter" class="com.epam.lathgertha.subscriber.StatefulKafkaLogCommitter"
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
 

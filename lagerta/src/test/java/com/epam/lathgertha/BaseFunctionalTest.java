@@ -34,9 +34,8 @@ public abstract class BaseFunctionalTest {
     // configured topic name in config.xml
     protected final String TOPIC = "testTopic";
     protected final String CACHE_NAME = "someCache";
-    private static final String CONFIG_PATH = "/com/epam/lathgertha/functional/config.xml";
-    private static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
-            new AppContextOneProcessClusterManager(CONFIG_PATH);
+    protected static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
+            new AppContextOneProcessClusterManager("/com/epam/lathgertha/functional/config.xml");
     private static final IgniteClusterResource CLUSTER_RESOURCE =
             new IgniteClusterResource(2, CLUSTER_MANAGER);
 
