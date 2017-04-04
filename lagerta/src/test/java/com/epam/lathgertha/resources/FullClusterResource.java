@@ -57,9 +57,9 @@ public class FullClusterResource implements Resource {
     }
 
     public void cleanUpClusters() throws SQLException {
-        cluster.clearCluster();
-        dbResource.tearDown();
-        kafka.deleteAllTopics();
+        cluster.stopACSServicesAndCaches();
+        dbResource.reset();
+        cluster.startACSServicesAndCaches();
     }
 
     private static void setUpResources(Resource... resources) throws Exception {

@@ -84,17 +84,25 @@ public class IgniteClusterResource implements Resource {
             .collect(Collectors.toList());
     }
 
-    public void clearCluster() {
+    public void stopACSServicesAndCaches() {
         cacheConfigs.forEach(config -> root.destroyCache(config.getName()));
+        if (serviceConfigs != null) {
+            root.services().cancelAll();
+        }
+        Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
+    }
+
+    public void startACSServicesAndCaches() {
         root.createCaches(cacheConfigs);
         if (serviceConfigs != null) {
             IgniteServices services = root.services();
-
-            services.cancelAll();
             Arrays.stream(serviceConfigs).forEach(services::deploy);
         }
         Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
     }
 
-
+    public void clearCluster() {
+        stopACSServicesAndCaches();
+        startACSServicesAndCaches();
+    }
 }
