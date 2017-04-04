@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * Core class for tests which performs set up and tear down of cluster and exposes some useful methods.
  */
 public class IgniteClusterResource implements Resource {
-    private static final long STARTUP_CLEANUP_AWAIT_TIME = 2_000;
+    private static final long AWAIT_TIME = 2_000;
     /**
      * Root node which is used for submitting tasks.
      */
@@ -69,7 +69,7 @@ public class IgniteClusterResource implements Resource {
         root = clusterManager.startCluster(numberOfNodes);
         cacheConfigs = getNonSystemCacheConfigs();
         serviceConfigs = root.configuration().getServiceConfiguration();
-        Uninterruptibles.sleepUninterruptibly(STARTUP_CLEANUP_AWAIT_TIME, TimeUnit.MILLISECONDS);
+        Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class IgniteClusterResource implements Resource {
             services.cancelAll();
             Arrays.stream(serviceConfigs).forEach(services::deploy);
         }
-        Uninterruptibles.sleepUninterruptibly(STARTUP_CLEANUP_AWAIT_TIME, TimeUnit.MILLISECONDS);
+        Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
     }
 
 

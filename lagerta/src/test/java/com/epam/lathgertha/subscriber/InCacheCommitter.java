@@ -24,9 +24,9 @@ import java.util.List;
 
 public class InCacheCommitter implements Committer {
 
-    public final static String TX_COMMIT_CACHE_NAME = "txCommitCache";
+    public static final String TX_COMMIT_CACHE_NAME = "txCommitCache";
 
-    private transient IgniteCache<Object, Object> cache;
+    private IgniteCache<Object, Object> cache;
 
 
     private InCacheCommitter(Ignite ignite) {

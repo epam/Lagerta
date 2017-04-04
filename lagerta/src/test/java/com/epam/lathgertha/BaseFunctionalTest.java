@@ -77,9 +77,7 @@ public abstract class BaseFunctionalTest {
     }
 
     protected void writeValueToKafka(String topic, int id, int key, int value) {
-        InputProducer producer = kafkaMockFactory.inputProducer(topic, 0);
-        Collection<Cache.Entry<?, ?>> updates = Collections.singletonList(new CacheEntryImpl<>(key, value));
-        producer.send(id, Collections.singletonMap(CACHE_NAME, updates));
+        writeValueToKafka(topic, id, key, value, 0);
     }
 
     protected void writeValueToKafka(String topic, int id, int key, int value, int kafkaPartition) {
