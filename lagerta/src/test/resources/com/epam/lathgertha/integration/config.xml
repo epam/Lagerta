@@ -87,6 +87,8 @@
         </property>
     </bean>
 
+    <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
+
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"

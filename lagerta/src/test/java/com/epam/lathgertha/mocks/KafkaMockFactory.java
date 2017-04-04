@@ -21,7 +21,6 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.common.Cluster;
@@ -31,7 +30,6 @@ import org.apache.kafka.common.serialization.ByteBufferSerializer;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;

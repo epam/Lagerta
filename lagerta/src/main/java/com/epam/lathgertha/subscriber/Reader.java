@@ -109,8 +109,8 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
-            approveAndCommitTransactionsBatch(scopes);
         }
+        approveAndCommitTransactionsBatch(scopes);
     }
 
 
@@ -119,9 +119,9 @@ public class Reader extends Scheduler {
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
-            commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(txIdsToCommit);
-            txIdsToCommit.stream()
+            List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
+            lead.notifyCommitted(committed);
+            committed.stream()
                     .map(buffer::remove)
                     .forEach(entry -> {
                         CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());

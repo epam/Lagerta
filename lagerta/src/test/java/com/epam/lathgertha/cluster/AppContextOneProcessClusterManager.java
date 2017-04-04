@@ -38,7 +38,7 @@ public class AppContextOneProcessClusterManager extends DefaultOneProcessCluster
         return applicationContext.getBean(Ignite.class);
     }
 
-    public void refreshContexts() {
-        contexts.forEach(ConfigurableApplicationContext::refresh);
+    public <T> T getBean(Class<T> beanClass) {
+        return contexts.get(0).getBean(beanClass);
     }
 }
