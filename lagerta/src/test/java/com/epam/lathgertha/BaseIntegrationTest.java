@@ -55,7 +55,9 @@ public abstract class BaseIntegrationTest {
             Person.PERSON_TABLE,
             Person.PERSON_KEY
     );
-    private static final long TX_WAIT_TIME = 5_000;
+    private static final long TX_WAIT_TIME = 10_000;
+
+    private static int TEST_NUMBER = 0;
 
     private final FullClusterResource allResources = new FullClusterResource(DB_NAME);
 
@@ -72,12 +74,14 @@ public abstract class BaseIntegrationTest {
         return new JDBCCommitter(cacheInBaseDescriptors, mappers, dbUrl, "", "");
     }
 
+    public static String adjustTopicNameForTest(String topic) {
+        return topic + "_" + TEST_NUMBER;
+    }
+
     @BeforeSuite
     public void setUp() throws Exception {
         allResources.setUp();
-        try (Connection connection = allResources.getDBResource().getConnection()) {
-            JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
-        }
+        createDBTable();
     }
 
     @AfterSuite(alwaysRun = true)
@@ -87,15 +91,19 @@ public abstract class BaseIntegrationTest {
 
     @AfterMethod
     public void cleanupResources() throws SQLException {
+        TEST_NUMBER++;
         allResources.cleanUpClusters();
+        createDBTable();
+    }
+
+    private void createDBTable() throws SQLException {
+        try (Connection connection = allResources.getDBResource().getConnection()) {
+            JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        }
     }
 
     public Ignite ignite() {
         return allResources.igniteCluster().ignite();
-    }
-
-    public <K, V> IgniteCache<K, V> getCache() {
-        return ignite().cache(Person.PERSON_CACHE);
     }
 
     public void writePersonToCache(String cacheName, int key, Person person) {
