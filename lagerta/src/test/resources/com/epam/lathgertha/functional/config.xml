@@ -101,7 +101,8 @@ limitations under the License.
           c:config-ref="subscriber-config"
           c:serializer-ref="serializer"
           c:commitStrategy-ref="commit-strategy"
-          c:commitToKafkaSupplier-ref="commitToKafkaCondition"/>
+          c:commitToKafkaSupplier-ref="commitToKafkaCondition"
+          c:bufferClearTimeInterval="100"/>
 
     <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
 
