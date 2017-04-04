@@ -34,6 +34,7 @@ public class SubscriberFunctionalTest extends BaseFunctionalTest {
     private static final Integer VALUE_ONE = 11;
     private static final Integer VALUE_TWO = 12;
     private static final Integer VALUE_THREE = 13;
+
     private IgniteCache<Integer, Integer> txCache;
     private IgniteCache<Object, Object> txCountCache;
 
@@ -45,7 +46,6 @@ public class SubscriberFunctionalTest extends BaseFunctionalTest {
 
     @Test
     public void committingAllSandTransactions() {
-
         writeValueToKafka(TOPIC, 0, KEY_ONE, VALUE_ONE, FIRST_KAFKA_PARTITION);
         writeValueToKafka(TOPIC, 1, KEY_TWO, VALUE_TWO, SECOND_KAFKA_PARTITION);
         writeValueToKafka(TOPIC, 2, KEY_THREE, VALUE_THREE, FIRST_KAFKA_PARTITION);
