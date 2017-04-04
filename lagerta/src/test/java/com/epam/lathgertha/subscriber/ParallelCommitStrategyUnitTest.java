@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.stream.LongStream;
 
 public class ParallelCommitStrategyUnitTest {
+    private static final String TEST = "test";
+
     private static final String CACHE_NAME = "cache";
 
     private static final List<String> A = singletonList("A");
@@ -36,7 +38,7 @@ public class ParallelCommitStrategyUnitTest {
     private static final List<String> A_C = asList("A", "C");
     private static final List<String> B_D = asList("B", "D");
 
-    @DataProvider(name = "test")
+    @DataProvider(name = TEST)
     public Object[][] dataProviderForCommit() {
         return new Object[][] {
                 //normal cases
@@ -58,7 +60,7 @@ public class ParallelCommitStrategyUnitTest {
         };
     }
 
-    @Test(dataProvider = "test")
+    @Test(dataProvider = TEST)
     public void testCommit(
             List<List<Object>> changes,
             long deadTransaction,
