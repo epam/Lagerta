@@ -20,5 +20,5 @@ import java.util.Map;
 
 public interface CommitStrategy {
 
-    void commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer);
+    List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer);
 }
