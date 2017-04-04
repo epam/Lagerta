@@ -30,7 +30,7 @@ public class SequentialCommitStrategy implements CommitStrategy {
     public List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer) {
         for (Long txId : txIdsToCommit) {
             if (!commitServitor.commit(txId, transactionsBuffer)) {
-                return txIdsToCommit.stream().filter(id -> id <= txId).collect(Collectors.toList());
+                return txIdsToCommit.stream().filter(id -> id < txId).collect(Collectors.toList());
             }
         }
         return txIdsToCommit;
