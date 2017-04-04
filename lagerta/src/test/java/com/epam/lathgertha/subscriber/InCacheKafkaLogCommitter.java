@@ -19,30 +19,26 @@ package com.epam.lathgertha.subscriber;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
 import com.epam.lathgertha.kafka.SubscriberConfig;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class StatefulKafkaLogCommitter extends KafkaLogCommitter {
+public class InCacheKafkaLogCommitter extends KafkaLogCommitter {
 
-    private static final AtomicInteger committedTransactionsCount = new AtomicInteger(0);
+    public static final String COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME = "committedTransactionsCountCache";
 
-    public StatefulKafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
+    private final IgniteCache<Object, Object> cache;
+
+    public InCacheKafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig, Ignite ignite) {
         super(kafkaFactory, subscriberConfig);
+        cache = ignite.cache(COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME);
     }
 
     @Override
     public Future<RecordMetadata> commitTransaction(long transactionId) {
-        committedTransactionsCount.incrementAndGet();
+        cache.put(transactionId, 0);
         return null;
-    }
-
-    public int getCommittedTransactionsCount() {
-        return committedTransactionsCount.get();
-    }
-
-    public void cleanCommittedTransactionsCount() {
-        committedTransactionsCount.set(0);
     }
 }
