@@ -16,47 +16,32 @@
 
 package com.epam.lathgertha.resources;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-
-import kafka.admin.AdminUtils;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
-import kafka.utils.ZKStringSerializer$;
-import kafka.utils.ZkUtils;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkConnection;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.ZooKeeperServerMain;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 public class EmbeddedKafka implements Resource {
     private static final int ZOOKEEPER_PORT = 2181;
-    private static final int ZOOKEEPER_TICK_TIME = 500;
     private static final int BASE_KAFKA_PORT = 9092;
     private static final String LOCALHOST = "localhost";
-    private static final int ZOOKEEPER_SESSION_TIMEOUT = 8_000;
-    private static final int ZOOKEEPER_CONNECTION_TIMEOUT = 8_000;
-    private static final Set<String> INTERNAL_TOPICS = Collections.singleton("__consumer_offsets");
+    private static final long ZOOKEEPER_AWAIT_TIME = 5_000;
 
-    private ServerCnxnFactory factory;
+    private final EmbeddedZookeeper zookeeperServer = new EmbeddedZookeeper();
     private final List<KafkaServerStartable> brokers = new ArrayList<>();
 
     private final TemporaryDirectory folder;
     private final int numberOfKafkaBrokers;
     private final int zookeeperPort;
     private final int kafkaPort;
+
+    private Thread zookeeperThread;
 
     public EmbeddedKafka(TemporaryDirectory folder, int numberOfKafkaBrokers, int zookeeperPort, int kafkaPort) {
         this.folder = folder;
@@ -70,21 +55,27 @@ public class EmbeddedKafka implements Resource {
     }
 
     @Override
-    public void setUp() {
-        try {
-            startZookeeper();
-            startKafkaServers();
-        }
-        catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+    public void setUp() throws Exception {
+        startZookeeper();
+        startKafkaServers();
     }
 
     private void startZookeeper() throws IOException, InterruptedException {
-        factory = NIOServerCnxnFactory.createFactory(new InetSocketAddress(LOCALHOST, zookeeperPort), 10);
-        File snapshotDir = folder.mkSubDir("embedded-zk-snapshot-" + zookeeperPort);
-        File logDir = folder.mkSubDir("embedded-zk-logs-" + zookeeperPort);
-        factory.startup(new ZooKeeperServer(snapshotDir, logDir, ZOOKEEPER_TICK_TIME));
+        File zkDir = folder.mkSubDir("embedded-zk-" + zookeeperPort);
+        ServerConfig config = new ServerConfig();
+
+        config.parse(new String[]{String.valueOf(zookeeperPort), zkDir.getAbsolutePath()});
+        zookeeperThread = new Thread(() -> {
+            try {
+                zookeeperServer.runFromConfig(config);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        zookeeperThread.setDaemon(true);
+        zookeeperThread.start();
+        // Await zookeeper startup.
+        zookeeperThread.join(ZOOKEEPER_AWAIT_TIME);
     }
 
     private void startKafkaServers() throws IOException {
@@ -116,52 +107,18 @@ public class EmbeddedKafka implements Resource {
     }
 
     @Override
-    public void tearDown() {
-        deleteAllTopics();
+    public void tearDown() throws InterruptedException {
         for (KafkaServerStartable broker : brokers) {
             broker.shutdown();
             broker.awaitShutdown();
         }
-        factory.shutdown();
+        zookeeperServer.stop();
+        zookeeperThread.join(ZOOKEEPER_AWAIT_TIME);
     }
 
-    public void deleteAllTopics() {
-        ZkClient zkClient = null;
-        ZkUtils zkUtils = null;
-
-        try {
-            String zookeeperConnect = String.format("%s:%s", LOCALHOST, zookeeperPort);
-
-            zkClient = new ZkClient(
-                zookeeperConnect,
-                ZOOKEEPER_SESSION_TIMEOUT,
-                ZOOKEEPER_CONNECTION_TIMEOUT,
-                ZKStringSerializer$.MODULE$);
-            zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect), false);
-            for (String topic : listTopics()) {
-                if (!INTERNAL_TOPICS.contains(topic)) {
-                    AdminUtils.deleteTopic(zkUtils, topic);
-                }
-            }
-        }
-        finally {
-            if (zkUtils != null) {
-                zkUtils.close();
-            }
-            if (zkClient != null) {
-                zkClient.close();
-            }
-        }
-    }
-
-    private Collection<String> listTopics() {
-        Properties consumerConfig = new Properties() {{
-            setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, String.format("%s:%s", LOCALHOST, kafkaPort));
-            setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
-            setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
-        }};
-        try (Consumer<Long, Long> consumer = new KafkaConsumer<>(consumerConfig)) {
-            return consumer.listTopics().keySet();
+    private static class EmbeddedZookeeper extends ZooKeeperServerMain {
+        void stop() {
+            super.shutdown();
         }
     }
 }
