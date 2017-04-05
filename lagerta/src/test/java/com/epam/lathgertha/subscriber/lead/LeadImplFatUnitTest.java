@@ -84,7 +84,6 @@ public class LeadImplFatUnitTest {
         return lead.notifyRead(uuid, scope);
     }
 
-
     // (0 -> 2) + (1 -> 2)
     @Test
     public void sequenceBlockedFromOutside() {
