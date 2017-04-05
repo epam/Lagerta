@@ -45,7 +45,7 @@ public final class PlannerUtil {
             CommittedTransactions committed,
             Set<Long> inProgress) {
 
-        Set<Entry<String, List>> blocked = new HashSet<>();
+        Map<String, Set<?>> blocked = new HashMap<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
         Map<UUID, List<Long>> plan = new HashMap<>();
 
@@ -53,15 +53,15 @@ public final class PlannerUtil {
             long id = info.getTransactionId();
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
-                if (inProgress.contains(id) || scope.stream().anyMatch(blocked::contains)) {
-                    blocked.addAll(scope);
+                if (inProgress.contains(id) || isIntersected(blocked, scope)) {
+                    scope.forEach(addTo(blocked));
                 } else {
                     UUID consumerId = info.getConsumerId();
                     if (isIntersectedWithClaimed(consumerId, scope, claimed)) {
-                        blocked.addAll(scope);
+                        scope.forEach(addTo(blocked));
                     } else {
                         Map<String, Set<?>> claimedScope = claimed.computeIfAbsent(consumerId, CLAIMED);
-                        scope.forEach(addToClaimed(claimedScope));
+                        scope.forEach(addTo(claimedScope));
                         plan.computeIfAbsent(consumerId, READY).add(id);
                     }
                 }
@@ -71,7 +71,7 @@ public final class PlannerUtil {
     }
 
     @SuppressWarnings("unchecked")
-    private static Consumer<Entry<String, List>> addToClaimed(Map<String, Set<?>> claimedScope) {
+    private static Consumer<Entry<String, List>> addTo(Map<String, Set<?>> claimedScope) {
         return entry -> claimedScope
                 .computeIfAbsent(entry.getKey(), NEW_HASH_SET)
                 .addAll(entry.getValue());

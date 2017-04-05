@@ -17,6 +17,7 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
@@ -59,6 +61,27 @@ public class LeadImplFatUnitTest {
     @AfterMethod
     public void tearDown() throws Exception {
         lead.stop();
+    }
+
+    @Test
+    public void regressionTestOnBlockedTransactionsLogicInPlanner() {
+        List<TransactionScope> aScope = list(
+                txScope(0, cacheScope(CACHE2, 1L)),
+                txScope(2, cacheScope(CACHE2, 1L, 2L)));
+
+        List<TransactionScope> bScope = list(
+                txScope(1, cacheScope(CACHE2, 2L)));
+
+        applyStatements(
+                () -> notifyRead(B, bScope, -2),
+                () -> notifyRead(A, aScope),
+                () -> Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS),
+                () -> assertEquals(notifyRead(A, list()), list(0L)));
+    }
+
+    private List<Long> notifyRead(UUID uuid, List<TransactionScope> scope, long previousLastDenseRead) {
+        dynamicRule.setPredicate(() -> read.getLastDenseRead() > previousLastDenseRead);
+        return lead.notifyRead(uuid, scope);
     }
 
     // (0 -> 2) + (1 -> 2)
