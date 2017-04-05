@@ -20,38 +20,59 @@ import org.apache.kafka.common.TopicPartition;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 public class ReaderFunctionalTest extends BaseFunctionalTest {
 
+    private static final long WAIT_KAFKA = 1_000;
+    private final TopicPartition topicPartitionForWrite = new TopicPartition(TOPIC, 0);
+
     @Test
-    public void execute() throws Exception {
-        TopicPartition expectedTopicPartition = new TopicPartition(TOPIC, 0);
-        int maxOffset = 7;
-        List<Integer> listFirstTxIds = Arrays.asList(4, 5, 6, 7);
-        for (int txId : listFirstTxIds) {
-            writeValueToKafka(TOPIC, txId, txId, txId);
-        }
-        Thread.sleep(2_000); //wait read records from kafka in Reader
-        assertNull(kafkaMockFactory.getLastCommittedOffset(expectedTopicPartition));
-//        checkLastCommittedOffset(expectedTopicPartition,0);
+    public void commitToKafkaDenseOffsets() throws Exception {
+        long expectedLastOffset = 3;
+        long expectedMiddleOffset = 1;
 
-        for (int txId : Arrays.asList(0, 2, 1)) {
-            writeValueToKafka(TOPIC, txId, txId, txId);
-        }
-        Thread.sleep(2_000); //wait read records from kafka in Reader
-        checkLastCommittedOffset(expectedTopicPartition, 0);
+        /**
+         * txId  : 0   1   2   3
+         * offset: 0   1   2   3
+         */
+        assertNull(kafkaMockFactory.getLastCommittedOffset(topicPartitionForWrite));
+        Arrays.asList(0, 1).forEach(txId -> writeValueToKafka(TOPIC, txId, txId, txId));
+        Thread.sleep(WAIT_KAFKA); //wait read records from kafka in Reader
+        checkLastCommittedOffset(topicPartitionForWrite, expectedMiddleOffset);
 
-        writeValueToKafka(TOPIC, 3, 3, 3);
-        Thread.sleep(2_000); //wait read records from kafka in Reader
-        checkLastCommittedOffset(expectedTopicPartition, maxOffset);
+        Arrays.asList(2, 3).forEach(txId -> writeValueToKafka(TOPIC, txId, txId, txId));
+        Thread.sleep(WAIT_KAFKA); //wait read records from kafka in Reader
+        checkLastCommittedOffset(topicPartitionForWrite, expectedLastOffset);
     }
 
-    private void checkLastCommittedOffset(TopicPartition expectedTopicPartition, long expectedOffset) {
-        long offset = kafkaMockFactory.getLastCommittedOffset(expectedTopicPartition);
+    @Test
+    public void commitToKafkaSparseOffsets() throws Exception {
+        long expectedLastOffset = 7;
+
+        /**
+         * txId  : 4   5   6   7   0   2   1   3
+         * offset: 0   1   2   3   4   5   6   7
+         */
+        Arrays.asList(4, 5, 6, 7).forEach(txId -> writeValueToKafka(TOPIC, txId, txId, txId));
+        Thread.sleep(WAIT_KAFKA); //wait read records from kafka in Reader
+        assertNull(kafkaMockFactory.getLastCommittedOffset(topicPartitionForWrite));
+
+        Arrays.asList(0, 2, 1).forEach(txId -> writeValueToKafka(TOPIC, txId, txId, txId));
+        Thread.sleep(WAIT_KAFKA); //wait read records from kafka in Reader
+        assertNull(kafkaMockFactory.getLastCommittedOffset(topicPartitionForWrite));
+
+        writeValueToKafka(TOPIC, 3, 3, 3);
+        Thread.sleep(WAIT_KAFKA); //wait read records from kafka in Reader
+        checkLastCommittedOffset(topicPartitionForWrite, expectedLastOffset);
+    }
+
+    private void checkLastCommittedOffset(TopicPartition expectedTopicPartition, Long expectedOffset) {
+        Long offset = kafkaMockFactory.getLastCommittedOffset(expectedTopicPartition);
+        assertNotNull(offset);
         assertEquals(offset, expectedOffset);
     }
 }

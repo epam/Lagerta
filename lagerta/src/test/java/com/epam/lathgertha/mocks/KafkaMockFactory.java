@@ -21,6 +21,7 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.common.Cluster;
@@ -128,8 +129,8 @@ public class KafkaMockFactory implements KafkaFactory {
      */
     public Long getLastCommittedOffset(TopicPartition topicPartition) {
         List<ProxyMockConsumer> proxyMockConsumers = existingOpenedConsumers(topicPartition.topic());
-        Map<TopicPartition, Long> map = proxyMockConsumers.get(0).endOffsets(Collections.singletonList(topicPartition));
-        return map.get(topicPartition);
+        OffsetAndMetadata map = proxyMockConsumers.get(0).committed(topicPartition);
+        return map == null ? null : map.offset();
     }
 
     public static void clearState() {
