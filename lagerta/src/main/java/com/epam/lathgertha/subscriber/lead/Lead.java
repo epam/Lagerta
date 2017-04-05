@@ -34,9 +34,10 @@ public interface Lead {
     /**
      * notifies lead that transactions has been committed
      *
+     * @param consumerId id of consumer node
      * @param ids sorted list of committed ids
      */
-    void notifyCommitted(List<Long> ids);
+    void notifyCommitted(UUID consumerId, List<Long> ids);
 
     void notifyFailed(Long id);
 

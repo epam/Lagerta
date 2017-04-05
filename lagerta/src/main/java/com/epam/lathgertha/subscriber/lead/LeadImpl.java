@@ -29,23 +29,30 @@ import java.util.Set;
 import java.util.UUID;
 
 public class LeadImpl extends Scheduler implements Lead {
+    private static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
 
     private final Set<Long> inProgress = new HashSet<>();
     private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
+    private final Heartbeats heartbeats;
 
-    LeadImpl(ReadTransactions readTransactions, CommittedTransactions committed) {
+    LeadImpl(ReadTransactions readTransactions, CommittedTransactions committed, Heartbeats heartbeats) {
         this.readTransactions = readTransactions;
         this.committed = committed;
+        this.heartbeats = heartbeats;
         registerRule(this.committed::compress);
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
         registerRule(this::plan);
     }
 
     public LeadImpl() {
-        this(new ReadTransactions(), new CommittedTransactions());
+        this(
+                new ReadTransactions(),
+                new CommittedTransactions(),
+                new Heartbeats(DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD)
+        );
     }
 
     /**
@@ -56,6 +63,9 @@ public class LeadImpl extends Scheduler implements Lead {
         List<Long> result = !txScopes.isEmpty()
                 ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
                 : toCommit.call(consumerId);
+        long beat = System.currentTimeMillis();
+
+        pushTask(() -> heartbeats.update(consumerId, beat));
         return result == null ? Collections.emptyList() : result;
     }
 
@@ -63,10 +73,13 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void notifyCommitted(List<Long> ids) {
+    public void notifyCommitted(UUID consumerId, List<Long> ids) {
+        long beat = System.currentTimeMillis();
+
         pushTask(() -> {
             committed.addAll(ids);
             inProgress.removeAll(ids);
+            heartbeats.update(consumerId, beat);
         });
     }
 
