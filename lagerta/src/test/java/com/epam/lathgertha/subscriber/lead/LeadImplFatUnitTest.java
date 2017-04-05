@@ -64,7 +64,7 @@ public class LeadImplFatUnitTest {
     }
 
     @Test
-    public void failCase() {
+    public void regressionTestOnBlockedTransactionsLogicInPlanner() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
                 txScope(2, cacheScope(CACHE2, 1L, 2L)));
