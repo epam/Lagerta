@@ -16,6 +16,7 @@
 package com.epam.lathgertha.subscriber;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.PredicateRule;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.kafka.KafkaFactory;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
+    private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
     private static final Comparator<TransactionScope> SCOPE_COMPARATOR = Comparator.comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
 
@@ -54,6 +57,7 @@ public class Reader extends Scheduler {
     private final CommitStrategy commitStrategy;
     private final UUID nodeId;
     private final BooleanSupplier commitToKafkaSupplier;
+    private final long bufferClearTimeInterval;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
@@ -61,11 +65,11 @@ public class Reader extends Scheduler {
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD));
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
@@ -73,10 +77,12 @@ public class Reader extends Scheduler {
         this.commitStrategy = commitStrategy;
         nodeId = ignite.cluster().localNode().id();
         this.commitToKafkaSupplier = commitToKafkaSupplier;
+        this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
 
     @Override
     public void execute() {
+        registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
             registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
@@ -135,5 +141,10 @@ public class Reader extends Scheduler {
                         entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
                 );
         consumer.commitSync(offsets);
+    }
+
+    private void clearBuffer() {
+        long lastDenseCommittedTxId = lead.getLastDenseCommitted();
+        buffer.entrySet().removeIf(next -> next.getKey() <= lastDenseCommittedTxId);
     }
 }

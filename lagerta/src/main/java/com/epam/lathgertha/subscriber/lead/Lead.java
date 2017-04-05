@@ -43,4 +43,6 @@ public interface Lead {
     void stop();
 
     void execute();
+
+    long getLastDenseCommitted();
 }

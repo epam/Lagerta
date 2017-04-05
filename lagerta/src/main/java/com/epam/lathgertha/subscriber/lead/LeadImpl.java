@@ -85,4 +85,9 @@ public class LeadImpl extends Scheduler implements Lead {
             toCommit.append(entry.getKey(), entry.getValue());
         }
     }
+
+    @Override
+    public long getLastDenseCommitted() {
+        return committed.getLastDenseCommit();
+    }
 }

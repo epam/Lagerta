@@ -60,4 +60,9 @@ public class LeadServiceImpl implements LeadService {
     public void notifyFailed(Long id) {
         lead.notifyFailed(id);
     }
+
+    @Override
+    public long getLastDenseCommitted() {
+        return lead.getLastDenseCommitted();
+    }
 }
