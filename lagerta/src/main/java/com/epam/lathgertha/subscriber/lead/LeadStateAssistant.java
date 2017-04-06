@@ -35,6 +35,7 @@ public class LeadStateAssistant {
     // todo get from props
     private static final String LEAD_STATE_CACHE = "leadStateCache";
     private static final String LEAD_LOAD_STATE_TASK = "leadLoadStateTask";
+    private static final String LOADER_GROUP_ID = "loaderGroupId";
 
     private final Ignite ignite;
     private final Atomic<Long> commitState;
@@ -77,7 +78,7 @@ public class LeadStateAssistant {
 
             @Override
             public Long call() throws Exception {
-                LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config);
+                LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
                 Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
                 Long lastDense = atomic.get();
                 List<Long> commits = loader.loadCommitsAfter(lastDense);
