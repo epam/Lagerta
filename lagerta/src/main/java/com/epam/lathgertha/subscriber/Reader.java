@@ -124,12 +124,7 @@ public class Reader extends Scheduler {
             lead.notifyCommitted(committed);
             committed.stream()
                     .map(buffer::remove)
-                    .forEach(entry -> {
-                        CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());
-                        if (offset != null) {
-                            offset.notifyCommit(entry.getOffset());
-                        }
-                    });
+                    .forEach(this::callNotifyCommit);
         }
     }
 
@@ -146,6 +141,19 @@ public class Reader extends Scheduler {
 
     private void clearBuffer() {
         long lastDenseCommittedTxId = lead.getLastDenseCommitted();
-        buffer.entrySet().removeIf(next -> next.getKey() <= lastDenseCommittedTxId);
+        buffer.keySet()
+                .stream()
+                .filter(txID -> txID <= lastDenseCommittedTxId)
+                .collect(Collectors.toList())
+                .stream()
+                .map(buffer::remove)
+                .forEach(this::callNotifyCommit);
+    }
+
+    private void callNotifyCommit(TransactionData transactionData) {
+        CommittedOffset offset = committedOffsetMap.get(transactionData.getTopicPartition());
+        if (offset != null) {
+            offset.notifyCommit(transactionData.getOffset());
+        }
     }
 }
