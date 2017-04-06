@@ -18,7 +18,6 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
-import com.epam.lathgertha.subscriber.util.MergeUtil;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -27,18 +26,20 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class LeadStateLoader {
 
     private static final long POLLING_TIME = 100L;
-    private static final long INITIAL_OFFSET = -1L;
+    private static final int PAGE_SIZE = 4;
 
     private final KafkaFactory kafkaFactory;
     private final SubscriberConfig config;
@@ -47,45 +48,59 @@ public class LeadStateLoader {
     public LeadStateLoader(KafkaFactory kafkaFactory, SubscriberConfig config, String groupId) {
         this.kafkaFactory = kafkaFactory;
         this.config = config;
-        this.groupId = groupId;
+        this.groupId = groupId + UUID.randomUUID();
     }
 
-    public List<Long> loadCommitsAfter(long commitId) {
+    public CommittedTransactions loadCommitsAfter(long commitId) {
         Consumer<?, ?> consumer = createConsumer();
-        Map<TopicPartition, Long> beginnings = getPartitionOffsets(consumer);
+        Map<TopicPartition, Long> ends = getPartitionOffsets(consumer);
         shiftToLastCommitted(consumer, commitId);
-        return beginnings.entrySet()
-                .parallelStream()
-                .map(entry -> consumePartitionUntilOffset(entry.getKey(), entry.getValue()))
-                .reduce(new LinkedList<>(), (l1, l2) -> {
-                    MergeUtil.merge(l1, l2, Long::compareTo);
-                    return l1;
-                });
+        CommittedTransactions committed = new CommittedTransactions();
+        List<StateKeeper> stateKeepers = ends.entrySet()
+                .stream()
+                .map(entry -> new StateKeeper(createConsumer(entry.getKey()), entry.getValue()))
+                .collect(Collectors.toList());
+        while (true) {
+            List<List<List<Long>>> collect = stateKeepers
+                    .parallelStream()
+                    .filter(state -> state.alive)
+                    .map(this::consumePartitionUntilOffset)
+                    .collect(Collectors.toList());
+            if (collect.isEmpty()) {
+                break;
+            }
+            collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
+            committed.compress();
+        }
+        return committed;
     }
 
-    private List<Long> consumePartitionUntilOffset(TopicPartition partition, Long endOffset) {
-        Consumer<?, ?> consumer = createConsumer();
-        consumer.assign(Collections.singletonList(partition));
-        List<Long> mainBuffer = new LinkedList<>();
-        long lastPollOffset = INITIAL_OFFSET;
-        do {
-            List<Long> recordBuffer = new ArrayList<>();
-            ConsumerRecords<?, ?> records = consumer.poll(POLLING_TIME);
-            for (ConsumerRecord<?, ?> record : records) {
-                recordBuffer.add(record.timestamp());
-                long offset = record.offset();
-                if (offset > lastPollOffset) {
-                    lastPollOffset = offset;
-                }
+    private List<List<Long>> consumePartitionUntilOffset(StateKeeper stateKeeper) {
+        List<List<Long>> mainBuffer = new ArrayList<>(PAGE_SIZE);
+        for (int i = 0; i < PAGE_SIZE; i++) {
+            ConsumerRecords<?, ?> records = stateKeeper.consumer.poll(POLLING_TIME);
+            List<Long> recordBuffer = StreamSupport.stream(records.spliterator(), false)
+                    .map(ConsumerRecord::timestamp)
+                    .collect(Collectors.toList());
+            recordBuffer.sort(Long::compareTo);
+            mainBuffer.add(recordBuffer);
+            Boolean cond = StreamSupport.stream(records.spliterator(), false)
+                    .map(ConsumerRecord::offset)
+                    .max(Long::compareTo)
+                    .map(f -> f >= stateKeeper.endOffset)
+                    .orElse(false);
+            if (cond) {
+                stateKeeper.alive = false;
+                break;
             }
-            merge(mainBuffer, recordBuffer);
-        } while (lastPollOffset < endOffset && lastPollOffset != INITIAL_OFFSET);
+        }
         return mainBuffer;
     }
 
-    private void merge(List<Long> container, List<Long> buffer) {
-        buffer.sort(Long::compareTo);
-        MergeUtil.merge(container, buffer, Long::compareTo);
+    private Consumer<?, ?> createConsumer(TopicPartition partition) {
+        Consumer<?, ?> consumer = createConsumer();
+        consumer.assign(Collections.singletonList(partition));
+        return consumer;
     }
 
     private Consumer<?, ?> createConsumer() {
@@ -114,5 +129,16 @@ public class LeadStateLoader {
         String topic = config.getRemoteTopic();
         return consumer.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
+    }
+
+    private static class StateKeeper {
+        final Consumer<?, ?> consumer;
+        final Long endOffset;
+        boolean alive = true;
+
+        private StateKeeper(Consumer<?, ?> consumer, Long endOffset) {
+            this.consumer = consumer;
+            this.endOffset = endOffset;
+        }
     }
 }

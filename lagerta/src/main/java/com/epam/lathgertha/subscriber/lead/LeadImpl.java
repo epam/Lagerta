@@ -87,8 +87,8 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void updateState(Long lastCommit) {
-        pushTask(() -> committed.updateLastDenseCommit(lastCommit));
+    public void updateState(CommittedTransactions newCommitted) {
+        pushTask(() -> committed.updateLastDenseCommit(newCommitted));
         pushTask(readTransactions::updateLastDenseRead);
     }
 

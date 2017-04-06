@@ -22,6 +22,7 @@ import com.epam.lathgertha.util.Atomic;
 import com.epam.lathgertha.util.AtomicsHelper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.SpringResource;
@@ -32,9 +33,7 @@ import java.util.List;
 
 public class LeadStateAssistant {
 
-    // todo get from props
     private static final String LEAD_STATE_CACHE = "leadStateCache";
-    private static final String LEAD_LOAD_STATE_TASK = "leadLoadStateTask";
     private static final String LOADER_GROUP_ID = "loaderGroupId";
 
     private final Ignite ignite;
@@ -51,40 +50,34 @@ public class LeadStateAssistant {
     }
 
     public void load(Lead lead) {
-        resetDeployedTask();
-        IgniteCompute igniteCompute = ignite
+        IgniteCompute asyncCompute = ignite
                 .compute()
-                .withName(LEAD_LOAD_STATE_TASK)
                 .withAsync();
-        igniteCompute
+        asyncCompute
                 .call(createLoadTask());
-        igniteCompute
-                .<Long>future()
+        asyncCompute
+                .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
     }
 
-    private void resetDeployedTask() {
-        ignite.compute().undeployTask(LEAD_LOAD_STATE_TASK);
-    }
+    @IgniteAsyncSupported
+    private IgniteCallable<CommittedTransactions> createLoadTask() {
+        return new IgniteCallable<CommittedTransactions>() {
+            @SpringResource(resourceClass = KafkaFactory.class)
+            private transient KafkaFactory kafkaFactory;
 
-    private IgniteCallable<Long> createLoadTask() {
-        return new IgniteCallable<Long>() {
-            @SpringResource
-            private KafkaFactory kafkaFactory;
-            @SpringResource
-            private SubscriberConfig config;
+            @SpringResource(resourceClass = SubscriberConfig.class)
+            private transient SubscriberConfig config;
+
             @IgniteInstanceResource
             private Ignite ignite;
 
             @Override
-            public Long call() throws Exception {
+            public CommittedTransactions call() throws Exception {
                 LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
                 Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
                 Long lastDense = atomic.get();
-                List<Long> commits = loader.loadCommitsAfter(lastDense);
-                return commits.stream()
-                        .max(Long::compareTo)
-                        .orElse(CommittedTransactions.INITIAL_READY_COMMIT_ID);
+                return loader.loadCommitsAfter(lastDense);
             }
         };
     }

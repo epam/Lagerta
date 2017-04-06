@@ -17,20 +17,22 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.subscriber.util.MergeUtil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CommittedTransactions {
+public class CommittedTransactions implements Serializable {
 
     static final long INITIAL_READY_COMMIT_ID = -1L;
     private static final long INITIAL_COMMIT_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<Long> sparseCommitted = new LinkedList<>();
-    private List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
     private long lastDenseCommit;
+
+    private transient List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
 
     public CommittedTransactions() {
         this.lastDenseCommit = INITIAL_COMMIT_ID;
@@ -62,14 +64,17 @@ public class CommittedTransactions {
         }
     }
 
-    void updateLastDenseCommit(Long newLastDenseCommit) {
-        if (newLastDenseCommit > INITIAL_READY_COMMIT_ID) {
-            lastDenseCommit = newLastDenseCommit;
-            compress();
+    public void updateLastDenseCommit(CommittedTransactions newCommitted) {
+        if (newCommitted.getLastDenseCommit() > INITIAL_READY_COMMIT_ID) {
+            merge(newCommitted);
         } else {
             lastDenseCommit = INITIAL_READY_COMMIT_ID;
             compress();
         }
+    }
+
+    private void merge(CommittedTransactions newTransactions) {
+        // todo
     }
 
     private void mergeCollections() {
