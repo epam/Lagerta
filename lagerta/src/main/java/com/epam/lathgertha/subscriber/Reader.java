@@ -75,7 +75,7 @@ public class Reader extends Scheduler {
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = ignite.cluster().localNode().id();
+        nodeId = UUID.randomUUID();
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
