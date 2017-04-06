@@ -50,6 +50,7 @@ public class PlannerUtilUnitTest {
 
     private static final CommittedTransactions EMPTY_COMMITTED = new CommittedTransactions();
     private static final HashSet<Long> EMPTY_IN_PROGRESS = Sets.newHashSet();
+    private static final Set<UUID> EMPTY_LOST_READERS = Collections.emptySet();
 
     @Test(dataProvider = PLANNER_INFO)
     public void planningWorks(
@@ -84,7 +85,7 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(0L, cacheScope(CACHE1, 1L)),
                 txScope(1L, cacheScope(CACHE1, 1L))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0L, 1L);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -133,7 +134,7 @@ public class PlannerUtilUnitTest {
                 txScope(1, cacheScope(CACHE1, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -146,7 +147,7 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 0);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -160,7 +161,7 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE1, 1, 2))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1)
                 .nodeTransactions(B, 2)
@@ -179,7 +180,7 @@ public class PlannerUtilUnitTest {
                         cacheScope(CACHE2, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(3, cacheScope(CACHE2, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2)
                 .nodeTransactions(B, 3)
@@ -200,7 +201,7 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(B, list(
                 txScope(4, cacheScope(CACHE2, 2))
         ));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2, 3)
                 .nodeTransactions(B, 4)
@@ -219,7 +220,7 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(0L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.pruneCommitted(committed, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
@@ -236,14 +237,14 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.pruneCommitted(committed, EMPTY_LOST_READERS);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 
     private static Object[] sequence(List<TransactionScope> list) {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list);
-        transactions.pruneCommitted(EMPTY_COMMITTED);
+        transactions.pruneCommitted(EMPTY_COMMITTED, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }

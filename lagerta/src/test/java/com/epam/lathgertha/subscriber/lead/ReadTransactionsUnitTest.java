@@ -19,6 +19,8 @@ package com.epam.lathgertha.subscriber.lead;
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.Set;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -40,6 +42,7 @@ public class ReadTransactionsUnitTest {
     private static final String LIST_OF_TRANSACTIONS = "listOfTransactions";
     private static final UUID NODE = java.util.UUID.randomUUID();
     private static final String CACHE = "cacheName";
+    private static final Set<UUID> EMPTY_LOST_READERS = Collections.emptySet();
 
     private static final CommittedTransactions COMMITTED = Mockito.mock(CommittedTransactions.class);
     private static final List<Map.Entry<String, List>> CACHE_SCOPE = Mockito.mock(List.class);
@@ -97,7 +100,7 @@ public class ReadTransactionsUnitTest {
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED);
+        read.pruneCommitted(COMMITTED, EMPTY_LOST_READERS);
         long commitAfterCompress = read.getLastDenseRead();
         assertEquals(commitAfterCompress, EXPECTED_LAST_DENSE_READ);
     }
@@ -107,7 +110,7 @@ public class ReadTransactionsUnitTest {
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED);
+        read.pruneCommitted(COMMITTED, EMPTY_LOST_READERS);
         List<Long> actual = Lists.newArrayList(read.iterator()).stream()
                 .map(ConsumerTxScope::getTransactionId)
                 .collect(Collectors.toList());
