@@ -120,7 +120,7 @@ public class Reader extends Scheduler {
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(committed);
+            lead.notifyCommitted(nodeId, committed);
             committed.stream()
                     .map(buffer::remove)
                     .forEach(entry -> {
