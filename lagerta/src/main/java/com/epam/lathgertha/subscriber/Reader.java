@@ -85,14 +85,15 @@ public class Reader extends Scheduler {
         registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
         }
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
-        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
+                new ReaderRebalanceListener(consumer, committedOffsetMap));
         return consumer;
     }
 
@@ -132,7 +133,7 @@ public class Reader extends Scheduler {
         }
     }
 
-    private void commitOffsets(Consumer consumer) {
+    static void commitOffsets(Consumer consumer, Map<TopicPartition, CommittedOffset> committedOffsetMap) {
         Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
                 .peek(entry -> entry.getValue().compress())
                 .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
