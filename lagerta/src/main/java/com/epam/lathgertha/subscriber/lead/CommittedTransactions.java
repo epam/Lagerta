@@ -74,7 +74,10 @@ public class CommittedTransactions implements Serializable {
     }
 
     private void merge(CommittedTransactions newTransactions) {
-        // todo
+        newTransactions.compress();
+        addAll(newTransactions.sparseCommitted);
+        lastDenseCommit = newTransactions.lastDenseCommit;
+        compress();
     }
 
     private void mergeCollections() {
