@@ -17,6 +17,7 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,6 +33,10 @@ public class Heartbeats {
     public boolean isAvailable(UUID consumerId) {
         Long beat = beats.get(consumerId);
         return beat != null && !isBeatExpired(beat);
+    }
+
+    public Iterable<UUID> knownReaders() {
+        return beats.keySet();
     }
 
     private boolean isBeatExpired(long beat) {
