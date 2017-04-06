@@ -18,6 +18,7 @@ package com.epam.lathgertha.subscriber.lead;
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.common.CallableKeyListTask;
 import com.epam.lathgertha.common.CallableKeyTask;
+import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 
@@ -29,9 +30,10 @@ import java.util.Set;
 import java.util.UUID;
 
 public class LeadImpl extends Scheduler implements Lead {
-    private static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
+    static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
 
     private final Set<Long> inProgress = new HashSet<>();
+    private final Set<UUID> lostReaders = new HashSet<>();
     private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
     private final CommittedTransactions committed;
@@ -43,8 +45,10 @@ public class LeadImpl extends Scheduler implements Lead {
         this.committed = committed;
         this.heartbeats = heartbeats;
         registerRule(this.committed::compress);
-        registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
+        registerRule(new PeriodicRule(this::markLostAndFound, DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
+        registerRule(() -> this.readTransactions.pruneCommitted(this.committed, lostReaders));
         registerRule(this::plan);
+
     }
 
     public LeadImpl() {
@@ -89,6 +93,22 @@ public class LeadImpl extends Scheduler implements Lead {
     @Override
     public void notifyFailed(Long id) {
         //todo
+    }
+
+    private void markLostAndFound() {
+        for (UUID consumerId : heartbeats.knownReaders()) {
+            boolean knownAsLost = lostReaders.contains(consumerId);
+
+            if (heartbeats.isAvailable(consumerId)) {
+                if (knownAsLost) {
+                    lostReaders.remove(consumerId);
+                    readTransactions.scheduleDuplicatesPrunning();
+                }
+            } else if (!knownAsLost) {
+                lostReaders.add(consumerId);
+                readTransactions.scheduleDuplicatesPrunning();
+            }
+        }
     }
 
     private void plan() {
