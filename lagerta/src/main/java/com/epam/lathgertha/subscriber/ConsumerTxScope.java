@@ -33,4 +33,20 @@ public class ConsumerTxScope extends TransactionScope {
     public UUID getConsumerId() {
         return consumerId;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ConsumerTxScope)) {
+            return false;
+        }
+        if (this == obj) {
+            return true;
+        }
+        return getTransactionId() == ((ConsumerTxScope) obj).getTransactionId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(getTransactionId());
+    }
 }
