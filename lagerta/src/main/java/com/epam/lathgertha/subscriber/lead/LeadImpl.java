@@ -46,7 +46,7 @@ public class LeadImpl extends Scheduler implements Lead {
         registerRule(this.committed::compress);
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
         registerRule(this::plan);
-        registerRule(new PeriodicRule(() -> stateAssistant.saveState(committed), SAVE_STATE_PERIOD));
+        registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), SAVE_STATE_PERIOD));
     }
 
     public LeadImpl(LeadStateAssistant stateAssistant) {
@@ -87,9 +87,9 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void updateState(CommittedTransactions newCommitted) {
-        pushTask(() -> committed.updateLastDenseCommit(newCommitted));
-        pushTask(readTransactions::updateLastDenseRead);
+    public void addState(CommittedTransactions newCommitted) {
+        pushTask(() -> committed.updateCommitted(newCommitted));
+        pushTask(readTransactions::setReady);
     }
 
     private void plan() {

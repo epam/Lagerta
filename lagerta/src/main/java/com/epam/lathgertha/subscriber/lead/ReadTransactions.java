@@ -69,7 +69,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 .iterator();
     }
 
-    void updateLastDenseRead() {
+    public void setReady() {
         if (lastDenseRead == INITIAL_READ_ID) {
             lastDenseRead = INITIAL_READY_READ_ID;
             compress();

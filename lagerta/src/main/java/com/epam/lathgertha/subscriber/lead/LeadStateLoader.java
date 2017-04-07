@@ -57,14 +57,15 @@ public class LeadStateLoader {
             shiftToLastCommitted(consumer, commitId);
             partitionStream = getTopicPartitionStream(consumer);
         }
-        List<StateKeeper> stateKeepers = partitionStream
-                .map(tp -> new StateKeeper(createAndSubscribeConsumer()))
+        List<ConsumerKeeper> consumerKeepers = partitionStream
+                .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
                 .collect(Collectors.toList());
         CommittedTransactions committed = new CommittedTransactions();
+        committed.setReady();
         while (true) {
-            List<List<List<Long>>> collect = stateKeepers
+            List<List<List<Long>>> collect = consumerKeepers
                     .parallelStream()
-                    .filter(StateKeeper::isAlive)
+                    .filter(ConsumerKeeper::isAlive)
                     .map(this::consumePartitionUntilOffset)
                     .collect(Collectors.toList());
             collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
@@ -73,20 +74,20 @@ public class LeadStateLoader {
                 break;
             }
         }
-        stateKeepers.forEach(StateKeeper::close);
+        consumerKeepers.forEach(ConsumerKeeper::close);
         return committed;
     }
 
-    private List<List<Long>> consumePartitionUntilOffset(StateKeeper stateKeeper) {
+    private List<List<Long>> consumePartitionUntilOffset(ConsumerKeeper consumerKeeper) {
         List<List<Long>> mainBuffer = new ArrayList<>(PAGE_SIZE);
         for (int i = 0; i < PAGE_SIZE; i++) {
-            ConsumerRecords<?, ?> records = stateKeeper.consumer().poll(POLLING_TIME);
+            ConsumerRecords<?, ?> records = consumerKeeper.consumer().poll(POLLING_TIME);
             List<Long> recordBuffer = recordStream(records)
                     .map(ConsumerRecord::timestamp)
                     .collect(Collectors.toList());
             recordBuffer.sort(Long::compareTo);
             mainBuffer.add(recordBuffer);
-            if (stateKeeper.isAlive(records)) {
+            if (consumerKeeper.isAlive(records)) {
                 break;
             }
         }
@@ -126,16 +127,16 @@ public class LeadStateLoader {
         return StreamSupport.stream(records.spliterator(), false);
     }
 
-    private static class StateKeeper {
+    private static class ConsumerKeeper {
         private final Consumer<?, ?> consumer;
         private Long endOffset;
         private boolean alive = true;
 
-        StateKeeper(Consumer<?, ?> consumer) {
+        ConsumerKeeper(Consumer<?, ?> consumer) {
             this.consumer = consumer;
         }
 
-        public Consumer<?, ?> consumer() {
+        Consumer<?, ?> consumer() {
             return consumer;
         }
 
