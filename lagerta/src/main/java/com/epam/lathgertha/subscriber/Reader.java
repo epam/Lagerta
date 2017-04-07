@@ -75,7 +75,7 @@ public class Reader extends Scheduler {
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = ignite.cluster().localNode().id();
+        nodeId = UUID.randomUUID();
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -85,14 +85,15 @@ public class Reader extends Scheduler {
         registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
         }
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
-        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
+                new ReaderRebalanceListener(consumer, committedOffsetMap));
         return consumer;
     }
 
@@ -121,18 +122,11 @@ public class Reader extends Scheduler {
             txIdsToCommit.sort(Long::compareTo);
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(committed);
-            committed.stream()
-                    .map(buffer::remove)
-                    .forEach(entry -> {
-                        CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());
-                        if (offset != null) {
-                            offset.notifyCommit(entry.getOffset());
-                        }
-                    });
+            removeFromBufferAndCallNotifyCommit(committed);
         }
     }
 
-    private void commitOffsets(Consumer consumer) {
+    static void commitOffsets(Consumer consumer, Map<TopicPartition, CommittedOffset> committedOffsetMap) {
         Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
                 .peek(entry -> entry.getValue().compress())
                 .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
@@ -145,6 +139,21 @@ public class Reader extends Scheduler {
 
     private void clearBuffer() {
         long lastDenseCommittedTxId = lead.getLastDenseCommitted();
-        buffer.entrySet().removeIf(next -> next.getKey() <= lastDenseCommittedTxId);
+        List<Long> committed = buffer.keySet()
+                .stream()
+                .filter(txID -> txID <= lastDenseCommittedTxId)
+                .collect(Collectors.toList());
+        removeFromBufferAndCallNotifyCommit(committed);
+    }
+
+    private void removeFromBufferAndCallNotifyCommit(List<Long> txIDs) {
+        txIDs.stream()
+                .map(buffer::remove)
+                .forEach(transactionData -> {
+                    CommittedOffset offset = committedOffsetMap.get(transactionData.getTopicPartition());
+                    if (offset != null) {
+                        offset.notifyCommit(transactionData.getOffset());
+                    }
+                });
     }
 }
