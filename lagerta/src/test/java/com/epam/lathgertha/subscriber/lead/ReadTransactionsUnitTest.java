@@ -43,6 +43,7 @@ public class ReadTransactionsUnitTest {
     private static final UUID NODE = java.util.UUID.randomUUID();
     private static final String CACHE = "cacheName";
     private static final Set<UUID> EMPTY_LOST_READERS = Collections.emptySet();
+    private static final Set<Long> EMPTY_IN_PROGRESS = Collections.emptySet();
 
     private static final CommittedTransactions COMMITTED = Mockito.mock(CommittedTransactions.class);
     private static final List<Map.Entry<String, List>> CACHE_SCOPE = Mockito.mock(List.class);
@@ -51,6 +52,7 @@ public class ReadTransactionsUnitTest {
     private static final long EXPECTED_LAST_DENSE_READ = 4L;
 
     private ReadTransactions read;
+    private Heartbeats heartbeats;
 
     @BeforeClass
     public static void setUpClass() {
@@ -60,6 +62,7 @@ public class ReadTransactionsUnitTest {
     @BeforeMethod
     public void setUp() {
         read = new ReadTransactions();
+        heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
     }
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
@@ -100,7 +103,7 @@ public class ReadTransactionsUnitTest {
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED, EMPTY_LOST_READERS);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         long commitAfterCompress = read.getLastDenseRead();
         assertEquals(commitAfterCompress, EXPECTED_LAST_DENSE_READ);
     }
@@ -110,7 +113,7 @@ public class ReadTransactionsUnitTest {
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED, EMPTY_LOST_READERS);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         List<Long> actual = Lists.newArrayList(read.iterator()).stream()
                 .map(ConsumerTxScope::getTransactionId)
                 .collect(Collectors.toList());
