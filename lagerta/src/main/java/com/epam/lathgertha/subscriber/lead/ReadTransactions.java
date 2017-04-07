@@ -85,11 +85,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     public Iterator<ConsumerTxScope> iterator() {
         Spliterator<ConsumerTxScope> spliterator = Spliterators.spliteratorUnknownSize(
             allTransactions.iterator(), Spliterator.SORTED | Spliterator.ORDERED);
-        // ToDo: Ensure alive will appear before dead.
-        // Simple solution: tweak MergeUtil#merge to add new duplicates before old ones.
-        // So with an old tx arrived from alive reader we will encounter before any that were
-        // marked dead previously, as there can be a case when a tx was marked dead, but no
-        // changes in reader topology happened after, yet another readers have taken this tx.
         return StreamSupport
             .stream(spliterator, false)
             .filter(tx -> tx.getTransactionId() <= lastDenseRead)
@@ -114,13 +109,16 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private void mergeCollections(Set<UUID> lostReaders) {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
-        if (duplicatesPruningScheduled) {
+        if (!duplicatesPruningScheduled && lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
+            MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
+        } else {
             Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
 
-            allTransactions.removeIf(scope -> diedReaders.contains(scope.getConsumerId()));
-            duplicatesPruningScheduled = false;
-        } else {
-            MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
+            allTransactions
+                    .stream()
+                    .filter(scope -> diedReaders.contains(scope.getConsumerId()))
+                    .map(ConsumerTxScope::getTransactionId)
+                    .forEach(orphanTransactions::add);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
@@ -144,7 +142,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 a = MergeUtil.getNext(firstIter);
             } else if (lostReaders.contains(a.getConsumerId())) {
                 diedReaders.add(a.getConsumerId());
-                orphanTransactions.add(a.getTransactionId());
+                orphanTransactions.remove(a.getTransactionId());
                 firstIter.remove();
                 firstIter.next();
             }
