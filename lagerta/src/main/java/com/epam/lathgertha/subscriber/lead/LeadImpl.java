@@ -112,7 +112,7 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     private void plan() {
-        Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
+        Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
         for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
             inProgress.addAll(entry.getValue());
             toCommit.append(entry.getKey(), entry.getValue());
