@@ -154,7 +154,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 diedReaders.add(a.getConsumerId());
                 orphanTransactions.remove(a.getTransactionId());
                 firstIter.remove();
-                firstIter.next();
+                a = MergeUtil.getNext(firstIter);
             }
         }
         while (b != null) {
