@@ -57,9 +57,9 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> scopes) {
-        List<Long> result = !scopes.isEmpty()
-                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, scopes))
+    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
+        List<Long> result = !txScopes.isEmpty()
+                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
                 : toCommit.call(consumerId);
         return result == null ? Collections.emptyList() : result;
     }
