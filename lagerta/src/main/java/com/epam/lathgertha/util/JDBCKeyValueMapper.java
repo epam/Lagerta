@@ -137,7 +137,6 @@ public final class JDBCKeyValueMapper {
         return targetObject;
     }
 
-
     private static Class getAsPrimitiveType(Class clazz) {
         Class<?> o = objectToPrimitiveMap.get(clazz);
         if (o == null) {
