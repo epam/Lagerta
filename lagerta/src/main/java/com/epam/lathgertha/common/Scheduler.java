@@ -32,10 +32,18 @@ public class Scheduler {
 
     private volatile boolean running = false;
 
+    /**
+     * thread-safe operation
+     * @param task - closure to run once
+     */
     public void pushTask(Runnable task) {
         tasks.add(task);
     }
 
+    /**
+     * non thread-safe operation
+     * @param rule closure to run every cycle
+     */
     public void registerRule(Runnable rule) {
         rules.add(rule);
     }
