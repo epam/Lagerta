@@ -29,6 +29,6 @@ public class LeadStateMockAssistant implements LeadStateAssistant {
     public void load(Lead lead) {
         CommittedTransactions committed = new CommittedTransactions();
         committed.setReady();
-        lead.addState(committed);
+        lead.updateState(committed);
     }
 }

@@ -58,7 +58,7 @@ public class LeadImplFatUnitTest {
         dynamicRule = new DynamicRule();
         dynamicRule.setPredicate(() -> true);
         lead = new LeadImpl(MOCK_STATE_ASSISTANT, read, commit);
-        lead.addState(commit);
+        lead.updateState(commit);
         lead.registerRule(dynamicRule);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }

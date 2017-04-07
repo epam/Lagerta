@@ -87,8 +87,8 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void addState(CommittedTransactions newCommitted) {
-        pushTask(() -> committed.updateCommitted(newCommitted));
+    public void updateState(CommittedTransactions newCommitted) {
+        pushTask(() -> committed.addAll(newCommitted));
         pushTask(readTransactions::setReady);
     }
 

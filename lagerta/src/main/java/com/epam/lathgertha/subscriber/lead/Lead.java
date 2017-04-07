@@ -49,5 +49,5 @@ public interface Lead {
     /**
      * updates state of Lead after re-init
      */
-    void addState(CommittedTransactions newCommitted);
+    void updateState(CommittedTransactions newCommitted);
 }

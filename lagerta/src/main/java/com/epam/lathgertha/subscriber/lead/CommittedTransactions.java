@@ -42,6 +42,12 @@ public class CommittedTransactions implements Serializable {
         return toMerge.add(sortedTransactions);
     }
 
+    public void addAll(CommittedTransactions newCommitted) {
+        addAll(newCommitted.sparseCommitted);
+        lastDenseCommit = newCommitted.lastDenseCommit;
+        compress();
+    }
+
     public boolean contains(long l) {
         return l <= lastDenseCommit || sparseCommitted.contains(l);
     }
@@ -62,12 +68,6 @@ public class CommittedTransactions implements Serializable {
                 break;
             }
         }
-    }
-
-    public void updateCommitted(CommittedTransactions newCommitted) {
-        addAll(newCommitted.sparseCommitted);
-        lastDenseCommit = newCommitted.lastDenseCommit;
-        compress();
     }
 
     public void setReady() {

@@ -52,7 +52,7 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
                 .call(createLoadTask());
         asyncCompute
                 .<CommittedTransactions>future()
-                .listen(future -> lead.addState(future.get()));
+                .listen(future -> lead.updateState(future.get()));
     }
 
     @IgniteAsyncSupported
