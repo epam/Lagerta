@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -59,21 +61,26 @@ public class LeadStateLoader {
         }
         List<ConsumerKeeper> consumerKeepers = partitionStream
                 .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
+                .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
                 .collect(Collectors.toList());
         CommittedTransactions committed = new CommittedTransactions();
         committed.setReady();
-        while (true) {
-            List<List<List<Long>>> collect = consumerKeepers
-                    .parallelStream()
-                    .filter(ConsumerKeeper::isAlive)
-                    .map(this::consumePartitionUntilOffset)
-                    .collect(Collectors.toList());
-            collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
-            committed.compress();
-            if (collect.isEmpty()) {
-                break;
+        ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
+        pool.submit(() -> {
+            while (true) {
+                List<List<List<Long>>> collect = consumerKeepers
+                        .parallelStream()
+                        .filter(ConsumerKeeper::isAlive)
+                        .map(this::consumePartitionUntilOffset)
+                        .collect(Collectors.toList());
+                collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
+                committed.compress();
+                if (collect.isEmpty()) {
+                    break;
+                }
             }
-        }
+            return committed;
+        }).join();
         consumerKeepers.forEach(ConsumerKeeper::close);
         return committed;
     }

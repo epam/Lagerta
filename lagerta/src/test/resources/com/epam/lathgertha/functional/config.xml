@@ -70,7 +70,6 @@ limitations under the License.
         <ref bean="someCache"/>
         <ref bean="txCommitCache"/>
         <ref bean="committedTransactionsCountCache"/>
-        <ref bean="atomicCache"/>
     </util:list>
 
     <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration"
@@ -92,7 +91,6 @@ limitations under the License.
           p:atomicityMode="TRANSACTIONAL"
           p:backups="2"/>
     <bean id="cacheStoreFactory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
-    <bean id="atomicCache" class="com.epam.lathgertha.util.AtomicsHelper" factory-method="getConfig"/>
 
     <!--Internal config-->
     <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>

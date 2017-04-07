@@ -57,29 +57,31 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
 
     @IgniteAsyncSupported
     private IgniteCallable<CommittedTransactions> createLoadTask() {
-        return new IgniteCallable<CommittedTransactions>() {
-            @SpringResource(resourceClass = KafkaFactory.class)
-            private transient KafkaFactory kafkaFactory;
+        return new StateLoader();
+    }
 
-            @SpringResource(resourceClass = SubscriberConfig.class)
-            private transient SubscriberConfig config;
+    private static class StateLoader implements IgniteCallable<CommittedTransactions> {
+        @SpringResource(resourceClass = KafkaFactory.class)
+        private transient KafkaFactory kafkaFactory;
 
-            @IgniteInstanceResource
-            private transient Ignite ignite;
+        @SpringResource(resourceClass = SubscriberConfig.class)
+        private transient SubscriberConfig config;
 
-            @Override
-            public CommittedTransactions call() throws Exception {
-                LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
-                Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
-                Long lastDense = atomic.get();
-                if (lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID) {
-                    return loader.loadCommitsAfter(lastDense);
-                } else {
-                    CommittedTransactions committed = new CommittedTransactions();
-                    committed.setReady();
-                    return committed;
-                }
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        @Override
+        public CommittedTransactions call() throws Exception {
+            LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
+            Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
+            Long lastDense = atomic.get();
+            if (lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID) {
+                return loader.loadCommitsAfter(lastDense);
+            } else {
+                CommittedTransactions committed = new CommittedTransactions();
+                committed.setReady();
+                return committed;
             }
-        };
+        }
     }
 }
