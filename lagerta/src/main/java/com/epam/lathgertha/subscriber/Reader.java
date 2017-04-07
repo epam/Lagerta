@@ -83,7 +83,7 @@ public class Reader extends Scheduler {
     @Override
     public void execute() {
         registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
-        try (Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig())) {
+        try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
             registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
