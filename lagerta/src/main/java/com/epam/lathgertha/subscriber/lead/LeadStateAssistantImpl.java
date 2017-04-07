@@ -57,10 +57,10 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
 
     @IgniteAsyncSupported
     private IgniteCallable<CommittedTransactions> createLoadTask() {
-        return new StateLoader();
+        return new LoadStateTask();
     }
 
-    private static class StateLoader implements IgniteCallable<CommittedTransactions> {
+    private static class LoadStateTask implements IgniteCallable<CommittedTransactions> {
         @SpringResource(resourceClass = KafkaFactory.class)
         private transient KafkaFactory kafkaFactory;
 

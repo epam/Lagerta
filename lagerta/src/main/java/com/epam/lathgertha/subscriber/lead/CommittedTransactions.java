@@ -30,7 +30,7 @@ public class CommittedTransactions implements Serializable {
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<Long> sparseCommitted = new LinkedList<>();
-    private long lastDenseCommit;
+    private volatile long lastDenseCommit;
 
     private transient List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
 
