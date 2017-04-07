@@ -46,7 +46,7 @@ public class LeadImpl extends Scheduler implements Lead {
         this.heartbeats = heartbeats;
         registerRule(this.committed::compress);
         registerRule(new PeriodicRule(this::markLostAndFound, DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
-        registerRule(() -> this.readTransactions.pruneCommitted(this.committed, lostReaders));
+        registerRule(() -> this.readTransactions.pruneCommitted(this.committed, heartbeats, lostReaders, inProgress));
         registerRule(this::plan);
 
     }

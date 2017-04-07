@@ -51,8 +51,13 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         return lastDenseRead;
     }
 
-    public void pruneCommitted(CommittedTransactions committed, Set<UUID> lostReaders) {
-        compress(lostReaders);
+    public void pruneCommitted(
+            CommittedTransactions committed,
+            Heartbeats heartbeats,
+            Set<UUID> lostReaders,
+            Set<Long> inProgress
+    ) {
+        compress(heartbeats, lostReaders, inProgress);
         Iterator<ConsumerTxScope> iterator = allTransactions.iterator();
         long commit = committed.getLastDenseCommit();
         while (iterator.hasNext()) {
@@ -92,8 +97,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             .iterator();
     }
 
-    private void compress(Set<UUID> lostReaders) {
-        mergeCollections(lostReaders);
+    private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
+        mergeCollections(heartbeats, lostReaders, inProgress);
         for (ConsumerTxScope next : allTransactions) {
             long nextId = next.getTransactionId();
             if (lastDenseRead >= nextId) {
@@ -106,7 +111,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
-    private void mergeCollections(Set<UUID> lostReaders) {
+    private void mergeCollections(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
         if (!duplicatesPruningScheduled && lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
@@ -118,7 +123,12 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                     .stream()
                     .filter(scope -> diedReaders.contains(scope.getConsumerId()))
                     .map(ConsumerTxScope::getTransactionId)
+                    .peek(inProgress::remove)
                     .forEach(orphanTransactions::add);
+            diedReaders
+                    .stream()
+                    .peek(lostReaders::remove)
+                    .forEach(heartbeats::removeDead);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
