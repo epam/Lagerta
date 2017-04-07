@@ -174,6 +174,7 @@ public class JDBCKeyValueMapperUnitTest {
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1F), float.class, 1F},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), Double.class, 1D},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), double.class, 1D},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), TimeUnit.class, TimeUnit.DAYS},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "Hello"), String.class, "Hello"},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, expectedDate), Date.class, expectedDate},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, Collections.singletonList(1)),
@@ -211,7 +212,9 @@ public class JDBCKeyValueMapperUnitTest {
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new TestEntry()), Date.class},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new Date()), TestEntry.class},
                 {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "hello"), TestEntry.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "1"), Integer.class}
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "1"), Integer.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), Integer.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 6), TimeUnit.class}
         };
     }
 
