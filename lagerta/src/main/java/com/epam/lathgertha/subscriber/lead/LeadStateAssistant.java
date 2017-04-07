@@ -41,7 +41,7 @@ public class LeadStateAssistant {
 
     public LeadStateAssistant(Ignite ignite) {
         this.ignite = ignite;
-        this.commitState = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
+        commitState = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
         commitState.initIfAbsent(CommittedTransactions.INITIAL_READY_COMMIT_ID);
     }
 
@@ -70,7 +70,7 @@ public class LeadStateAssistant {
             private transient SubscriberConfig config;
 
             @IgniteInstanceResource
-            private Ignite ignite;
+            private transient Ignite ignite;
 
             @Override
             public CommittedTransactions call() throws Exception {

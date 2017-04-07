@@ -68,15 +68,14 @@ public class CommittedTransactions implements Serializable {
         if (newCommitted.getLastDenseCommit() > INITIAL_READY_COMMIT_ID) {
             merge(newCommitted);
         } else {
-            lastDenseCommit = INITIAL_READY_COMMIT_ID;
-            compress();
+            newCommitted.lastDenseCommit = INITIAL_READY_COMMIT_ID;
+            merge(newCommitted);
         }
     }
 
-    private void merge(CommittedTransactions newTransactions) {
-        newTransactions.compress();
-        addAll(newTransactions.sparseCommitted);
-        lastDenseCommit = newTransactions.lastDenseCommit;
+    private void merge(CommittedTransactions newCommitted) {
+        addAll(newCommitted.sparseCommitted);
+        lastDenseCommit = newCommitted.lastDenseCommit;
         compress();
     }
 

@@ -52,54 +52,50 @@ public class LeadStateLoader {
     }
 
     public CommittedTransactions loadCommitsAfter(long commitId) {
-        Consumer<?, ?> consumer = createConsumer();
-        Map<TopicPartition, Long> ends = getPartitionOffsets(consumer);
-        shiftToLastCommitted(consumer, commitId);
-        CommittedTransactions committed = new CommittedTransactions();
-        List<StateKeeper> stateKeepers = ends.entrySet()
-                .stream()
-                .map(entry -> new StateKeeper(createConsumer(entry.getKey()), entry.getValue()))
+        Stream<TopicPartition> partitionStream;
+        try (Consumer<?, ?> consumer = createConsumer()) {
+            shiftToLastCommitted(consumer, commitId);
+            partitionStream = getTopicPartitionStream(consumer);
+        }
+        List<StateKeeper> stateKeepers = partitionStream
+                .map(tp -> new StateKeeper(createAndSubscribeConsumer()))
                 .collect(Collectors.toList());
+        CommittedTransactions committed = new CommittedTransactions();
         while (true) {
             List<List<List<Long>>> collect = stateKeepers
                     .parallelStream()
-                    .filter(state -> state.alive)
+                    .filter(StateKeeper::isAlive)
                     .map(this::consumePartitionUntilOffset)
                     .collect(Collectors.toList());
+            collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
+            committed.compress();
             if (collect.isEmpty()) {
                 break;
             }
-            collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
-            committed.compress();
         }
+        stateKeepers.forEach(StateKeeper::close);
         return committed;
     }
 
     private List<List<Long>> consumePartitionUntilOffset(StateKeeper stateKeeper) {
         List<List<Long>> mainBuffer = new ArrayList<>(PAGE_SIZE);
         for (int i = 0; i < PAGE_SIZE; i++) {
-            ConsumerRecords<?, ?> records = stateKeeper.consumer.poll(POLLING_TIME);
-            List<Long> recordBuffer = StreamSupport.stream(records.spliterator(), false)
+            ConsumerRecords<?, ?> records = stateKeeper.consumer().poll(POLLING_TIME);
+            List<Long> recordBuffer = recordStream(records)
                     .map(ConsumerRecord::timestamp)
                     .collect(Collectors.toList());
             recordBuffer.sort(Long::compareTo);
             mainBuffer.add(recordBuffer);
-            Boolean cond = StreamSupport.stream(records.spliterator(), false)
-                    .map(ConsumerRecord::offset)
-                    .max(Long::compareTo)
-                    .map(f -> f >= stateKeeper.endOffset)
-                    .orElse(false);
-            if (cond) {
-                stateKeeper.alive = false;
+            if (stateKeeper.isAlive(records)) {
                 break;
             }
         }
         return mainBuffer;
     }
 
-    private Consumer<?, ?> createConsumer(TopicPartition partition) {
+    private Consumer<?, ?> createAndSubscribeConsumer() {
         Consumer<?, ?> consumer = createConsumer();
-        consumer.assign(Collections.singletonList(partition));
+        consumer.subscribe(Collections.singleton(config.getRemoteTopic()));
         return consumer;
     }
 
@@ -107,11 +103,6 @@ public class LeadStateLoader {
         Properties properties = config.getConsumerConfig();
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         return kafkaFactory.consumer(properties);
-    }
-
-    private Map<TopicPartition, Long> getPartitionOffsets(Consumer<?, ?> consumer) {
-        Stream<TopicPartition> topicPartitionStream = getTopicPartitionStream(consumer);
-        return consumer.endOffsets(topicPartitionStream.collect(Collectors.toList()));
     }
 
     private void shiftToLastCommitted(Consumer<?, ?> consumer, long commitId) {
@@ -131,14 +122,45 @@ public class LeadStateLoader {
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
     }
 
-    private static class StateKeeper {
-        final Consumer<?, ?> consumer;
-        final Long endOffset;
-        boolean alive = true;
+    private static <K, V> Stream<ConsumerRecord<K, V>> recordStream(ConsumerRecords<K, V> records) {
+        return StreamSupport.stream(records.spliterator(), false);
+    }
 
-        private StateKeeper(Consumer<?, ?> consumer, Long endOffset) {
+    private static class StateKeeper {
+        private final Consumer<?, ?> consumer;
+        private Long endOffset;
+        private boolean alive = true;
+
+        StateKeeper(Consumer<?, ?> consumer) {
             this.consumer = consumer;
-            this.endOffset = endOffset;
+        }
+
+        public Consumer<?, ?> consumer() {
+            return consumer;
+        }
+
+        boolean isAlive() {
+            return alive;
+        }
+
+        boolean isAlive(ConsumerRecords<?, ?> records) {
+            if (endOffset == null) {
+                endOffset = recordStream(records)
+                        .findFirst()
+                        .map(record -> new TopicPartition(record.topic(), record.partition()))
+                        .map(tp -> consumer.endOffsets(Collections.singletonList(tp)).get(tp))
+                        .orElse(null);
+            }
+            alive = endOffset != null && recordStream(records)
+                    .map(ConsumerRecord::offset)
+                    .max(Long::compareTo)
+                    .map(f -> f >= endOffset)
+                    .orElse(false);
+            return alive;
+        }
+
+        void close() {
+            consumer.close();
         }
     }
 }
