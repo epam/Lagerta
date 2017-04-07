@@ -18,6 +18,9 @@ package com.epam.lathgertha.util;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -29,6 +32,19 @@ public final class JDBCKeyValueMapper {
 
     static final String KEY_FIELD_NAME = "key";
     static final String VAL_FIELD_NAME = "val";
+
+    private static final Map<Class<?>, Class<?>> objectToPrimitiveMap = new HashMap<>();
+
+    static {
+        objectToPrimitiveMap.put(Integer.class, Integer.TYPE);
+        objectToPrimitiveMap.put(Short.class, Short.TYPE);
+        objectToPrimitiveMap.put(Byte.class, Byte.TYPE);
+        objectToPrimitiveMap.put(Float.class, Float.TYPE);
+        objectToPrimitiveMap.put(Double.class, Double.TYPE);
+        objectToPrimitiveMap.put(Long.class, Long.TYPE);
+        objectToPrimitiveMap.put(Boolean.class, Boolean.TYPE);
+        objectToPrimitiveMap.put(Character.class, Character.TYPE);
+    }
 
     private JDBCKeyValueMapper() {
     }
@@ -83,5 +99,52 @@ public final class JDBCKeyValueMapper {
         boolean isDate = value instanceof Date;
 
         return !(isEnum || isNumber || isString || isDate);
+    }
+
+
+    public static <T> T getObject(Map<String, Object> columnValues, Class<T> targetClass) {
+        Object o = columnValues.get(VAL_FIELD_NAME);
+        if (o != null) {
+            if (getAsPrimitiveType(targetClass) == getAsPrimitiveType(o.getClass())) {
+                return (T) o;
+            }
+            return targetClass.cast(o);
+        } else {
+            return getPOJOFromMapParams(columnValues, targetClass);
+        }
+    }
+
+    private static <T> T getPOJOFromMapParams(Map<String, Object> columnValues, Class<T> targetClass) {
+        Constructor<T> constructor = null;
+        try {
+            constructor = targetClass.getConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(
+                    "No found default constructor(without parameters) for class " + targetClass.getName() + " It should be public", e);
+        }
+        T targetObject;
+        try {
+            targetObject = constructor.newInstance();
+            for (String fieldName : columnValues.keySet()) {
+                Object value = columnValues.get(fieldName);
+                Field declaredField = targetClass.getDeclaredField(fieldName);
+                boolean wasAccessible = declaredField.isAccessible();
+                declaredField.setAccessible(true);
+                declaredField.set(targetObject, value);
+                declaredField.setAccessible(wasAccessible);
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchFieldException e) {
+            throw new RuntimeException("Can not create new instance of " + targetClass.getSimpleName(), e);
+        }
+        return targetObject;
+    }
+
+
+    private static Class getAsPrimitiveType(Class clazz) {
+        Class<?> o = objectToPrimitiveMap.get(clazz);
+        if (o == null) {
+            return clazz;
+        }
+        return o;
     }
 }
