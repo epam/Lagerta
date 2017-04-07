@@ -16,6 +16,8 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.common.CallableKeyListTask;
+import com.epam.lathgertha.common.CallableKeyTask;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 
@@ -25,29 +27,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class LeadImpl extends Scheduler implements Lead {
 
     private final Set<Long> inProgress = new HashSet<>();
-    private final Map<UUID, List<Long>> toCommit = new ConcurrentHashMap<>();
+    private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
-    private final CommittedTransactions committed = new CommittedTransactions();
-    private final ReadTransactions readTransactions = new ReadTransactions();
+    private final CommittedTransactions committed;
+    private final ReadTransactions readTransactions;
 
-    public LeadImpl() {
-        registerRule(committed::compress);
-        registerRule(() -> readTransactions.pruneCommitted(committed));
+    LeadImpl(ReadTransactions readTransactions, CommittedTransactions committed) {
+        this.readTransactions = readTransactions;
+        this.committed = committed;
+        registerRule(this.committed::compress);
+        registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
         registerRule(this::plan);
     }
 
+    public LeadImpl() {
+        this(new ReadTransactions(), new CommittedTransactions());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
-        pushTask(() -> readTransactions.addAllOnNode(consumerId, txScopes));
-        List<Long> result = toCommit.remove(consumerId);
+        List<Long> result = !txScopes.isEmpty()
+                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
+                : toCommit.call(consumerId);
         return result == null ? Collections.emptyList() : result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void notifyCommitted(List<Long> ids) {
         pushTask(() -> {
@@ -56,6 +70,9 @@ public class LeadImpl extends Scheduler implements Lead {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void notifyFailed(Long id) {
         //todo
@@ -65,11 +82,12 @@ public class LeadImpl extends Scheduler implements Lead {
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
             inProgress.addAll(entry.getValue());
-            List<Long> old = toCommit.remove(entry.getKey());
-            if (old != null) {
-                entry.getValue().addAll(old);
-            }
-            toCommit.put(entry.getKey(), entry.getValue());
+            toCommit.append(entry.getKey(), entry.getValue());
         }
+    }
+
+    @Override
+    public long getLastDenseCommitted() {
+        return committed.getLastDenseCommit();
     }
 }

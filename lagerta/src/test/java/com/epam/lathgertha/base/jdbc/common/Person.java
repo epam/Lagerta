@@ -15,7 +15,10 @@
  */
 package com.epam.lathgertha.base.jdbc.common;
 
-public class Person {
+import java.io.Serializable;
+import java.util.Objects;
+
+public class Person implements Serializable {
     public static final String PERSON_CACHE = "person";
     public static final String PERSON_TABLE = "cache_information";
     public static final String PERSON_VAL = "val";
@@ -37,5 +40,22 @@ public class Person {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Person)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        Person other = (Person) obj;
+        return Objects.equals(id, other.id) && Objects.equals(name, other.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name);
     }
 }

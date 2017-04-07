@@ -4,6 +4,8 @@
     <test name="All">
         <classes>
             <class name="com.epam.lathgertha.base.jdbc.committer.JDBCCommitterFunctionalTest"/>
+            <class name="com.epam.lathgertha.subscriber.SubscriberFunctionalTest"/>
+            <class name="com.epam.lathgertha.subscriber.ReaderFunctionalTest"/>
         </classes>
     </test>
 </suite>

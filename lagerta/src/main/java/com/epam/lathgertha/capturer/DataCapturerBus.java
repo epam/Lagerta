@@ -87,6 +87,12 @@ public class DataCapturerBus<K, V> implements CacheStore<K, V> {
     IdSequencer sequencer;
 
     /**
+     * bean to load data from persistent store
+     */
+    @SpringResource(resourceName = "cache-loader")
+    DataCapturerLoader loader;
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -99,7 +105,7 @@ public class DataCapturerBus<K, V> implements CacheStore<K, V> {
      */
     @Override
     public V load(K key) throws CacheLoaderException {
-        return null;
+        return loader.load(cacheName, key);
     }
 
     /**
@@ -107,7 +113,7 @@ public class DataCapturerBus<K, V> implements CacheStore<K, V> {
      */
     @Override
     public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
-        return Collections.emptyMap();
+        return loader.loadAll(cacheName, keys);
     }
 
     /**

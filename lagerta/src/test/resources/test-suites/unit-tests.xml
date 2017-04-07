@@ -11,8 +11,10 @@
             <class name="com.epam.lathgertha.subscriber.SequentialCommitStrategyUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.lead.CommittedTransactionsUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.lead.ReadTransactionsUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.lead.LeadImplFatUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.util.PlannerUtilUnitTest"/>
             <class name="com.epam.lathgertha.subscriber.util.MergeUtilUnitTest"/>
+            <class name="com.epam.lathgertha.subscriber.CommittedOffsetUnitTest"/>
         </classes>
     </test>
 </suite>

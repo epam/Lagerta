@@ -13,12 +13,17 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.subscriber;
+package com.epam.lathgertha.common;
 
 import java.util.List;
-import java.util.Map;
 
-public interface CommitStrategy {
-
-    List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer);
+public class CallableKeyListTask<K, E> extends CallableKeyTask<List<E>, K, List<E>> {
+    public CallableKeyListTask(Scheduler scheduler) {
+        super(scheduler, (old, k, toAppend) -> {
+            if (old != null) {
+                toAppend.addAll(old);
+            }
+            return toAppend;
+        });
+    }
 }

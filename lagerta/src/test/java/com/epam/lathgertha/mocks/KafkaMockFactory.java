@@ -21,6 +21,7 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.common.Cluster;
@@ -121,6 +122,15 @@ public class KafkaMockFactory implements KafkaFactory {
             throw new IllegalArgumentException("No consumer for topic " + topic);
         }
         return result;
+    }
+
+    /**
+     * Don't support multiple subscribe on topic partition.
+     */
+    public Long getLastCommittedOffset(TopicPartition topicPartition) {
+        List<ProxyMockConsumer> proxyMockConsumers = existingOpenedConsumers(topicPartition.topic());
+        OffsetAndMetadata map = proxyMockConsumers.get(0).committed(topicPartition);
+        return map == null ? null : map.offset();
     }
 
     public static void clearState() {

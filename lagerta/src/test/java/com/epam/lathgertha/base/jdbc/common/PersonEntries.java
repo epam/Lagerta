@@ -18,20 +18,51 @@ package com.epam.lathgertha.base.jdbc.common;
 import com.epam.lathgertha.base.CacheInBaseDescriptor;
 import com.epam.lathgertha.base.FieldDescriptor;
 import com.epam.lathgertha.base.jdbc.committer.BaseMapper;
+import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.committer.JDBCTransformer;
+import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
 
 import javax.sql.rowset.serial.SerialBlob;
+import java.nio.ByteBuffer;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PersonEntries {
+    private static final Serializer SERIALIZER = new SerializerImpl();
+    private static final String SQL_BASE_PATH = "/com/epam/lathgertha/base/jdbc/committer/";
+
+    public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "clear_tables.sql";
+
+    public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
+        Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
+        actualResults.put(Person.PERSON_ID, resultSet.getInt(Person.PERSON_ID));
+        actualResults.put(Person.PERSON_KEY, resultSet.getInt(Person.PERSON_KEY));
+        Blob blob = resultSet.getBlob(Person.PERSON_VAL);
+        Object deserializeVal = null;
+        if (blob != null) {
+            int length = (int) blob.length();
+            deserializeVal = SERIALIZER.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
+        }
+        actualResults.put(Person.PERSON_VAL, deserializeVal);
+        actualResults.put(Person.PERSON_NAME, resultSet.getString(Person.PERSON_NAME));
+        return actualResults;
+    }
+
+    public static JDBCCommitter getPersonOnlyJDBCCommitter(String dbUrl) {
+        return new JDBCCommitter(Collections.singletonList(PersonEntries.getPersonCacheInBaseDescriptor()),
+                Collections.singletonList(PersonEntries.getPersonMapper(Person.PERSON_CACHE)), dbUrl, "", "");
+    }
 
     public static List<String> getPersonColumns() {
         return getPersonFieldDescriptor().values()
@@ -50,13 +81,17 @@ public class PersonEntries {
     }
 
     public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor() {
-        CacheInBaseDescriptor personMapper = new CacheInBaseDescriptor(Person.PERSON_CACHE, Person.PERSON_TABLE,
+        return getPersonCacheInBaseDescriptor(Person.PERSON_CACHE);
+    }
+
+    public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor(String cacheName) {
+        CacheInBaseDescriptor personMapper = new CacheInBaseDescriptor(cacheName, Person.PERSON_TABLE,
                 new ArrayList<FieldDescriptor>(getPersonFieldDescriptor().values()));
         return personMapper;
     }
 
-    public static BaseMapper getPersonMapper() {
-        return new PersonMapper();
+    public static BaseMapper getPersonMapper(String cacheName) {
+        return new PersonMapper(cacheName);
     }
 
     private static FieldDescriptor PERSON_ID_DESCRIPTOR = new FieldDescriptor() {
@@ -116,10 +151,15 @@ public class PersonEntries {
     };
 
     private static class PersonMapper implements BaseMapper {
+        private final String cacheName;
+
+        public PersonMapper(String cacheName) {
+            this.cacheName = cacheName;
+        }
 
         @Override
         public String getCacheName() {
-            return Person.PERSON_CACHE;
+            return cacheName;
         }
 
         private static String getParametersTemplate(int count) {

@@ -29,4 +29,6 @@ public interface LeadService extends Service {
     void notifyCommitted(List<Long> ids);
 
     void notifyFailed(Long id);
+
+    long getLastDenseCommitted();
 }

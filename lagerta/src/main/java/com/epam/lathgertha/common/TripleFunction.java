@@ -13,12 +13,17 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.subscriber;
+package com.epam.lathgertha.common;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
-public interface CommitStrategy {
+@FunctionalInterface
+public interface TripleFunction<A, B, C, R> {
+    R apply(A a, B b, C c);
 
-    List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer);
+    default <V> TripleFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (a, b, c) -> after.apply(apply(a, b, c));
+    }
 }

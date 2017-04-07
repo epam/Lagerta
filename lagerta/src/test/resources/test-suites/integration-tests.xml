@@ -19,7 +19,7 @@
 <suite name="Integration Tests">
     <test name="All">
         <classes>
-            <!--Test classes-->
+            <class name="com.epam.lathgertha.subscriber.SubscriberIntegrationTest"/>
         </classes>
     </test>
 </suite>

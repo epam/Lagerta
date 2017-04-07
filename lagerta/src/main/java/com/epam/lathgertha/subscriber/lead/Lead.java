@@ -26,7 +26,7 @@ public interface Lead {
      * notifies lead that transactions has been read
      *
      * @param consumerId id of consumer node
-     * @param txScopes   transaction scopes read by the consumer
+     * @param txScopes   sorted transaction scopes read by the consumer
      * @return transactions ids that can be committed
      */
     List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
@@ -43,4 +43,6 @@ public interface Lead {
     void stop();
 
     void execute();
+
+    long getLastDenseCommitted();
 }

@@ -15,11 +15,9 @@
  */
 package com.epam.lathgertha.subscriber;
 
-import com.epam.lathgertha.capturer.TransactionScope;
-
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SequentialCommitStrategy implements CommitStrategy {
     private final CommitServitor commitServitor;
@@ -29,11 +27,12 @@ public class SequentialCommitStrategy implements CommitStrategy {
     }
 
     @Override
-    public void commit(List<Long> txIdsToCommit, Map<Long, Map.Entry<TransactionScope, ByteBuffer>> transactionsBuffer) {
+    public List<Long> commit(List<Long> txIdsToCommit, Map<Long, TransactionData> transactionsBuffer) {
         for (Long txId : txIdsToCommit) {
             if (!commitServitor.commit(txId, transactionsBuffer)) {
-                break;
+                return txIdsToCommit.stream().filter(id -> id < txId).collect(Collectors.toList());
             }
         }
+        return txIdsToCommit;
     }
 }
