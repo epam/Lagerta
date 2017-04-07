@@ -43,7 +43,8 @@ public final class PlannerUtil {
     public static Map<UUID, List<Long>> plan(
             ReadTransactions read,
             CommittedTransactions committed,
-            Set<Long> inProgress) {
+            Set<Long> inProgress,
+            Set<UUID> lostReaders) {
 
         Map<String, Set<?>> blocked = new HashMap<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
@@ -53,7 +54,8 @@ public final class PlannerUtil {
             long id = info.getTransactionId();
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
-                if (inProgress.contains(id) || isIntersected(blocked, scope)) {
+                if (inProgress.contains(id) || lostReaders.contains(info.getConsumerId())
+                        || read.isOrphan(id) || isIntersected(blocked, scope)) {
                     scope.forEach(addTo(blocked));
                 } else {
                     UUID consumerId = info.getConsumerId();
