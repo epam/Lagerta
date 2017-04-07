@@ -115,9 +115,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
         if (duplicatesPruningScheduled) {
-            Set<UUID> dieadReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
+            Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
 
-            allTransactions.removeIf(scope -> dieadReaders.contains(scope.getConsumerId()));
+            allTransactions.removeIf(scope -> diedReaders.contains(scope.getConsumerId()));
             duplicatesPruningScheduled = false;
         } else {
             MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
