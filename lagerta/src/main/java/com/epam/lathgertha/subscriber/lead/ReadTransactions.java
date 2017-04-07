@@ -68,7 +68,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         return deadTransactions.contains(transactionId);
     }
 
-    public void scheduleDuplicatesPrunning() {
+    public void scheduleDuplicatesPruning() {
         if (!duplicatesPruningScheduled) {
             duplicatesPruningScheduled = true;
         }

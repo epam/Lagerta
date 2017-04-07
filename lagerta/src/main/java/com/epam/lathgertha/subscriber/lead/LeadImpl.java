@@ -102,11 +102,11 @@ public class LeadImpl extends Scheduler implements Lead {
             if (heartbeats.isAvailable(consumerId)) {
                 if (knownAsLost) {
                     lostReaders.remove(consumerId);
-                    readTransactions.scheduleDuplicatesPrunning();
+                    readTransactions.scheduleDuplicatesPruning();
                 }
             } else if (!knownAsLost) {
                 lostReaders.add(consumerId);
-                readTransactions.scheduleDuplicatesPrunning();
+                readTransactions.scheduleDuplicatesPruning();
             }
         }
     }
