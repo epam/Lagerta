@@ -69,4 +69,8 @@ public class DBResource implements Resource {
         connections.add(connection);
         return connection;
     }
+
+    public String getDBUrl() {
+        return dbUrl;
+    }
 }
