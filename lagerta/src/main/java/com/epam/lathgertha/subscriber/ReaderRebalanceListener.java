@@ -22,6 +22,8 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class ReaderRebalanceListener implements ConsumerRebalanceListener {
@@ -42,6 +44,6 @@ public class ReaderRebalanceListener implements ConsumerRebalanceListener {
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> collection) {
-        collection.forEach(committedOffsetMap::remove);
+        committedOffsetMap.keySet().removeIf(topicPartition -> !collection.contains(topicPartition));
     }
 }

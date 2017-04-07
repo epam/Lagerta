@@ -122,9 +122,7 @@ public class Reader extends Scheduler {
             txIdsToCommit.sort(Long::compareTo);
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(committed);
-            committed.stream()
-                    .map(buffer::remove)
-                    .forEach(this::callNotifyCommit);
+            removeFromBufferAndCallNotifyCommit(committed);
         }
     }
 
@@ -141,19 +139,21 @@ public class Reader extends Scheduler {
 
     private void clearBuffer() {
         long lastDenseCommittedTxId = lead.getLastDenseCommitted();
-        buffer.keySet()
+        List<Long> committed = buffer.keySet()
                 .stream()
                 .filter(txID -> txID <= lastDenseCommittedTxId)
-                .collect(Collectors.toList())
-                .stream()
-                .map(buffer::remove)
-                .forEach(this::callNotifyCommit);
+                .collect(Collectors.toList());
+        removeFromBufferAndCallNotifyCommit(committed);
     }
 
-    private void callNotifyCommit(TransactionData transactionData) {
-        CommittedOffset offset = committedOffsetMap.get(transactionData.getTopicPartition());
-        if (offset != null) {
-            offset.notifyCommit(transactionData.getOffset());
-        }
+    private void removeFromBufferAndCallNotifyCommit(List<Long> txIDs) {
+        txIDs.stream()
+                .map(buffer::remove)
+                .forEach(transactionData -> {
+                    CommittedOffset offset = committedOffsetMap.get(transactionData.getTopicPartition());
+                    if (offset != null) {
+                        offset.notifyCommit(transactionData.getOffset());
+                    }
+                });
     }
 }
