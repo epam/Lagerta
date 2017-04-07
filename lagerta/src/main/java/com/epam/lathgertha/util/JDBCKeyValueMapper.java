@@ -128,10 +128,8 @@ public final class JDBCKeyValueMapper {
             for (String fieldName : columnValues.keySet()) {
                 Object value = columnValues.get(fieldName);
                 Field declaredField = targetClass.getDeclaredField(fieldName);
-                boolean wasAccessible = declaredField.isAccessible();
                 declaredField.setAccessible(true);
                 declaredField.set(targetObject, value);
-                declaredField.setAccessible(wasAccessible);
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchFieldException e) {
             throw new RuntimeException("Can not create new instance of " + targetClass.getSimpleName(), e);
