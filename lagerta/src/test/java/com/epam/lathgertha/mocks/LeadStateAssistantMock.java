@@ -20,7 +20,7 @@ import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
 import com.epam.lathgertha.subscriber.lead.Lead;
 import com.epam.lathgertha.subscriber.lead.LeadStateAssistant;
 
-public class LeadStateMockAssistant implements LeadStateAssistant {
+public class LeadStateAssistantMock implements LeadStateAssistant {
     @Override
     public void saveState(Lead lead) {
     }

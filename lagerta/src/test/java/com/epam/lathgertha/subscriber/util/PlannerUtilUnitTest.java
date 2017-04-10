@@ -57,7 +57,8 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        transactions.setReadyAndPrune(EMPTY_COMMITTED);
+        transactions.makeReady();
+        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
         assertEquals(plan, expected);
     }
@@ -214,7 +215,8 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(list(0L));
         committed.compress();
-        transactions.setReadyAndPrune(committed);
+        transactions.makeReady();
+        transactions.pruneCommitted(committed);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
@@ -231,7 +233,8 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
-        transactions.setReadyAndPrune(committed);
+        transactions.makeReady();
+        transactions.pruneCommitted(committed);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 

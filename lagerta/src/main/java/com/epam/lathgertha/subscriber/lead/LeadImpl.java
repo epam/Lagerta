@@ -99,12 +99,16 @@ public class LeadImpl extends Scheduler implements Lead {
      */
     @Override
     public void updateState(CommittedTransactions newCommitted) {
-        LOGGER.info("[L] initialized {}", newCommitted);
-        pushTask(() -> committed.addAll(newCommitted));
-        pushTask(() -> readTransactions.setReadyAndPrune(committed));
+        LOGGER.info("[L] loaded {}", newCommitted);
+        pushTask(() -> {
+            committed.addAll(newCommitted);
+            readTransactions.makeReady();
+            readTransactions.pruneCommitted(committed);
+        });
     }
 
     private void plan() {
+        // return not committed duplicates
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         if (!ready.isEmpty()) {
             LOGGER.trace("[L] Planned {}", ready);

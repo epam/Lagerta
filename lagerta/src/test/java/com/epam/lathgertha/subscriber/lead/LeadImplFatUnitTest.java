@@ -17,11 +17,10 @@
 package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.mocks.LeadStateAssistantMock;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -33,13 +32,12 @@ import java.util.concurrent.TimeUnit;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
-import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
 
     private static final long TIMEOUT = 1000L;
 
-    private static final LeadStateAssistant MOCK_STATE_ASSISTANT = mock(LeadStateAssistant.class);
+    private static final LeadStateAssistant MOCK_STATE_ASSISTANT = new LeadStateAssistantMock();
 
     private static final UUID A = UUID.randomUUID();
     private static final UUID B = UUID.randomUUID();
@@ -49,22 +47,56 @@ public class LeadImplFatUnitTest {
 
     private LeadImpl lead;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ReadTransactions read = new ReadTransactions();
-        CommittedTransactions committed = new CommittedTransactions();
-        lead = new LeadImpl(MOCK_STATE_ASSISTANT, read, committed);
-        lead.updateState(committed);
+    private void startDefaultLead() {
+        lead = new LeadImpl(MOCK_STATE_ASSISTANT, new ReadTransactions(), CommittedTransactions.createNotReady());
+        ForkJoinPool.commonPool().submit(() -> lead.execute());
+    }
+
+    private void startConfiguredLead(LeadStateAssistant assistant, CommittedTransactions committed) {
+        lead = new LeadImpl(assistant, new ReadTransactions(), committed);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    public void tearDown() {
         lead.stop();
+    }
+
+    @Test
+    public void compressDuplicateTransactions() {
+        LeadStateAssistant assistant = new LeadStateAssistant() {
+            @Override
+            public void saveState(Lead lead) {
+            }
+
+            @Override
+            public void load(Lead lead) {
+                CommittedTransactions newCommitted = new CommittedTransactions();
+                newCommitted.addAll(list(0L, 1L, 2L, 4L, 5L));
+                newCommitted.compress();
+                lead.updateState(newCommitted);
+            }
+        };
+        startConfiguredLead(assistant, CommittedTransactions.createNotReady());
+
+        List<TransactionScope> aScope = list(
+                txScope(0, cacheScope(CACHE2, 1L)),
+                txScope(2, cacheScope(CACHE2, 1L, 2L)),
+                txScope(3, cacheScope(CACHE1, 2L)),
+                txScope(5, cacheScope(CACHE1, 1L)));
+        List<TransactionScope> bScope = list(
+                txScope(1, cacheScope(CACHE2, 1L)),
+                txScope(4, cacheScope(CACHE1, 1L)));
+
+        notifyRead(B, bScope);
+        notifyCommitted(A, list(0L, 1L, 2L));
+        notifyRead(A, aScope);
+        assertPlanned(A, list(3L));
     }
 
     @Test(timeOut = TIMEOUT)
     public void regressionTestOnBlockedTransactionsLogicInPlanner() {
+        startDefaultLead();
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
                 txScope(2, cacheScope(CACHE2, 1L, 2L)));
@@ -80,6 +112,7 @@ public class LeadImplFatUnitTest {
     // (0 -> 2) + (1 -> 2)
     @Test(timeOut = TIMEOUT)
     public void sequenceBlockedFromOutside() {
+        startDefaultLead();
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
                 txScope(2, cacheScope(CACHE2, 1L, 2L)));
@@ -102,6 +135,7 @@ public class LeadImplFatUnitTest {
     //      + (9 -> 10 -> 11) + (12 -> 14) + (13 -> 14)
     @Test(timeOut = TIMEOUT)
     public void forksJoinsAndBlockedPaths() {
+        startDefaultLead();
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE1, 1L)),
                 txScope(1, cacheScope(CACHE1, 1L, 2L)),
