@@ -89,7 +89,7 @@ public class LeadImpl extends Scheduler implements Lead {
     @Override
     public void updateState(CommittedTransactions newCommitted) {
         pushTask(() -> committed.addAll(newCommitted));
-        pushTask(readTransactions::setReady);
+        pushTask(() -> readTransactions.setReadyAndPrune(committed));
     }
 
     private void plan() {
