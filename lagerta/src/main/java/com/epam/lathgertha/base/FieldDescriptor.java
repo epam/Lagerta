@@ -15,11 +15,12 @@
  */
 package com.epam.lathgertha.base;
 
-import com.epam.lathgertha.base.jdbc.committer.JDBCTransformer;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public interface FieldDescriptor {
 
-    String getName();
+    int getIndex();
 
-    JDBCTransformer transform(int index);
+    void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException;
 }

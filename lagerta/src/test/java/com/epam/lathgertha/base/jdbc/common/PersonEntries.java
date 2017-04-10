@@ -15,22 +15,18 @@
  */
 package com.epam.lathgertha.base.jdbc.common;
 
-import com.epam.lathgertha.base.CacheInBaseDescriptor;
+import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.base.FieldDescriptor;
-import com.epam.lathgertha.base.jdbc.committer.BaseMapper;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
-import com.epam.lathgertha.base.jdbc.committer.JDBCTransformer;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
 
 import javax.sql.rowset.serial.SerialBlob;
 import java.nio.ByteBuffer;
 import java.sql.Blob;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -60,14 +56,13 @@ public class PersonEntries {
     }
 
     public static JDBCCommitter getPersonOnlyJDBCCommitter(String dbUrl) {
-        return new JDBCCommitter(Collections.singletonList(PersonEntries.getPersonCacheInBaseDescriptor()),
-                Collections.singletonList(PersonEntries.getPersonMapper(Person.PERSON_CACHE)), dbUrl, "", "");
+        Map<String, EntityDescriptor> personEntityDescriptor = Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
+        return new JDBCCommitter(personEntityDescriptor, dbUrl, "", "");
     }
 
     public static List<String> getPersonColumns() {
-        return getPersonFieldDescriptor().values()
+        return getPersonFieldDescriptor().keySet()
                 .stream()
-                .map(FieldDescriptor::getName)
                 .collect(Collectors.toList());
     }
 
@@ -80,118 +75,61 @@ public class PersonEntries {
         return personFieldsDescriptor;
     }
 
-    public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor() {
-        return getPersonCacheInBaseDescriptor(Person.PERSON_CACHE);
-    }
-
-    public static CacheInBaseDescriptor getPersonCacheInBaseDescriptor(String cacheName) {
-        CacheInBaseDescriptor personMapper = new CacheInBaseDescriptor(cacheName, Person.PERSON_TABLE,
-                new ArrayList<FieldDescriptor>(getPersonFieldDescriptor().values()));
-        return personMapper;
-    }
-
-    public static BaseMapper getPersonMapper(String cacheName) {
-        return new PersonMapper(cacheName);
+    public static EntityDescriptor getPersonEntityDescriptor() {
+        return new EntityDescriptor<>(Person.class, getPersonFieldDescriptor(), Person.PERSON_TABLE, Person.PERSON_KEY);
     }
 
     private static FieldDescriptor PERSON_ID_DESCRIPTOR = new FieldDescriptor() {
+
         @Override
-        public String getName() {
-            return Person.PERSON_ID;
+        public int getIndex() {
+            return Person.PERSON_ID_INDEX;
         }
 
         @Override
-        public JDBCTransformer transform(int index) {
-            return (o, preparedStatement) -> preparedStatement.setObject(index, Integer.valueOf(o.toString()));
+        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setInt(getIndex(), (Integer) object);
         }
     };
 
     private static FieldDescriptor PERSON_NAME_DESCRIPTOR = new FieldDescriptor() {
+
         @Override
-        public String getName() {
-            return Person.PERSON_NAME;
+        public int getIndex() {
+            return Person.PERSON_NAME_INDEX;
         }
 
         @Override
-        public JDBCTransformer transform(int index) {
-            return (o, preparedStatement) -> preparedStatement.setString(index, o.toString());
+        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setString(getIndex(), (String) object);
         }
+
     };
 
     private static FieldDescriptor PERSON_VAL_DESCRIPTOR = new FieldDescriptor() {
-        private SerializerImpl serializer = new SerializerImpl();
 
         @Override
-        public String getName() {
-            return Person.PERSON_VAL;
+        public int getIndex() {
+            return Person.PERSON_VAL_INDEX;
         }
 
         @Override
-        public JDBCTransformer transform(int index) {
-            return (o, preparedStatement) -> {
-                try {
-                    preparedStatement.setBlob(index, new SerialBlob(serializer.serialize(o).array()));
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            };
+        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setBlob(getIndex(), new SerialBlob(SERIALIZER.serialize(object).array()));
         }
     };
 
     private static FieldDescriptor PERSON_KEY_DESCRIPTOR = new FieldDescriptor() {
+
         @Override
-        public String getName() {
-            return Person.PERSON_KEY;
+        public int getIndex() {
+            return Person.PERSON_KEY_INDEX;
         }
 
         @Override
-        public JDBCTransformer transform(int index) {
-            return (o, preparedStatement) -> preparedStatement.setInt(index, Integer.valueOf(o.toString()));
+        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setInt(getIndex(), (Integer) object);
         }
+
     };
-
-    private static class PersonMapper implements BaseMapper {
-        private final String cacheName;
-
-        public PersonMapper(String cacheName) {
-            this.cacheName = cacheName;
-        }
-
-        @Override
-        public String getCacheName() {
-            return cacheName;
-        }
-
-        private static String getParametersTemplate(int count) {
-            List<String> buf = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                buf.add("?");
-            }
-            return String.join(",", buf);
-        }
-
-        @Override
-        public PreparedStatement insertUpdateStatement(Connection connection, String tableName,
-                                                       List<FieldDescriptor> fieldDescriptor) throws SQLException {
-            String fieldsName = String.join(",", getPersonColumns());
-            String parametersTemplate = getParametersTemplate(fieldDescriptor.size());
-            String sql = "MERGE INTO " + tableName + " (" + fieldsName + ") KEY(" + Person.PERSON_KEY + ")" +
-                    "VALUES (" + parametersTemplate + ")";
-            return connection.prepareStatement(sql);
-        }
-
-        @Override
-        public void addValuesToBatch(PreparedStatement statement,
-                                     Map<String, Object> fieldValueMap) throws SQLException {
-            for (String fieldName : getPersonColumns()) {
-                int index = getPersonColumns().indexOf(fieldName) + 1;
-                statement.setObject(index, null);
-                Object value = fieldValueMap.get(fieldName);
-                if (value != null) {
-                    getPersonFieldDescriptor().get(fieldName).transform(index).accept(value, statement);
-                }
-            }
-            statement.addBatch();
-        }
-    }
 }

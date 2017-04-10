@@ -26,6 +26,11 @@ public class Person implements Serializable {
     public static final String PERSON_ID = "id";
     public static final String PERSON_NAME = "name";
 
+    public static final int PERSON_ID_INDEX = 1;
+    public static final int PERSON_KEY_INDEX = 2;
+    public static final int PERSON_VAL_INDEX = 3;
+    public static final int PERSON_NAME_INDEX = 4;
+
     private final int id;
     private final String name;
 
