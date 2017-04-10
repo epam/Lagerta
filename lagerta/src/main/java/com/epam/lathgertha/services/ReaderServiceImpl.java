@@ -41,4 +41,9 @@ public class ReaderServiceImpl implements ReaderService {
         reader = context.getBean(Reader.class);
         reader.execute();
     }
+
+    @Override
+    public void resendReadTransactions() {
+        reader.resendReadTransactions();
+    }
 }

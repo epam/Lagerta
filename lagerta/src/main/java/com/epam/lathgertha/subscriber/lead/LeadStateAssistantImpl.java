@@ -17,6 +17,7 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
+import com.epam.lathgertha.services.ReaderService;
 import com.epam.lathgertha.util.Atomic;
 import com.epam.lathgertha.util.AtomicsHelper;
 import org.apache.ignite.Ignite;
@@ -53,6 +54,10 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
         asyncCompute
                 .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
+        ReaderService reader = ignite.services().service(ReaderService.NAME);
+        if (reader != null) {
+            reader.resendReadTransactions();
+        }
     }
 
     @IgniteAsyncSupported

@@ -90,6 +90,15 @@ public class Reader extends Scheduler {
         }
     }
 
+    public void resendReadTransactions() {
+        pushTask(() -> {
+            List<TransactionScope> collect = buffer.values().stream()
+                    .map(TransactionData::getTransactionScope)
+                    .collect(Collectors.toList());
+            approveAndCommitTransactionsBatch(collect);
+        });
+    }
+
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
         consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
