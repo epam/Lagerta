@@ -27,6 +27,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.SpringResource;
 
+import java.util.Collection;
+
 public class LeadStateAssistantImpl implements LeadStateAssistant {
 
     private static final String LEAD_STATE_CACHE = "leadStateCache";
@@ -54,10 +56,8 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
         asyncCompute
                 .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
-        ReaderService reader = ignite.services().service(ReaderService.NAME);
-        if (reader != null) {
-            reader.resendReadTransactions();
-        }
+        Collection<ReaderService> services = ignite.services().services(ReaderService.NAME);
+        services.forEach(ReaderService::resendReadTransactions);
     }
 
     @IgniteAsyncSupported
