@@ -29,6 +29,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
+
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
     private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
@@ -110,6 +114,7 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
+            LOGGER.trace("[R] {} polled {}", nodeId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
@@ -120,6 +125,8 @@ public class Reader extends Scheduler {
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
+            LOGGER.trace("[R] {} told to commit {}", nodeId, txIdsToCommit);
+
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(committed);
             removeFromBufferAndCallNotifyCommit(committed);

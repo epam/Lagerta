@@ -47,8 +47,8 @@ public class LeadServiceImpl implements LeadService {
     }
 
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
-        return lead.notifyRead(consumerId, txScopes);
+    public List<Long> notifyRead(UUID readerId, List<TransactionScope> txScopes) {
+        return lead.notifyRead(readerId, txScopes);
     }
 
     @Override
@@ -57,8 +57,8 @@ public class LeadServiceImpl implements LeadService {
     }
 
     @Override
-    public void notifyFailed(Long id) {
-        lead.notifyFailed(id);
+    public void notifyFailed(UUID readerId, Long id) {
+        lead.notifyFailed(readerId, id);
     }
 
     @Override

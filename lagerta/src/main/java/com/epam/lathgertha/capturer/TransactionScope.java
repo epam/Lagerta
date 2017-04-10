@@ -35,4 +35,9 @@ public class TransactionScope implements Serializable {
     public List<Map.Entry<String, List>> getScope() {
         return scope;
     }
+
+    @Override
+    public String toString() {
+        return "TX{" + transactionId + '}';
+    }
 }
