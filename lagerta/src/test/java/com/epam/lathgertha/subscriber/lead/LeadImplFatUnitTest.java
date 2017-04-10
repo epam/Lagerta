@@ -33,8 +33,11 @@ import java.util.function.BooleanSupplier;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
+import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
+
+    private static final LeadStateAssistantImpl MOCK_STATE_ASSISTANT = mock(LeadStateAssistantImpl.class);
 
     private static final UUID A = UUID.randomUUID();
     private static final UUID B = UUID.randomUUID();
@@ -51,9 +54,11 @@ public class LeadImplFatUnitTest {
     public void setUp() throws Exception {
         read = new ReadTransactions();
         commit = new CommittedTransactions();
+        commit.setReady();
         dynamicRule = new DynamicRule();
         dynamicRule.setPredicate(() -> true);
-        lead = new LeadImpl(read, commit);
+        lead = new LeadImpl(MOCK_STATE_ASSISTANT, read, commit);
+        lead.updateState(commit);
         lead.registerRule(dynamicRule);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }

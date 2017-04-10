@@ -47,7 +47,12 @@
     <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
           p:configuration-ref="ignite.cfg"/>
 
-    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
+    <bean id="stateAssistant" class="com.epam.lathgertha.subscriber.lead.LeadStateAssistantImpl" scope="prototype"
+          c:ignite-ref="ignite-bean"/>
+
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"
+          c:stateAssistant-ref="stateAssistant"/>
+
     <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
           c:ignite-ref="ignite-bean"
           c:kafkaFactory-ref="kafka-factory"
@@ -72,6 +77,7 @@
     <util:list id="caches">
         <ref bean="cache"/>
         <ref bean="binary-cache"/>
+        <ref bean="atomicCache"/>
     </util:list>
 
     <bean name="discovery-spi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -164,4 +170,6 @@
           p:backups="2"
           p:storeKeepBinary="true"
           p:cacheStoreFactory-ref="cache-store-factory"/>
+
+    <bean id="atomicCache" class="com.epam.lathgertha.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>

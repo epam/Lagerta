@@ -36,6 +36,7 @@ public class CommittedTransactionsUnitTest {
     @BeforeMethod
     public void setUp() {
         committed = new CommittedTransactions();
+        committed.setReady();
     }
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
