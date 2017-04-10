@@ -21,7 +21,6 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import com.google.common.util.concurrent.Uninterruptibles;
-import net.bytebuddy.implementation.bytecode.Throw;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
