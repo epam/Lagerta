@@ -114,7 +114,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private void mergeCollections(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
-        if (lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
+        if (!duplicatesPruningScheduled && lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
             MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
         } else {
             Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
