@@ -52,6 +52,8 @@ public class KafkaMockFactory implements KafkaFactory {
     private final SubscriberConfig config;
     private final Serializer serializer;
 
+    private int specifiedNumberOfNodes = -1;
+
     public KafkaMockFactory(KeyTransformer keyTransformer, ValueTransformer valueTransformer, SubscriberConfig config,
                             Serializer serializer) {
         this.keyTransformer = keyTransformer;
@@ -107,6 +109,11 @@ public class KafkaMockFactory implements KafkaFactory {
     }
 
     public InputProducer inputProducer(String topic, int partition) {
+        if (specifiedNumberOfNodes > 0) {
+            while (CONSUMERS.size() < specifiedNumberOfNodes) {
+                //waiting for Readers subscribing
+            }
+        }
         ProxyMockConsumer consumer = existingOpenedConsumers(topic).get(partition);
         return new InputProducer(keyTransformer, valueTransformer, consumer, new TopicPartition(topic, partition),
             serializer);
@@ -135,5 +142,9 @@ public class KafkaMockFactory implements KafkaFactory {
 
     public static void clearState() {
         CONSUMERS.clear();
+    }
+
+    public void setNumberOfNodes(int numberOfNodes) {
+        this.specifiedNumberOfNodes = numberOfNodes;
     }
 }
