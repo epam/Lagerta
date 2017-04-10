@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
@@ -48,12 +49,16 @@ public abstract class BaseFunctionalTest {
     @BeforeSuite
     public void initCluster() {
         CLUSTER_RESOURCE.setUp();
-        ignite = CLUSTER_RESOURCE.ignite();
     }
 
     @AfterSuite
     public void stopCluster() {
         CLUSTER_RESOURCE.tearDown();
+    }
+
+    @BeforeClass
+    public void getIgnite() {
+        ignite = CLUSTER_RESOURCE.ignite();
     }
 
     @BeforeMethod
