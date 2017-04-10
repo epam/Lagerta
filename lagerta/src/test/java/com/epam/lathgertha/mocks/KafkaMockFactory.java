@@ -20,6 +20,8 @@ import com.epam.lathgertha.capturer.ValueTransformer;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
+import com.google.common.util.concurrent.Uninterruptibles;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
@@ -37,6 +39,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -46,13 +49,14 @@ public class KafkaMockFactory implements KafkaFactory {
     private static final Queue<ProxyMockConsumer<?, ?>> CONSUMERS = new ConcurrentLinkedQueue<>();
 
     public static final int NUMBER_OF_PARTITIONS = 2;
+    public static final int READERS_SUBSCRIPTION_AWAITING_TIMEOUT = 100;
 
     private final KeyTransformer keyTransformer;
     private final ValueTransformer valueTransformer;
     private final SubscriberConfig config;
     private final Serializer serializer;
 
-    private int specifiedNumberOfNodes = -1;
+    private int specifiedNumberOfNodes;
 
     public KafkaMockFactory(KeyTransformer keyTransformer, ValueTransformer valueTransformer, SubscriberConfig config,
                             Serializer serializer) {
@@ -112,6 +116,7 @@ public class KafkaMockFactory implements KafkaFactory {
         if (specifiedNumberOfNodes > 0) {
             while (CONSUMERS.size() < specifiedNumberOfNodes) {
                 //waiting for Readers subscribing
+                Uninterruptibles.sleepUninterruptibly(READERS_SUBSCRIPTION_AWAITING_TIMEOUT, TimeUnit.MILLISECONDS);
             }
         }
         ProxyMockConsumer consumer = existingOpenedConsumers(topic).get(partition);
