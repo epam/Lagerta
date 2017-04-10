@@ -114,23 +114,97 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private void mergeCollections(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
-        if (!duplicatesPruningScheduled && lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
+        if (lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
             MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
         } else {
             Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
 
-            allTransactions
-                    .stream()
-                    .filter(scope -> diedReaders.contains(scope.getConsumerId()))
-                    .map(ConsumerTxScope::getTransactionId)
-                    .peek(inProgress::remove)
-                    .forEach(orphanTransactions::add);
-            diedReaders
-                    .stream()
-                    .peek(lostReaders::remove)
-                    .forEach(heartbeats::removeDead);
+            pruneDuplicates(heartbeats, diedReaders, lostReaders, inProgress);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
+    }
+
+    private void pruneDuplicates(
+            Heartbeats heartbeats,
+            Set<UUID> diedReaders,
+            Set<UUID> lostReaders,
+            Set<Long> inProgress
+    ) {
+        if (allTransactions.isEmpty()) {
+            return;
+        }
+        ListIterator<ConsumerTxScope> it = allTransactions.listIterator();
+        int encounteredLost = 0;
+        int encounteredDead = 0;
+        boolean aliveEncountered = false;
+        long txId = it.next().getTransactionId();
+
+        it.previous();
+        while (it.hasNext()) {
+            ConsumerTxScope scope = it.next();
+            long scopeTxId = scope.getTransactionId();
+            UUID consumerId = scope.getConsumerId();
+
+            if (scopeTxId != txId) {
+                if (encounteredDead != 0) {
+                    orphanTransactions.add(txId);
+                    inProgress.remove(txId);
+                }
+                encounteredLost = 0;
+                encounteredDead = 0;
+                aliveEncountered = false;
+                txId = scopeTxId;
+            }
+            boolean isAlive = !lostReaders.contains(consumerId) && !diedReaders.contains(consumerId);
+            boolean isLost = lostReaders.contains(consumerId);
+
+            if (isAlive) {
+                if (!aliveEncountered) {
+                    aliveEncountered = true;
+                    orphanTransactions.remove(txId);
+                    if (encounteredLost > 0 || encounteredDead > 0) {
+                        int backtrackSteps = encounteredDead + encounteredLost;
+                        while (backtrackSteps > 0) {
+                            ConsumerTxScope previous = it.previous();
+                            UUID previousId = previous.getConsumerId();
+
+                            if (lostReaders.contains(previousId)) {
+                                diedReaders.add(previousId);
+                                lostReaders.remove(previousId);
+                                heartbeats.removeDead(previousId);
+                            }
+                            it.remove();
+                            backtrackSteps--;
+                        }
+                        encounteredLost = 0;
+                        encounteredDead = 0;
+                    }
+                }
+            } else if (isLost) {
+                if (encounteredDead > 0) {
+                    orphanTransactions.remove(txId);
+                    while (encounteredDead > 0) {
+                        it.previous();
+                        it.remove();
+                        encounteredDead--;
+                    }
+                } else if (aliveEncountered) {
+                    diedReaders.add(consumerId);
+                    lostReaders.remove(consumerId);
+                    heartbeats.removeDead(consumerId);
+                    it.remove();
+                } else {
+                    encounteredLost++;
+                }
+            } else {
+                if (encounteredLost > 0 || aliveEncountered) {
+                    it.remove();
+                } else {
+                    encounteredDead++;
+                }
+                diedReaders.add(consumerId);
+            }
+        }
     }
 
     private Set<UUID> mergeWithDeduplication(Set<UUID> lostReaders, List<ConsumerTxScope> mergedBuffer) {
