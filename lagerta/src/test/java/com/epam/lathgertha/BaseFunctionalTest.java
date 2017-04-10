@@ -36,8 +36,9 @@ public abstract class BaseFunctionalTest {
     protected final String CACHE_NAME = "someCache";
     protected static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
             new AppContextOneProcessClusterManager("/com/epam/lathgertha/functional/config.xml");
+    private static final int NUMBER_OF_NODES = 2;
     private static final IgniteClusterResource CLUSTER_RESOURCE =
-            new IgniteClusterResource(2, CLUSTER_MANAGER);
+            new IgniteClusterResource(NUMBER_OF_NODES, CLUSTER_MANAGER);
 
     protected KafkaMockFactory kafkaMockFactory;
     protected Ignite ignite;
@@ -58,6 +59,7 @@ public abstract class BaseFunctionalTest {
     @BeforeMethod
     public void setUp() {
         kafkaMockFactory = CLUSTER_MANAGER.getBean(KafkaMockFactory.class);
+        kafkaMockFactory.setNumberOfNodes(NUMBER_OF_NODES);
     }
 
     @AfterMethod
