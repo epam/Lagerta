@@ -16,6 +16,7 @@
 package com.epam.lathgertha.base;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public interface FieldDescriptor {
@@ -23,4 +24,6 @@ public interface FieldDescriptor {
     int getIndex();
 
     void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException;
+
+    Object getFieldValue(ResultSet resultSet) throws SQLException;
 }

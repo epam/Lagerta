@@ -31,12 +31,15 @@ public class Person implements Serializable {
     public static final int PERSON_VAL_INDEX = 3;
     public static final int PERSON_NAME_INDEX = 4;
 
-    private final int id;
-    private final String name;
+    private int id;
+    private String name;
 
     public Person(int id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public Person() {
     }
 
     public int getId() {

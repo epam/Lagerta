@@ -18,6 +18,7 @@ package com.epam.lathgertha.base.jdbc.common;
 import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.base.FieldDescriptor;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
+import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
 
@@ -60,6 +61,12 @@ public class PersonEntries {
         return new JDBCCommitter(personEntityDescriptor, dbUrl, "", "");
     }
 
+    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(String dbUrl) {
+        Map<String, EntityDescriptor> personEntityDescriptor =
+                Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
+        return new JDBCDataCapturerLoader(personEntityDescriptor, dbUrl, "", "");
+    }
+
     public static List<String> getPersonColumns() {
         return getPersonFieldDescriptor().keySet()
                 .stream()
@@ -88,7 +95,16 @@ public class PersonEntries {
 
         @Override
         public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setInt(getIndex(), (Integer) object);
+            if (object == null) {
+                preparedStatement.setObject(getIndex(), null);
+            } else {
+                preparedStatement.setInt(getIndex(), (Integer) object);
+            }
+        }
+
+        @Override
+        public Object getFieldValue(ResultSet resultSet) throws SQLException {
+            return resultSet.getInt(getIndex());
         }
     };
 
@@ -101,7 +117,16 @@ public class PersonEntries {
 
         @Override
         public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(getIndex(), (String) object);
+            if (object == null) {
+                preparedStatement.setObject(getIndex(), null);
+            } else {
+                preparedStatement.setString(getIndex(), (String) object);
+            }
+        }
+
+        @Override
+        public Object getFieldValue(ResultSet resultSet) throws SQLException {
+            return resultSet.getString(getIndex());
         }
 
     };
@@ -115,7 +140,21 @@ public class PersonEntries {
 
         @Override
         public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setBlob(getIndex(), new SerialBlob(SERIALIZER.serialize(object).array()));
+            if (object == null) {
+                preparedStatement.setObject(getIndex(), null);
+            } else {
+                preparedStatement.setBlob(getIndex(), new SerialBlob(SERIALIZER.serialize(object).array()));
+            }
+        }
+
+        @Override
+        public Object getFieldValue(ResultSet resultSet) throws SQLException {
+            Blob blob = resultSet.getBlob(getIndex());
+            if (blob != null) {
+                ByteBuffer wrap = ByteBuffer.wrap(blob.getBytes(0, (int) blob.length()));
+                return SERIALIZER.deserialize(wrap);
+            }
+            return null;
         }
     };
 
@@ -128,8 +167,16 @@ public class PersonEntries {
 
         @Override
         public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setInt(getIndex(), (Integer) object);
+            if (object == null) {
+                preparedStatement.setObject(getIndex(), null);
+            } else {
+                preparedStatement.setInt(getIndex(), (Integer) object);
+            }
         }
 
+        @Override
+        public Object getFieldValue(ResultSet resultSet) throws SQLException {
+            return resultSet.getInt(getIndex());
+        }
     };
 }

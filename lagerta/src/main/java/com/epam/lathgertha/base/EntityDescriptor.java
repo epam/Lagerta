@@ -65,24 +65,23 @@ public class EntityDescriptor<T> {
         for (String fieldName : this.fieldDescriptors.keySet()) {
             Object valueForField = parametersValue.get(fieldName);
             FieldDescriptor fieldDescriptor = this.fieldDescriptors.get(fieldName);
-            if (valueForField == null) {
-                statement.setObject(fieldDescriptor.getIndex(), null);
-            } else {
-                fieldDescriptor.setValueInStatement(valueForField, statement);
-            }
+            fieldDescriptor.setValueInStatement(valueForField, statement);
         }
         statement.addBatch();
     }
 
-    T transform(ResultSet resultSet) throws Exception {
-        ResultSetMetaData rsmd = resultSet.getMetaData();
-        Map<String, Object> resultMap = new HashMap<>(rsmd.getColumnCount());
+    public T transform(ResultSet resultSet) throws Exception {
+        if (!resultSet.isBeforeFirst()) {
+            // empty resultSet
+            return null;
+        }
         resultSet.next();
         if (!resultSet.isLast()) {
             throw new RuntimeException("Result should be only one row for key");
         }
-        for (String fieldName : fieldDescriptors.keySet()) {
-            resultMap.put(fieldName, resultSet.getObject(fieldName));
+        Map<String, Object> resultMap = new HashMap<>(fieldDescriptors.size());
+        for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
+            resultMap.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
         }
         return JDBCKeyValueMapper.getObject(resultMap, clazz);
     }

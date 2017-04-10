@@ -126,6 +126,9 @@ public final class JDBCKeyValueMapper {
         try {
             targetObject = constructor.newInstance();
             for (String fieldName : columnValues.keySet()) {
+                if (fieldName.equalsIgnoreCase(KEY_FIELD_NAME) || fieldName.equalsIgnoreCase(VAL_FIELD_NAME)) {
+                    continue;
+                }
                 Object value = columnValues.get(fieldName);
                 Field declaredField = targetClass.getDeclaredField(fieldName);
                 declaredField.setAccessible(true);

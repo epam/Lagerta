@@ -1,0 +1,68 @@
+/*
+ * Copyright (c) 2017. EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.lathgertha.capturer;
+
+import com.epam.lathgertha.base.EntityDescriptor;
+
+import javax.cache.integration.CacheLoaderException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
+
+public class JDBCDataCapturerLoader implements DataCapturerLoader {
+    private final Map<String, EntityDescriptor> entityDescriptors;
+    private final String dbUrl;
+    private final String dbUser;
+    private final String dbPassword;
+
+    public JDBCDataCapturerLoader(Map<String, EntityDescriptor> entityDescriptors, String dbUrl, String dbUser, String dbPassword) {
+        this.dbUrl = dbUrl;
+        this.dbUser = dbUser;
+        this.dbPassword = dbPassword;
+        this.entityDescriptors = entityDescriptors;
+    }
+
+    @Override
+    public Object load(String cacheName, Object key) {
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+            EntityDescriptor entityDescriptor = entityDescriptors.get(cacheName);
+            if (entityDescriptor == null) {
+                //todo support
+                throw new RuntimeException("Not found entityDescriptor for cache: " + cacheName);
+            }
+            PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
+            statement.setObject(1, key);
+            ResultSet resultSet = statement.executeQuery();
+            Object result = entityDescriptor.transform(resultSet);
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public <K, V> Map<K, V> loadAll(String cacheName, Iterable<? extends K> keys) throws CacheLoaderException {
+        Map<K, V> result = new HashMap<K, V>();
+        for (K key : keys) {
+            result.put(key, (V) load(cacheName, key));
+        }
+        return result;
+    }
+}
