@@ -80,13 +80,9 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
             LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
             Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
             Long lastDense = atomic.get();
-            if (lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID) {
-                return loader.loadCommitsAfter(lastDense);
-            } else {
-                CommittedTransactions committed = new CommittedTransactions();
-                committed.setReady();
-                return committed;
-            }
+            return lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID
+                    ? loader.loadCommitsAfter(lastDense)
+                    : new CommittedTransactions();
         }
     }
 }

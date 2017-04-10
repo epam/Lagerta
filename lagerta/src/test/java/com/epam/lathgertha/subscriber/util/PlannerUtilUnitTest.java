@@ -57,7 +57,6 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        committed.setReady();
         transactions.setReady();
         Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
         assertEquals(plan, expected);

@@ -27,8 +27,6 @@ public class LeadStateMockAssistant implements LeadStateAssistant {
 
     @Override
     public void load(Lead lead) {
-        CommittedTransactions committed = new CommittedTransactions();
-        committed.setReady();
-        lead.updateState(committed);
+        lead.updateState(new CommittedTransactions());
     }
 }

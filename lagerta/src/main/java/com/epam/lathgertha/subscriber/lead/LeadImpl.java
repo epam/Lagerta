@@ -50,7 +50,7 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     public LeadImpl(LeadStateAssistant stateAssistant) {
-        this(stateAssistant, new ReadTransactions(), new CommittedTransactions());
+        this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady());
     }
 
     /**
