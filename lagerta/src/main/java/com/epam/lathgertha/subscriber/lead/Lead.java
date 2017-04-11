@@ -25,7 +25,7 @@ public interface Lead {
     /**
      * notifies lead that transactions has been read
      *
-     * @param readerId id of consumer node
+     * @param readerId id of Reader
      * @param scopes   sorted transaction scopes read by the consumer
      * @return transactions ids that can be committed
      */
@@ -34,9 +34,10 @@ public interface Lead {
     /**
      * notifies lead that transactions has been committed
      *
-     * @param ids sorted list of committed ids
+     * @param readerId id of Reader
+     * @param ids      sorted list of committed ids
      */
-    void notifyCommitted(List<Long> ids);
+    void notifyCommitted(UUID readerId, List<Long> ids);
 
     void notifyFailed(UUID readerId, Long id);
 

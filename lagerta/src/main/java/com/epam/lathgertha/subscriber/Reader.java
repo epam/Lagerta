@@ -139,7 +139,7 @@ public class Reader extends Scheduler {
             LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
 
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(committed);
+            lead.notifyCommitted(readerId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
     }

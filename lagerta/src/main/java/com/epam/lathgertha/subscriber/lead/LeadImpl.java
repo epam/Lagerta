@@ -77,7 +77,8 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void notifyCommitted(List<Long> ids) {
+    public void notifyCommitted(UUID readerId, List<Long> ids) {
+        LOGGER.trace("[L] notify committed from {} -> {} ", readerId, ids);
         pushTask(() -> {
             committed.addAll(ids);
             inProgress.removeAll(ids);
@@ -98,6 +99,7 @@ public class LeadImpl extends Scheduler implements Lead {
      */
     @Override
     public void updateState(CommittedTransactions newCommitted) {
+        LOGGER.info("[L] initialized {}", newCommitted);
         pushTask(() -> committed.addAll(newCommitted));
         pushTask(() -> readTransactions.setReadyAndPrune(committed));
     }

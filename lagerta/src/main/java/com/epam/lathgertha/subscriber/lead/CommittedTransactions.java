@@ -89,4 +89,9 @@ public class CommittedTransactions implements Serializable {
         MergeUtil.mergeCollections(sparseCommitted, toMerge, Long::compare);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
     }
+
+    @Override
+    public String toString() {
+        return "Committed{" + lastDenseCommit + " -> " + sparseCommitted + '}';
+    }
 }

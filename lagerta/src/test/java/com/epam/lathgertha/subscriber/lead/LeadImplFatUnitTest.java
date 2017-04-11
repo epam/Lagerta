@@ -102,9 +102,9 @@ public class LeadImplFatUnitTest {
                 () -> notifyRead(A, aScope),
                 () -> notifyRead(B, bScope),
                 () -> assertEquals(notifyRead(A, list()), list(0L)),
-                () -> notifyCommitted(list(0L)),
+                () -> notifyCommitted(A, list(0L)),
                 () -> assertEquals(notifyRead(B, list()), list(1L)),
-                () -> notifyCommitted(list(1L)),
+                () -> notifyCommitted(B, list(1L)),
                 () -> assertEquals(notifyRead(A, list()), list(2L)));
     }
 
@@ -138,19 +138,19 @@ public class LeadImplFatUnitTest {
         applyStatements(
                 () -> notifyRead(A, aScope),
                 () -> notifyRead(B, bScope),
-                () -> notifyCommitted(list()),
+                () -> notifyCommitted(A, list()),
                 () -> assertEquals(notifyRead(B, list()), list(13L)),
                 () -> assertEquals(notifyRead(B, list()), list()),
                 () -> assertEquals(notifyRead(A, list()), expectedFirstCommits),
                 () -> assertEquals(notifyRead(A, list()), list()),
-                () -> notifyCommitted(list(13L)),
+                () -> notifyCommitted(B, list(13L)),
                 () -> assertEquals(notifyRead(B, list()), list()),
-                () -> notifyCommitted(expectedFirstCommits),
+                () -> notifyCommitted(A, expectedFirstCommits),
                 () -> assertEquals(notifyRead(A, list()), list()),
                 () -> assertEquals(notifyRead(B, list()), list(10L)),
-                () -> notifyCommitted(list(10L)),
+                () -> notifyCommitted(B, list(10L)),
                 () -> assertEquals(notifyRead(A, list()), list(11L)),
-                () -> notifyCommitted(list(11L)),
+                () -> notifyCommitted(A, list(11L)),
                 () -> Assert.assertTrue(commit.getLastDenseCommit() == 14L)
         );
     }
@@ -166,8 +166,8 @@ public class LeadImplFatUnitTest {
         return lead.notifyRead(uuid, scope);
     }
 
-    private void notifyCommitted(List<Long> committed) {
-        lead.notifyCommitted(committed);
+    private void notifyCommitted(UUID readerId, List<Long> committed) {
+        lead.notifyCommitted(readerId, committed);
         dynamicRule.setPredicate(() -> committed.isEmpty() ||
                 committed.stream().anyMatch(commit::contains));
     }
