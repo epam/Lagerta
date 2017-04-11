@@ -25,5 +25,5 @@ public interface FieldDescriptor {
 
     void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException;
 
-    Object getFieldValue(ResultSet resultSet) throws SQLException;
+    Object getFieldValue(ResultSet resultSet);
 }

@@ -20,7 +20,6 @@ import com.epam.lathgertha.util.JDBCKeyValueMapper;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +48,9 @@ public class EntityDescriptor<T> {
         //todo need customization sql syntax issues #95
         upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + keyField + ")" +
                 " VALUES (" + maskFields + ")";
-        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE " + keyField + " = ?";
+        // specific IN semantic for h2
+        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE " + keyField +
+                " in (select * from table(x int = ?))";
     }
 
     public String getUpsertQuery() {
@@ -69,19 +70,16 @@ public class EntityDescriptor<T> {
         statement.addBatch();
     }
 
-    public T transform(ResultSet resultSet) throws Exception {
-        if (!resultSet.isBeforeFirst()) {
-            // empty resultSet
-            return null;
+    public Map<Object, T> transform(ResultSet resultSet) throws Exception {
+        Map<Object, T> result = new HashMap<>();
+        while (resultSet.next()) {
+            Map<String, Object> objectParameters = new HashMap<>(fieldDescriptors.size());
+            for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
+                objectParameters.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
+            }
+            JDBCKeyValueMapper.KeyAndValue<T> keyAndValue = JDBCKeyValueMapper.getObject(objectParameters, clazz);
+            result.put(keyAndValue.getKey(), keyAndValue.getValue());
         }
-        resultSet.next();
-        if (!resultSet.isLast()) {
-            throw new RuntimeException("Result should be only one row for key");
-        }
-        Map<String, Object> resultMap = new HashMap<>(fieldDescriptors.size());
-        for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
-            resultMap.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
-        }
-        return JDBCKeyValueMapper.getObject(resultMap, clazz);
+        return result;
     }
 }

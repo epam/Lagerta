@@ -103,8 +103,12 @@ public class PersonEntries {
         }
 
         @Override
-        public Object getFieldValue(ResultSet resultSet) throws SQLException {
-            return resultSet.getInt(getIndex());
+        public Object getFieldValue(ResultSet resultSet) {
+            try {
+                return resultSet.getInt(getIndex());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     };
 
@@ -125,8 +129,12 @@ public class PersonEntries {
         }
 
         @Override
-        public Object getFieldValue(ResultSet resultSet) throws SQLException {
-            return resultSet.getString(getIndex());
+        public Object getFieldValue(ResultSet resultSet) {
+            try {
+                return resultSet.getString(getIndex());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     };
 
@@ -147,13 +155,17 @@ public class PersonEntries {
         }
 
         @Override
-        public Object getFieldValue(ResultSet resultSet) throws SQLException {
-            Blob blob = resultSet.getBlob(getIndex());
-            if (blob != null) {
-                ByteBuffer wrap = ByteBuffer.wrap(blob.getBytes(0, (int) blob.length()));
-                return SERIALIZER.deserialize(wrap);
+        public Object getFieldValue(ResultSet resultSet) {
+            try {
+                Blob blob = resultSet.getBlob(getIndex());
+                if (blob != null) {
+                    ByteBuffer wrap = ByteBuffer.wrap(blob.getBytes(0, (int) blob.length()));
+                    return SERIALIZER.deserialize(wrap);
+                }
+                return null;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-            return null;
         }
     };
 
@@ -174,8 +186,12 @@ public class PersonEntries {
         }
 
         @Override
-        public Object getFieldValue(ResultSet resultSet) throws SQLException {
-            return resultSet.getInt(getIndex());
+        public Object getFieldValue(ResultSet resultSet) {
+            try {
+                return resultSet.getInt(getIndex());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     };
 }

@@ -193,8 +193,8 @@ public class JDBCKeyValueMapperUnitTest {
 
     @Test(dataProvider = CORRECT_PARAMS_PROVIDER)
     public <T> void createFromMapWithCorrectParams(Map<String, Object> params, Class<T> clazz, T expectedObject) {
-        T actualObject = JDBCKeyValueMapper.getObject(params, clazz);
-        assertEquals(expectedObject, actualObject);
+        JDBCKeyValueMapper.KeyAndValue<T> actualObject = JDBCKeyValueMapper.getObject(params, clazz);
+        assertEquals(expectedObject, actualObject.getValue());
     }
 
     @DataProvider(name = INCORRECT_PARAMS_PROVIDER)

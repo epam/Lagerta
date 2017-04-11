@@ -23,7 +23,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class JDBCDataCapturerLoader implements DataCapturerLoader {
@@ -45,9 +47,7 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
-            statement.setObject(1, key);
-            ResultSet resultSet = statement.executeQuery();
-            return entityDescriptor.transform(resultSet);
+            return loadMapResult(Collections.singletonList(key), entityDescriptor, statement).get(key);
         } catch (Exception e) {
             throw new CacheLoaderException(e);
         }
@@ -55,11 +55,21 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     @Override
     public <K, V> Map<K, V> loadAll(String cacheName, Iterable<? extends K> keys) throws CacheLoaderException {
-        Map<K, V> result = new HashMap<K, V>();
-        for (K key : keys) {
-            result.put(key, (V) load(cacheName, key));
+        EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+            PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
+            return loadMapResult(keys, entityDescriptor, statement);
+        } catch (Exception e) {
+            throw new CacheLoaderException(e);
         }
-        return result;
+    }
+
+    private <K, V> Map<K, V> loadMapResult(Iterable<? extends K> keys, EntityDescriptor entityDescriptor, PreparedStatement statement) throws Exception {
+        List<K> keysInList = new ArrayList<>();
+        keys.iterator().forEachRemaining(keysInList::add);
+        statement.setObject(1, keysInList.toArray());
+        ResultSet resultSet = statement.executeQuery();
+        return entityDescriptor.transform(resultSet);
     }
 
     private EntityDescriptor getEntityDescriptor(String cacheName) {
