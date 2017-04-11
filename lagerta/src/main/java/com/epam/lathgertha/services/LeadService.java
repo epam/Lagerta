@@ -24,11 +24,11 @@ import java.util.UUID;
 public interface LeadService extends Service {
     String NAME = "Lead";
 
-    List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes);
+    List<Long> notifyRead(UUID readerId, List<TransactionScope> txScopes);
 
-    void notifyCommitted(UUID consumerId, List<Long> ids);
+    void notifyCommitted(UUID readerId, List<Long> ids);
 
-    void notifyFailed(Long id);
+    void notifyFailed(UUID readerId, Long id);
 
     long getLastDenseCommitted();
 }

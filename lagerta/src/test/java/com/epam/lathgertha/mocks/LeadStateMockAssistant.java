@@ -13,12 +13,20 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.base.jdbc.committer;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+package com.epam.lathgertha.mocks;
 
-public interface JDBCTransformer {
+import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.Lead;
+import com.epam.lathgertha.subscriber.lead.LeadStateAssistant;
 
-    void accept(Object t, PreparedStatement u) throws SQLException;
+public class LeadStateMockAssistant implements LeadStateAssistant {
+    @Override
+    public void saveState(Lead lead) {
+    }
+
+    @Override
+    public void load(Lead lead) {
+        lead.updateState(new CommittedTransactions());
+    }
 }

@@ -16,6 +16,7 @@
 package com.epam.lathgertha.services;
 
 import com.epam.lathgertha.subscriber.Reader;
+import com.epam.lathgertha.subscriber.ReaderConfig;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.services.ServiceContext;
 import org.springframework.context.ApplicationContext;
@@ -28,7 +29,9 @@ public class ReaderServiceImpl implements ReaderService {
 
     @Override
     public void cancel(ServiceContext ctx) {
-        reader.stop();
+        if (reader != null) {
+            reader.stop();
+        }
     }
 
     @Override
@@ -38,7 +41,16 @@ public class ReaderServiceImpl implements ReaderService {
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
-        reader = context.getBean(Reader.class);
-        reader.execute();
+        if (context != null) {
+            reader = ReaderConfig.create(context).getBean(Reader.class);
+            reader.execute();
+        }
+    }
+
+    @Override
+    public void resendReadTransactions() {
+        if (reader != null) {
+            reader.resendReadTransactions();
+        }
     }
 }

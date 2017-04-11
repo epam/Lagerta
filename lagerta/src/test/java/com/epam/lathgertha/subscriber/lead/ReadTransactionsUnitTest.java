@@ -66,6 +66,7 @@ public class ReadTransactionsUnitTest {
     @BeforeMethod
     public void setUp() {
         read = new ReadTransactions();
+        read.setReadyAndPrune(COMMITTED);
         heartbeats = Mockito.mock(Heartbeats.class);
         Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
     }

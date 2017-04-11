@@ -16,9 +16,8 @@
 
 package com.epam.lathgertha;
 
-import com.epam.lathgertha.base.CacheInBaseDescriptor;
+import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.base.jdbc.JDBCUtil;
-import com.epam.lathgertha.base.jdbc.committer.BaseMapper;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
@@ -63,15 +62,10 @@ public abstract class BaseIntegrationTest {
 
     private static JDBCCommitter personJDBCCommitter() {
         String dbUrl = String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);
-        List<CacheInBaseDescriptor> cacheInBaseDescriptors = Arrays.asList(
-                PersonEntries.getPersonCacheInBaseDescriptor(BaseIntegrationTest.CACHE_NAME),
-                PersonEntries.getPersonCacheInBaseDescriptor(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME)
-        );
-        List<BaseMapper> mappers = Arrays.asList(
-                PersonEntries.getPersonMapper(BaseIntegrationTest.CACHE_NAME),
-                PersonEntries.getPersonMapper(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME)
-        );
-        return new JDBCCommitter(cacheInBaseDescriptors, mappers, dbUrl, "", "");
+        Map<String, EntityDescriptor> entityDescriptors = new HashMap<>(2);
+        entityDescriptors.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
+        entityDescriptors.put(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
+        return new JDBCCommitter(entityDescriptors, dbUrl, "", "");
     }
 
     public static String adjustTopicNameForTest(String topic) {

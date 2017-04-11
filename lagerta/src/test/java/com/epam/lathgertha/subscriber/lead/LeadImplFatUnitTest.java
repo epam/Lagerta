@@ -34,8 +34,11 @@ import java.util.function.BooleanSupplier;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
+import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
+
+    private static final LeadStateAssistantImpl MOCK_STATE_ASSISTANT = mock(LeadStateAssistantImpl.class);
 
     private static final UUID A = UUID.randomUUID();
     private static final UUID B = UUID.randomUUID();
@@ -56,7 +59,8 @@ public class LeadImplFatUnitTest {
         heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
         dynamicRule = new DynamicRule();
         dynamicRule.setPredicate(() -> true);
-        lead = new LeadImpl(read, commit, heartbeats);
+        lead = new LeadImpl(MOCK_STATE_ASSISTANT, read, commit, heartbeats);
+        lead.updateState(commit);
         lead.registerRule(dynamicRule);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
@@ -165,8 +169,8 @@ public class LeadImplFatUnitTest {
         return lead.notifyRead(uuid, scope);
     }
 
-    private void notifyCommitted(UUID consumerId, List<Long> committed) {
-        lead.notifyCommitted(consumerId, committed);
+    private void notifyCommitted(UUID readerId, List<Long> committed) {
+        lead.notifyCommitted(readerId, committed);
         dynamicRule.setPredicate(() -> committed.isEmpty() ||
                 committed.stream().anyMatch(commit::contains));
     }

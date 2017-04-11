@@ -37,14 +37,23 @@ import java.util.stream.StreamSupport;
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
             Comparator.comparingLong(ConsumerTxScope::getTransactionId);
-    private static final long INITIAL_READ_ID = -1L;
+    private static final long INITIAL_READY_READ_ID = -1L;
+    private static final long INITIAL_READ_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
 
-    private long lastDenseRead = INITIAL_READ_ID;
-    private List<List<ConsumerTxScope>> buffer = new ArrayList<>(INITIAL_CAPACITY);
+    private long lastDenseRead;
+    private List<List<ConsumerTxScope>> buffer;
     private boolean duplicatesPruningScheduled = false;
+
+    /**
+     * creates not ready process transactions
+     */
+    public ReadTransactions() {
+        lastDenseRead = INITIAL_READ_ID;
+        buffer = new ArrayList<>(INITIAL_CAPACITY);
+    }
 
     public long getLastDenseRead() {
         return lastDenseRead;
@@ -68,17 +77,17 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
+    public void addAllOnNode(UUID consumerId, List<TransactionScope> scopes) {
+        List<ConsumerTxScope> collect = scopes.stream()
+                .map(tx -> new ConsumerTxScope(consumerId, tx.getTransactionId(), tx.getScope()))
+                .collect(Collectors.toList());
+        buffer.add(collect);
+    }
+
     public void scheduleDuplicatesPruning() {
         if (!duplicatesPruningScheduled) {
             duplicatesPruningScheduled = true;
         }
-    }
-
-    public void addAllOnNode(UUID consumerId, List<TransactionScope> txScopes) {
-        List<ConsumerTxScope> collect = txScopes.stream()
-                .map(tx -> new ConsumerTxScope(consumerId, tx.getTransactionId(), tx.getScope()))
-                .collect(Collectors.toList());
-        buffer.add(collect);
     }
 
     @Override
@@ -90,6 +99,16 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             .filter(tx -> tx.getTransactionId() <= lastDenseRead)
             .distinct()
             .iterator();
+    }
+
+    /**
+     * makes this ready to process transactions and shifts lastDenseRead to proper id
+     */
+    public void setReadyAndPrune(CommittedTransactions committed) {
+        if (lastDenseRead == INITIAL_READ_ID) {
+            lastDenseRead = INITIAL_READY_READ_ID;
+            pruneCommitted(committed);
+        }
     }
 
     private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {

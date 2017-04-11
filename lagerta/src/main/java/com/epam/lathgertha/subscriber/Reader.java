@@ -29,6 +29,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
+
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
     private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
@@ -55,7 +59,7 @@ public class Reader extends Scheduler {
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
-    private final UUID nodeId;
+    private final UUID readerId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
 
@@ -63,19 +67,21 @@ public class Reader extends Scheduler {
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy) {
+                  CommitStrategy commitStrategy, UUID readerId) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL);
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
+                readerId);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
+                  UUID readerId) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = ignite.cluster().localNode().id();
+        this.readerId = readerId;
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -85,14 +91,24 @@ public class Reader extends Scheduler {
         registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer), commitToKafkaSupplier));
+            registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
         }
     }
 
+    public void resendReadTransactions() {
+        pushTask(() -> {
+            List<TransactionScope> collect = buffer.values().stream()
+                    .map(TransactionData::getTransactionScope)
+                    .collect(Collectors.toList());
+            approveAndCommitTransactionsBatch(collect);
+        });
+    }
+
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
         Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
-        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
+                new ReaderRebalanceListener(consumer, committedOffsetMap));
         return consumer;
     }
 
@@ -109,30 +125,26 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
+            LOGGER.trace("[R] {} polled {}", readerId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
+            LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
+
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(nodeId, committed);
-            committed.stream()
-                    .map(buffer::remove)
-                    .forEach(entry -> {
-                        CommittedOffset offset = committedOffsetMap.get(entry.getTopicPartition());
-                        if (offset != null) {
-                            offset.notifyCommit(entry.getOffset());
-                        }
-                    });
+            lead.notifyCommitted(readerId, committed);
+            removeFromBufferAndCallNotifyCommit(committed);
         }
     }
 
-    private void commitOffsets(Consumer consumer) {
+    static void commitOffsets(Consumer consumer, Map<TopicPartition, CommittedOffset> committedOffsetMap) {
         Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
                 .peek(entry -> entry.getValue().compress())
                 .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
@@ -145,6 +157,21 @@ public class Reader extends Scheduler {
 
     private void clearBuffer() {
         long lastDenseCommittedTxId = lead.getLastDenseCommitted();
-        buffer.entrySet().removeIf(next -> next.getKey() <= lastDenseCommittedTxId);
+        List<Long> committed = buffer.keySet()
+                .stream()
+                .filter(txID -> txID <= lastDenseCommittedTxId)
+                .collect(Collectors.toList());
+        removeFromBufferAndCallNotifyCommit(committed);
+    }
+
+    private void removeFromBufferAndCallNotifyCommit(List<Long> txIDs) {
+        txIDs.stream()
+                .map(buffer::remove)
+                .forEach(transactionData -> {
+                    CommittedOffset offset = committedOffsetMap.get(transactionData.getTopicPartition());
+                    if (offset != null) {
+                        offset.notifyCommit(transactionData.getOffset());
+                    }
+                });
     }
 }

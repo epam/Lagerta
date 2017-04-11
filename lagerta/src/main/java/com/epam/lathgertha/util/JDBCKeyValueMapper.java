@@ -18,6 +18,9 @@ package com.epam.lathgertha.util;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -29,6 +32,37 @@ public final class JDBCKeyValueMapper {
 
     static final String KEY_FIELD_NAME = "key";
     static final String VAL_FIELD_NAME = "val";
+
+    private static final Map<Class<?>, Class<?>> objectToPrimitiveMap = new HashMap<>();
+
+    static {
+        objectToPrimitiveMap.put(Integer.class, Integer.TYPE);
+        objectToPrimitiveMap.put(Short.class, Short.TYPE);
+        objectToPrimitiveMap.put(Byte.class, Byte.TYPE);
+        objectToPrimitiveMap.put(Float.class, Float.TYPE);
+        objectToPrimitiveMap.put(Double.class, Double.TYPE);
+        objectToPrimitiveMap.put(Long.class, Long.TYPE);
+        objectToPrimitiveMap.put(Boolean.class, Boolean.TYPE);
+        objectToPrimitiveMap.put(Character.class, Character.TYPE);
+    }
+
+    public static class KeyAndValue<V> {
+        private final Object key;
+        private final V value;
+
+        public KeyAndValue(Object key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public Object getKey() {
+            return key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+    }
 
     private JDBCKeyValueMapper() {
     }
@@ -83,5 +117,54 @@ public final class JDBCKeyValueMapper {
         boolean isDate = value instanceof Date;
 
         return !(isEnum || isNumber || isString || isDate);
+    }
+
+
+    public static <T> KeyAndValue<T> getObject(Map<String, Object> columnValues, Class<T> targetClass) {
+        Object val = columnValues.get(VAL_FIELD_NAME);
+        Object key = columnValues.get(KEY_FIELD_NAME);
+        if (val != null) {
+            if (getAsPrimitiveType(targetClass) == getAsPrimitiveType(val.getClass())) {
+                return new KeyAndValue<>(key, (T) val);
+            }
+            return new KeyAndValue<>(key, targetClass.cast(val));
+        } else {
+            return new KeyAndValue<>(key, getPOJOFromMapParams(columnValues, targetClass));
+        }
+    }
+
+    private static <T> T getPOJOFromMapParams(Map<String, Object> columnValues, Class<T> targetClass) {
+        Constructor<T> constructor = null;
+        try {
+            constructor = targetClass.getConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(
+                    "No found default constructor(without parameters) for class " + targetClass.getName() + " It should be public", e);
+        }
+        T targetObject;
+        try {
+            targetObject = constructor.newInstance();
+            for (Map.Entry<String, Object> columnNameAndValue : columnValues.entrySet()) {
+                String fieldName = columnNameAndValue.getKey();
+                if (KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName)) {
+                    continue;
+                }
+                Object value = columnNameAndValue.getValue();
+                Field declaredField = targetClass.getDeclaredField(fieldName);
+                declaredField.setAccessible(true);
+                declaredField.set(targetObject, value);
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchFieldException e) {
+            throw new RuntimeException("Can not create new instance of " + targetClass.getSimpleName(), e);
+        }
+        return targetObject;
+    }
+
+    private static Class getAsPrimitiveType(Class clazz) {
+        Class<?> o = objectToPrimitiveMap.get(clazz);
+        if (o == null) {
+            return clazz;
+        }
+        return o;
     }
 }

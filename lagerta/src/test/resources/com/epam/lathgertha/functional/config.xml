@@ -95,16 +95,10 @@ limitations under the License.
     <!--Internal config-->
     <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
 
-    <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
-          c:ignite-ref="ignite-bean"
-          c:kafkaFactory-ref="kafka-factory"
-          c:config-ref="subscriber-config"
-          c:serializer-ref="serializer"
-          c:commitStrategy-ref="commit-strategy"
-          c:commitToKafkaSupplier-ref="commitToKafkaCondition"
-          c:bufferClearTimeInterval="100"/>
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"
+          c:stateAssistant-ref="stateAssistant"/>
 
-    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
+    <bean id="stateAssistant" class="com.epam.lathgertha.mocks.LeadStateMockAssistant" scope="prototype"/>
 
     <bean id="inCacheCommitter" class="com.epam.lathgertha.subscriber.InCacheCommitter" scope="prototype"
           c:ignite-ref="ignite-bean"/>
@@ -116,15 +110,6 @@ limitations under the License.
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"
           c:ignite-ref="ignite-bean"/>
-
-    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor" scope="prototype"
-          c:serializer-ref="serializer"
-          c:committer-ref="inCacheCommitter"
-          c:kafkaLogCommitter-ref="InCacheKafkaLogCommitter"
-          c:ignite-ref="ignite-bean"/>
-
-    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy" scope="prototype"
-          c:commitServitor-ref="commit-servitor"/>
 
     <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
     <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>

@@ -28,11 +28,13 @@ import org.apache.ignite.binary.BinaryType;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -41,18 +43,36 @@ import java.util.stream.Stream;
 public class JDBCKeyValueMapperUnitTest {
     private static final String SHOULD_BE_SERIALIZED_PROVIDER = "shouldBeSerializedProvider";
     private static final String SHOULD_NOT_BE_SERIALIZED_PROVIDER = "shouldNotBeSerializedProvider";
+    private static final String CORRECT_PARAMS_PROVIDER = "correctParamsMap";
+    private static final String INCORRECT_PARAMS_PROVIDER = "incorrectParamsMap";
 
-    private static class TestEntry{
-        final int intField;
-        final String stringField;
-        final Object objectField;
-        final Collection collectionField;
+    private static class TestEntry {
+        private int intField;
+        private String stringField;
+        private Object objectField;
+        private Collection collectionField;
 
-        TestEntry(int intField, String stringField, Object objectField, Collection collectionField) {
+        public TestEntry() {
+        }
+
+        public TestEntry(int intField, String stringField, Object objectField, Collection collectionField) {
             this.intField = intField;
             this.stringField = stringField;
             this.objectField = objectField;
             this.collectionField = collectionField;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestEntry testEntry = (TestEntry) o;
+            if (intField != testEntry.intField) return false;
+            if (stringField != null ? !stringField.equals(testEntry.stringField) : testEntry.stringField != null)
+                return false;
+            if (objectField != null ? !objectField.equals(testEntry.objectField) : testEntry.objectField != null)
+                return false;
+            return collectionField != null ? collectionField.equals(testEntry.collectionField) : testEntry.collectionField == null;
         }
     }
 
@@ -130,5 +150,76 @@ public class JDBCKeyValueMapperUnitTest {
         Map<String, Object> actualResult = JDBCKeyValueMapper.keyValueMap(key, binaryValue);
 
         assertEquals(actualResult, expectedValues);
+    }
+
+    @DataProvider(name = CORRECT_PARAMS_PROVIDER)
+    public Object[][] provideCorrectParamsMap() {
+        Object expectedEntry = new TestEntry(1, "1", "Object", Collections.singletonList(1));
+        Map<String, Object> testEntryParams = new HashMap<>();
+        testEntryParams.put("intField", 1);
+        testEntryParams.put("stringField", "1");
+        testEntryParams.put("objectField", "Object");
+        testEntryParams.put("collectionField", Collections.singletonList(1));
+        Date expectedDate = new Date(System.currentTimeMillis());
+        return new Object[][]{
+                {testEntryParams, TestEntry.class, expectedEntry},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, expectedEntry), TestEntry.class, expectedEntry},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), Integer.class, 1},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), int.class, 1},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, (short) 1), Short.class, (short) 1},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, (short) 1), short.class, (short) 1},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1L), Long.class, 1L},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1L), long.class, 1L},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1F), Float.class, 1F},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1F), float.class, 1F},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), Double.class, 1D},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), double.class, 1D},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), TimeUnit.class, TimeUnit.DAYS},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "Hello"), String.class, "Hello"},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, expectedDate), Date.class, expectedDate},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, Collections.singletonList(1)),
+                        List.class, Collections.singletonList(1)},
+
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new ArrayList<>()),
+                        List.class, new ArrayList<>()},
+
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, Collections.singletonMap("Key", 1)),
+                        Map.class, Collections.singletonMap("Key", 1)},
+
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new HashMap<>()),
+                        Map.class, new HashMap<>()}
+        };
+    }
+
+    @Test(dataProvider = CORRECT_PARAMS_PROVIDER)
+    public <T> void createFromMapWithCorrectParams(Map<String, Object> params, Class<T> clazz, T expectedObject) {
+        JDBCKeyValueMapper.KeyAndValue<T> actualObject = JDBCKeyValueMapper.getObject(params, clazz);
+        assertEquals(expectedObject, actualObject.getValue());
+    }
+
+    @DataProvider(name = INCORRECT_PARAMS_PROVIDER)
+    public Object[][] provideIncorrectParamsMap() {
+        Map<String, Object> incorrectTestEntryParams = new HashMap<>();
+        incorrectTestEntryParams.put("notInt", 1);
+        incorrectTestEntryParams.put("NotString", "1");
+        incorrectTestEntryParams.put("buzz", "Object");
+        incorrectTestEntryParams.put("collectionField", Collections.singletonList(1));
+        return new Object[][]{
+                {incorrectTestEntryParams, TestEntry.class},
+                {Collections.<String, Object>singletonMap("f", 1), Integer.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), TestEntry.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new TestEntry()), String.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new TestEntry()), Date.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new Date()), TestEntry.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "hello"), TestEntry.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "1"), Integer.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), Integer.class},
+                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 6), TimeUnit.class}
+        };
+    }
+
+    @Test(dataProvider = INCORRECT_PARAMS_PROVIDER, expectedExceptions = RuntimeException.class)
+    public <T> void createFromMapWithIncorrectParams(Map<String, Object> params, Class<T> clazz) throws RuntimeException {
+        JDBCKeyValueMapper.getObject(params, clazz);
     }
 }
