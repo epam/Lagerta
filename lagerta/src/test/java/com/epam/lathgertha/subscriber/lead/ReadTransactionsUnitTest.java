@@ -65,10 +65,10 @@ public class ReadTransactionsUnitTest {
 
     @BeforeMethod
     public void setUp() {
-        read = new ReadTransactions();
-        read.setReadyAndPrune(COMMITTED);
-        heartbeats = Mockito.mock(Heartbeats.class);
         Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
+        read = new ReadTransactions();
+        read.setReadyAndPrune(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
+        heartbeats = Mockito.mock(Heartbeats.class);
     }
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
