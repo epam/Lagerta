@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SchedulerUnitTest {
 
-    @Test(timeOut = 1_000L)
+    private static final long TIME_OUT = 1_000L;
+
+    @Test(timeOut = TIME_OUT)
     public void allPushedTasksRan() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger i = new AtomicInteger(0);
