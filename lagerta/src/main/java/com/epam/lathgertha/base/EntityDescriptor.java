@@ -33,7 +33,8 @@ public class EntityDescriptor<T> {
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(Class<T> clazz, Map<String, FieldDescriptor> fieldDescriptors, String tableName, String keyField) {
+    public EntityDescriptor(Class<T> clazz, Map<String, FieldDescriptor> fieldDescriptors,
+                            String tableName, String keyField) {
         this.clazz = clazz;
         this.fieldDescriptors = fieldDescriptors;
         List<String> sortedColumns = fieldDescriptors.entrySet()
@@ -45,7 +46,7 @@ public class EntityDescriptor<T> {
         String maskFields = fieldDescriptors.entrySet().stream()
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
-        //todo need customization sql syntax
+        //todo need customization sql syntax issues #95
         upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + keyField + ")" +
                 " VALUES (" + maskFields + ")";
         selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE " + keyField + " = ?";
@@ -59,13 +60,11 @@ public class EntityDescriptor<T> {
         return selectQuery;
     }
 
-
     public void addValuesToBatch(Object key, Object value, PreparedStatement statement) throws SQLException {
         Map<String, Object> parametersValue = JDBCKeyValueMapper.keyValueMap(key, value);
-        for (String fieldName : this.fieldDescriptors.keySet()) {
-            Object valueForField = parametersValue.get(fieldName);
-            FieldDescriptor fieldDescriptor = this.fieldDescriptors.get(fieldName);
-            fieldDescriptor.setValueInStatement(valueForField, statement);
+        for (Map.Entry<String, FieldDescriptor> fieldNameAndDescriptor : fieldDescriptors.entrySet()) {
+            Object valueForField = parametersValue.get(fieldNameAndDescriptor.getKey());
+            fieldNameAndDescriptor.getValue().setValueInStatement(valueForField, statement);
         }
         statement.addBatch();
     }

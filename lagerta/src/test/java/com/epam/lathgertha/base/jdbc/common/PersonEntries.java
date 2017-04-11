@@ -128,7 +128,6 @@ public class PersonEntries {
         public Object getFieldValue(ResultSet resultSet) throws SQLException {
             return resultSet.getString(getIndex());
         }
-
     };
 
     private static FieldDescriptor PERSON_VAL_DESCRIPTOR = new FieldDescriptor() {

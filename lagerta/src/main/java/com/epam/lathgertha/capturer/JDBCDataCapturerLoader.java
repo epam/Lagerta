@@ -32,7 +32,8 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     private final String dbUser;
     private final String dbPassword;
 
-    public JDBCDataCapturerLoader(Map<String, EntityDescriptor> entityDescriptors, String dbUrl, String dbUser, String dbPassword) {
+    public JDBCDataCapturerLoader(Map<String, EntityDescriptor> entityDescriptors,
+                                  String dbUrl, String dbUser, String dbPassword) {
         this.dbUrl = dbUrl;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
@@ -41,19 +42,14 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     @Override
     public Object load(String cacheName, Object key) {
+        EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
-            EntityDescriptor entityDescriptor = entityDescriptors.get(cacheName);
-            if (entityDescriptor == null) {
-                //todo support
-                throw new RuntimeException("Not found entityDescriptor for cache: " + cacheName);
-            }
             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
             statement.setObject(1, key);
             ResultSet resultSet = statement.executeQuery();
-            Object result = entityDescriptor.transform(resultSet);
-            return result;
+            return entityDescriptor.transform(resultSet);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new CacheLoaderException(e);
         }
     }
 
@@ -64,5 +60,14 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
             result.put(key, (V) load(cacheName, key));
         }
         return result;
+    }
+
+    private EntityDescriptor getEntityDescriptor(String cacheName) {
+        EntityDescriptor entityDescriptor = entityDescriptors.get(cacheName);
+        if (entityDescriptor == null) {
+            //todo issues #93
+            throw new RuntimeException("Not found entityDescriptor for cache: " + cacheName);
+        }
+        return entityDescriptor;
     }
 }
