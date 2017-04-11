@@ -32,7 +32,9 @@ public class LeadServiceImpl implements LeadService {
 
     @Override
     public void cancel(ServiceContext ctx) {
-        lead.stop();
+        if (lead != null) {
+            lead.stop();
+        }
     }
 
     @Override
@@ -42,27 +44,33 @@ public class LeadServiceImpl implements LeadService {
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
-        lead = context.getBean(Lead.class);
-        lead.execute();
+        if (context != null) {
+            lead = context.getBean(Lead.class);
+            lead.execute();
+        }
     }
 
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
-        return lead.notifyRead(consumerId, txScopes);
+    public List<Long> notifyRead(UUID readerId, List<TransactionScope> txScopes) {
+        return lead == null ? null : lead.notifyRead(readerId, txScopes);
     }
 
     @Override
-    public void notifyCommitted(List<Long> ids) {
-        lead.notifyCommitted(ids);
+    public void notifyCommitted(UUID readerId, List<Long> ids) {
+        if (lead != null) {
+            lead.notifyCommitted(readerId, ids);
+        }
     }
 
     @Override
-    public void notifyFailed(Long id) {
-        lead.notifyFailed(id);
+    public void notifyFailed(UUID readerId, Long id) {
+        if (lead != null) {
+            lead.notifyFailed(readerId, id);
+        }
     }
 
     @Override
     public long getLastDenseCommitted() {
-        return lead.getLastDenseCommitted();
+        return lead == null ? -1 : lead.getLastDenseCommitted();
     }
 }

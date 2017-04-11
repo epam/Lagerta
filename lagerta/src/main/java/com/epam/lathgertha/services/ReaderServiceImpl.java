@@ -29,7 +29,9 @@ public class ReaderServiceImpl implements ReaderService {
 
     @Override
     public void cancel(ServiceContext ctx) {
-        reader.stop();
+        if (reader != null) {
+            reader.stop();
+        }
     }
 
     @Override
@@ -39,12 +41,16 @@ public class ReaderServiceImpl implements ReaderService {
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
-        reader = ReaderConfig.create(context).getBean(Reader.class);
-        reader.execute();
+        if (context != null) {
+            reader = ReaderConfig.create(context).getBean(Reader.class);
+            reader.execute();
+        }
     }
 
     @Override
     public void resendReadTransactions() {
-        reader.resendReadTransactions();
+        if (reader != null) {
+            reader.resendReadTransactions();
+        }
     }
 }

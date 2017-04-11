@@ -30,7 +30,7 @@ public class CommitServitor {
     }
 
     @SuppressWarnings("unchecked")
-    protected boolean commit(Long txId, Map<Long, TransactionData> buffer) {
+    public boolean commit(Long txId, Map<Long, TransactionData> buffer) {
         try {
             TransactionData transactionScopeAndSerializedValues = buffer.get(txId);
             List<Map.Entry<String, List>> scope = transactionScopeAndSerializedValues.getTransactionScope().getScope();
@@ -43,7 +43,7 @@ public class CommitServitor {
             kafkaLogCommitter.commitTransaction(txId);
             return true;
         } catch (Exception e) {
-            lead.notifyFailed(txId);
+            lead.notifyFailed(readerId, txId);
             return false;
         }
     }

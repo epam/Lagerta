@@ -21,6 +21,8 @@ import com.epam.lathgertha.common.CallableKeyTask;
 import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.Scheduler;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class LeadImpl extends Scheduler implements Lead {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LeadImpl.class);
 
     private static final long SAVE_STATE_PERIOD = 1000L;
 
@@ -57,10 +60,16 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public List<Long> notifyRead(UUID consumerId, List<TransactionScope> txScopes) {
+    public List<Long> notifyRead(UUID readerId, List<TransactionScope> txScopes) {
+        if (!txScopes.isEmpty()) {
+            LOGGER.trace("[L] notify read from {} ->  {}", readerId, txScopes);
+        }
         List<Long> result = !txScopes.isEmpty()
-                ? toCommit.call(consumerId, () -> readTransactions.addAllOnNode(consumerId, txScopes))
-                : toCommit.call(consumerId);
+                ? toCommit.call(readerId, () -> readTransactions.addAllOnNode(readerId, txScopes))
+                : toCommit.call(readerId);
+        if (result != null) {
+            LOGGER.trace("[L] ready to commit for {} ->  {}", readerId, result);
+        }
         return result == null ? Collections.emptyList() : result;
     }
 
@@ -68,7 +77,8 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void notifyCommitted(List<Long> ids) {
+    public void notifyCommitted(UUID readerId, List<Long> ids) {
+        LOGGER.trace("[L] notify committed from {} -> {} ", readerId, ids);
         pushTask(() -> {
             committed.addAll(ids);
             inProgress.removeAll(ids);
@@ -79,7 +89,8 @@ public class LeadImpl extends Scheduler implements Lead {
      * {@inheritDoc}
      */
     @Override
-    public void notifyFailed(Long id) {
+    public void notifyFailed(UUID readerId, Long id) {
+        LOGGER.error("[L] notify failed transaction from {} ->  {}", readerId, id);
         //todo
     }
 
@@ -88,12 +99,16 @@ public class LeadImpl extends Scheduler implements Lead {
      */
     @Override
     public void updateState(CommittedTransactions newCommitted) {
+        LOGGER.info("[L] initialized {}", newCommitted);
         pushTask(() -> committed.addAll(newCommitted));
         pushTask(() -> readTransactions.setReadyAndPrune(committed));
     }
 
     private void plan() {
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
+        if (!ready.isEmpty()) {
+            LOGGER.trace("[L] Planned {}", ready);
+        }
         for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
             inProgress.addAll(entry.getValue());
             toCommit.append(entry.getKey(), entry.getValue());
