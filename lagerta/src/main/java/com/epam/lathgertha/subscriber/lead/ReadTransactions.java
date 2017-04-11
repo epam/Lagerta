@@ -197,7 +197,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 txId = scopeTxId;
             }
             boolean isAlive = !lostReaders.contains(consumerId) && !diedReaders.contains(consumerId);
-            boolean isLost = lostReaders.contains(consumerId);
+            boolean isLost = lostReaders.contains(consumerId) && !diedReaders.contains(consumerId);
 
             if (isAlive) {
                 if (!aliveEncountered) {
