@@ -147,11 +147,13 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             } else {
                 if (thisLevel > level) {
                     level = thisLevel;
+                    it.previous();
                     while (count > 0) {
                         it.previous();
                         it.remove();
                         count--;
                     }
+                    it.next();
                 }
                 count++;
             }
