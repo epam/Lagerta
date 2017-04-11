@@ -41,7 +41,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
-    private final Set<Long> orphanTransactions = new HashSet<>();
 
     private long lastDenseRead = INITIAL_READ_ID;
     private List<List<ConsumerTxScope>> buffer = new ArrayList<>(INITIAL_CAPACITY);
@@ -67,10 +66,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 break;
             }
         }
-    }
-
-    public boolean isOrphan(long transactionId) {
-        return orphanTransactions.contains(transactionId);
     }
 
     public void scheduleDuplicatesPruning() {
@@ -190,7 +185,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 a = MergeUtil.getNext(firstIter);
             } else if (lostReaders.contains(a.getConsumerId())) {
                 diedReaders.add(a.getConsumerId());
-                orphanTransactions.remove(a.getTransactionId());
                 firstIter.remove();
                 a = MergeUtil.getNext(firstIter);
             }
