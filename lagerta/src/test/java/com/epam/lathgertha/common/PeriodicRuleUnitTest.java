@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class PeriodicRuleUnitTest {
 
-    @Test(invocationTimeOut = 100L)
+    @Test(timeOut = 1_000L)
     public void ruleRunsAtDesignedPeriodOnce() throws Exception {
         AtomicInteger i = new AtomicInteger(0);
         PeriodicRule periodicRule = new PeriodicRule(i::incrementAndGet, 1000);
@@ -33,5 +33,4 @@ public class PeriodicRuleUnitTest {
         periodicRule.run();
         assertEquals(1, i.get());
     }
-
 }
