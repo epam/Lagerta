@@ -25,6 +25,8 @@ public class ConsumerTxScope extends TransactionScope {
 
     private final UUID consumerId;
 
+    private boolean orphan;
+
     public ConsumerTxScope(UUID consumerId, long transactionId, List<Map.Entry<String, List>> scope) {
         super(transactionId, scope);
         this.consumerId = consumerId;
@@ -35,8 +37,11 @@ public class ConsumerTxScope extends TransactionScope {
     }
 
     public boolean isOrphan() {
-        //todo
-        throw new UnsupportedOperationException();
+        return orphan;
+    }
+
+    public void markOrphan() {
+        orphan = true;
     }
 
     @Override
