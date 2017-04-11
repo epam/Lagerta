@@ -39,10 +39,12 @@ public class Person implements Serializable {
         this.name = name;
     }
 
+    /**
+     * This use for recreate object from map parameters.
+     * see {@link com.epam.lathgertha.util.JDBCKeyValueMapper#getPOJOFromMapParams(java.util.Map, java.lang.Class)}
+     */
     @SuppressWarnings("unused")
     public Person() {
-        // this use for recreate object from map parameters.
-        // see JDBCKeyValueMapper#getPOJOFromMapParams()
     }
 
     public int getId() {

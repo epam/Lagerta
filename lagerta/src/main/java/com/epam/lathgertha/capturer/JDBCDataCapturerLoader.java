@@ -64,7 +64,9 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
         }
     }
 
-    private <K, V> Map<K, V> loadMapResult(Iterable<? extends K> keys, EntityDescriptor entityDescriptor, PreparedStatement statement) throws Exception {
+    private <K, V> Map<K, V> loadMapResult(Iterable<? extends K> keys,
+                                           EntityDescriptor entityDescriptor,
+                                           PreparedStatement statement) throws Exception {
         List<K> keysInList = new ArrayList<>();
         keys.iterator().forEachRemaining(keysInList::add);
         statement.setObject(1, keysInList.toArray());
