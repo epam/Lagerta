@@ -49,8 +49,7 @@ public class EntityDescriptor<T> {
         upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + keyField + ")" +
                 " VALUES (" + maskFields + ")";
         // specific IN semantic for h2
-        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE " + keyField +
-                " in (select * from table(x int = ?))";
+        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE array_contains(?, " + keyField + ")";
     }
 
     public String getUpsertQuery() {
