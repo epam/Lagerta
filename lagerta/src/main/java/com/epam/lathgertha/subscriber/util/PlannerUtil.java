@@ -55,7 +55,7 @@ public final class PlannerUtil {
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
                 if (inProgress.contains(id) || lostReaders.contains(info.getConsumerId())
-                        || read.isOrphan(id) || isIntersected(blocked, scope)) {
+                        || info.isOrphan() || isIntersected(blocked, scope)) {
                     scope.forEach(addTo(blocked));
                 } else {
                     UUID consumerId = info.getConsumerId();
