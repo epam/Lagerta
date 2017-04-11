@@ -181,8 +181,16 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         long txId = it.next().getTransactionId();
 
         it.previous();
-        while (it.hasNext()) {
-            ConsumerTxScope scope = it.next();
+        while (true) {
+            ConsumerTxScope scope = it.hasNext() ? it.next() : null;
+
+            if (scope == null) {
+                if (encounteredDead != 0) {
+                    orphanTransactions.add(txId);
+                    inProgress.remove(txId);
+                }
+                break;
+            }
             long scopeTxId = scope.getTransactionId();
             UUID consumerId = scope.getConsumerId();
 
