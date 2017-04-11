@@ -62,7 +62,7 @@ public class Scheduler {
                 }
                 rules.forEach(Runnable::run);
             } catch (Exception e) {
-//                LOG.error("Error while running a bunch of tasks", e);
+                LOG.error("Error while running a bunch of tasks", e);
             }
         }
     }
