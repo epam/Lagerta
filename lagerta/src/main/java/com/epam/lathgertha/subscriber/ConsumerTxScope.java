@@ -34,6 +34,11 @@ public class ConsumerTxScope extends TransactionScope {
         return consumerId;
     }
 
+    public boolean isOrphan() {
+        //todo
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof ConsumerTxScope)) {

@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
 
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
-        Comparator.comparingLong(ConsumerTxScope::getTransactionId);
+            Comparator.comparingLong(ConsumerTxScope::getTransactionId);
     private static final long INITIAL_READ_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
@@ -122,6 +122,46 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             pruneDuplicates(heartbeats, diedReaders, lostReaders, inProgress);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
+    }
+
+    private static void deduplicate(Set<UUID> lostReaders, List<ConsumerTxScope> transactions) {
+        if (transactions.isEmpty()) {
+            return;
+        }
+        int level = 0;          //0 - Unknown, 1 - Dead, 2 - Lost, 3 - Alive
+        int count = 0;
+        long id = -2L;
+        for (ListIterator<ConsumerTxScope> it = transactions.listIterator(); it.hasNext(); ) {
+            ConsumerTxScope tx = it.next();
+            long thisId = tx.getTransactionId();
+            if (thisId > id) {
+                id = thisId;
+                level = 0;
+                count = 0;
+            }
+            int thisLevel = getLevel(tx, lostReaders);
+            if (thisLevel < level) {
+                it.remove();
+            } else {
+                if (thisLevel > level) {
+                    level = thisLevel;
+                    while (count > 0) {
+                        it.previous();
+                        it.remove();
+                        count--;
+                    }
+                }
+                count++;
+            }
+        }
+    }
+
+    private static int getLevel(ConsumerTxScope scope, Set<UUID> lostReaders) {
+        return scope.isOrphan()
+                ? 1
+                : lostReaders.contains(scope.getConsumerId())
+                ? 2
+                : 3;
     }
 
     private void pruneDuplicates(
