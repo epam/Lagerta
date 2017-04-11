@@ -32,10 +32,25 @@ public class CommittedTransactions implements Serializable {
     private final List<Long> sparseCommitted = new LinkedList<>();
     private volatile long lastDenseCommit;
 
-    private transient List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
+    private transient List<List<Long>> toMerge;
 
+    /**
+     * creates ready to process transactions
+     */
     public CommittedTransactions() {
-        this.lastDenseCommit = INITIAL_COMMIT_ID;
+        this(INITIAL_READY_COMMIT_ID);
+    }
+
+    /**
+     * creates not ready to process transactions
+     */
+    public static CommittedTransactions createNotReady() {
+        return new CommittedTransactions(INITIAL_COMMIT_ID);
+    }
+
+    private CommittedTransactions(long initialCommitId) {
+        lastDenseCommit = initialCommitId;
+        toMerge = new ArrayList<>(INITIAL_CAPACITY);
     }
 
     public boolean addAll(List<Long> sortedTransactions) {
@@ -67,12 +82,6 @@ public class CommittedTransactions implements Serializable {
             } else {
                 break;
             }
-        }
-    }
-
-    public void setReady() {
-        if (lastDenseCommit == INITIAL_COMMIT_ID) {
-            lastDenseCommit = INITIAL_READY_COMMIT_ID;
         }
     }
 

@@ -35,8 +35,16 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
-    private long lastDenseRead = INITIAL_READ_ID;
-    private List<List<ConsumerTxScope>> buffer = new ArrayList<>(INITIAL_CAPACITY);
+    private long lastDenseRead;
+    private List<List<ConsumerTxScope>> buffer;
+
+    /**
+     * creates not ready process transactions
+     */
+    public ReadTransactions() {
+        lastDenseRead = INITIAL_READ_ID;
+        buffer = new ArrayList<>(INITIAL_CAPACITY);
+    }
 
     public long getLastDenseRead() {
         return lastDenseRead;
@@ -69,10 +77,13 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 .iterator();
     }
 
-    public void setReady() {
+    /**
+     * makes this ready to process transactions and shifts lastDenseRead to proper id
+     */
+    public void setReadyAndPrune(CommittedTransactions committed) {
         if (lastDenseRead == INITIAL_READ_ID) {
             lastDenseRead = INITIAL_READY_READ_ID;
-            compress();
+            pruneCommitted(committed);
         }
     }
 

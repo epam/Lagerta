@@ -57,7 +57,7 @@ public class ReadTransactionsUnitTest {
     @BeforeMethod
     public void setUp() {
         read = new ReadTransactions();
-        read.setReady();
+        read.setReadyAndPrune(COMMITTED);
     }
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)

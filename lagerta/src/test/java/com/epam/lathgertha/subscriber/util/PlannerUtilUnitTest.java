@@ -57,8 +57,7 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        committed.setReady();
-        transactions.setReady();
+        transactions.setReadyAndPrune(EMPTY_COMMITTED);
         Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
         assertEquals(plan, expected);
     }
@@ -86,7 +85,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(0L, cacheScope(CACHE1, 1L)),
                 txScope(1L, cacheScope(CACHE1, 1L))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0L, 1L);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -135,7 +133,6 @@ public class PlannerUtilUnitTest {
                 txScope(1, cacheScope(CACHE1, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -148,7 +145,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 0);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -162,7 +158,6 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE1, 1, 2))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1)
                 .nodeTransactions(B, 2)
@@ -181,7 +176,6 @@ public class PlannerUtilUnitTest {
                         cacheScope(CACHE2, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(3, cacheScope(CACHE2, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2)
                 .nodeTransactions(B, 3)
@@ -202,7 +196,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(B, list(
                 txScope(4, cacheScope(CACHE2, 2))
         ));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2, 3)
                 .nodeTransactions(B, 4)
@@ -219,9 +212,9 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(B, list(
                 txScope(1, cacheScope(CACHE2, 2))));
         CommittedTransactions committed = new CommittedTransactions();
-        committed.addAll(Lists.newArrayList(0L));
+        committed.addAll(list(0L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.setReadyAndPrune(committed);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
@@ -238,14 +231,13 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.setReadyAndPrune(committed);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 
     private static Object[] sequence(List<TransactionScope> list) {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list);
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }

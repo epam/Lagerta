@@ -17,6 +17,7 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.SubscriberConfig;
+import com.epam.lathgertha.services.ReaderService;
 import com.epam.lathgertha.util.Atomic;
 import com.epam.lathgertha.util.AtomicsHelper;
 import org.apache.ignite.Ignite;
@@ -25,6 +26,8 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.SpringResource;
+
+import java.util.Collection;
 
 public class LeadStateAssistantImpl implements LeadStateAssistant {
 
@@ -53,6 +56,8 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
         asyncCompute
                 .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
+        Collection<ReaderService> services = ignite.services().services(ReaderService.NAME);
+        services.forEach(ReaderService::resendReadTransactions);
     }
 
     @IgniteAsyncSupported
@@ -75,13 +80,9 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
             LeadStateLoader loader = new LeadStateLoader(kafkaFactory, config, LOADER_GROUP_ID);
             Atomic<Long> atomic = AtomicsHelper.getAtomic(ignite, LEAD_STATE_CACHE);
             Long lastDense = atomic.get();
-            if (lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID) {
-                return loader.loadCommitsAfter(lastDense);
-            } else {
-                CommittedTransactions committed = new CommittedTransactions();
-                committed.setReady();
-                return committed;
-            }
+            return lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID
+                    ? loader.loadCommitsAfter(lastDense)
+                    : new CommittedTransactions();
         }
     }
 }

@@ -20,4 +20,5 @@ import org.apache.ignite.services.Service;
 public interface ReaderService extends Service {
     String NAME = "Reader";
 
+    void resendReadTransactions();
 }

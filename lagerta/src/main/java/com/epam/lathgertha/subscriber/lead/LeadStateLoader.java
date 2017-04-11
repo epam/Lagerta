@@ -64,7 +64,6 @@ public class LeadStateLoader {
                 .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
                 .collect(Collectors.toList());
         CommittedTransactions committed = new CommittedTransactions();
-        committed.setReady();
         ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
         pool.submit(() -> {
             while (true) {
