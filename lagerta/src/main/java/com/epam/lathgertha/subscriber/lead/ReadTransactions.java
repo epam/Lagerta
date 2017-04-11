@@ -114,13 +114,20 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
 
     private void mergeCollections(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
+        Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
 
-        if (!duplicatesPruningScheduled && lostReaders.isEmpty() && orphanTransactions.isEmpty()) {
-            MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
-        } else {
-            Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
-
-            pruneDuplicates(heartbeats, diedReaders, lostReaders, inProgress);
+        if (duplicatesPruningScheduled || !lostReaders.isEmpty()) {
+            deduplicate(lostReaders, allTransactions);
+            diedReaders
+                .stream()
+                .peek(lostReaders::remove)
+                .forEach(heartbeats::removeDead);
+            allTransactions
+                .stream()
+                .filter(scope -> diedReaders.contains(scope.getConsumerId()))
+                .peek(ConsumerTxScope::markOrphan)
+                .map(ConsumerTxScope::getTransactionId)
+                .forEach(inProgress::remove);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
@@ -163,105 +170,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 : lostReaders.contains(scope.getConsumerId())
                 ? 2
                 : 3;
-    }
-
-    private void pruneDuplicates(
-            Heartbeats heartbeats,
-            Set<UUID> diedReaders,
-            Set<UUID> lostReaders,
-            Set<Long> inProgress
-    ) {
-        if (allTransactions.isEmpty()) {
-            return;
-        }
-        ListIterator<ConsumerTxScope> it = allTransactions.listIterator();
-        int encounteredLost = 0;
-        int encounteredDead = 0;
-        boolean aliveEncountered = false;
-        long txId = it.next().getTransactionId();
-
-        it.previous();
-        while (true) {
-            ConsumerTxScope scope = it.hasNext() ? it.next() : null;
-
-            if (scope == null) {
-                if (encounteredDead != 0) {
-                    orphanTransactions.add(txId);
-                    inProgress.remove(txId);
-                }
-                break;
-            }
-            long scopeTxId = scope.getTransactionId();
-            UUID consumerId = scope.getConsumerId();
-
-            if (scopeTxId != txId) {
-                if (encounteredDead != 0) {
-                    orphanTransactions.add(txId);
-                    inProgress.remove(txId);
-                }
-                encounteredLost = 0;
-                encounteredDead = 0;
-                aliveEncountered = false;
-                txId = scopeTxId;
-            }
-            boolean isAlive = !lostReaders.contains(consumerId) && !diedReaders.contains(consumerId);
-            boolean isLost = lostReaders.contains(consumerId) && !diedReaders.contains(consumerId);
-
-            if (isAlive) {
-                if (!aliveEncountered) {
-                    aliveEncountered = true;
-                    orphanTransactions.remove(txId);
-                    if (encounteredLost > 0 || encounteredDead > 0) {
-                        removePreviousTxs(it, encounteredDead + encounteredLost, txScope -> {
-                            UUID previousId = txScope.getConsumerId();
-
-                            if (lostReaders.contains(previousId)) {
-                                diedReaders.add(previousId);
-                                lostReaders.remove(previousId);
-                                heartbeats.removeDead(previousId);
-                            }
-                        });
-                        encounteredLost = 0;
-                        encounteredDead = 0;
-                    }
-                }
-            } else if (isLost) {
-                if (encounteredDead > 0) {
-                    orphanTransactions.remove(txId);
-                    removePreviousTxs(it, encounteredDead, txScope -> {});
-                    encounteredDead = 0;
-                } else if (aliveEncountered) {
-                    diedReaders.add(consumerId);
-                    lostReaders.remove(consumerId);
-                    heartbeats.removeDead(consumerId);
-                    it.remove();
-                } else {
-                    encounteredLost++;
-                }
-            } else {
-                if (encounteredLost > 0 || aliveEncountered) {
-                    it.remove();
-                } else {
-                    encounteredDead++;
-                }
-                diedReaders.add(consumerId);
-            }
-        }
-    }
-
-    private static void removePreviousTxs(
-        ListIterator<ConsumerTxScope> it,
-        int number,
-        Consumer<ConsumerTxScope> removedTxsProcessor
-    ) {
-        it.previous(); // To not remove current element;
-        for (int i = 0; i < number; i++) {
-            ConsumerTxScope scope = it.previous();
-
-            it.remove();
-            removedTxsProcessor.accept(scope);
-        }
-        it.next();
     }
 
     private Set<UUID> mergeWithDeduplication(Set<UUID> lostReaders, List<ConsumerTxScope> mergedBuffer) {
