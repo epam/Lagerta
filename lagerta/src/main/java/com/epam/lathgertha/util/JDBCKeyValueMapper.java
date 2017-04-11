@@ -46,6 +46,24 @@ public final class JDBCKeyValueMapper {
         objectToPrimitiveMap.put(Character.class, Character.TYPE);
     }
 
+    public static class KeyAndValue<V> {
+        private final Object key;
+        private final V value;
+
+        public KeyAndValue(Object key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public Object getKey() {
+            return key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+    }
+
     private JDBCKeyValueMapper() {
     }
 
@@ -102,15 +120,16 @@ public final class JDBCKeyValueMapper {
     }
 
 
-    public static <T> T getObject(Map<String, Object> columnValues, Class<T> targetClass) {
-        Object o = columnValues.get(VAL_FIELD_NAME);
-        if (o != null) {
-            if (getAsPrimitiveType(targetClass) == getAsPrimitiveType(o.getClass())) {
-                return (T) o;
+    public static <T> KeyAndValue<T> getObject(Map<String, Object> columnValues, Class<T> targetClass) {
+        Object val = columnValues.get(VAL_FIELD_NAME);
+        Object key = columnValues.get(KEY_FIELD_NAME);
+        if (val != null) {
+            if (getAsPrimitiveType(targetClass) == getAsPrimitiveType(val.getClass())) {
+                return new KeyAndValue<>(key, (T) val);
             }
-            return targetClass.cast(o);
+            return new KeyAndValue<>(key, targetClass.cast(val));
         } else {
-            return getPOJOFromMapParams(columnValues, targetClass);
+            return new KeyAndValue<>(key, getPOJOFromMapParams(columnValues, targetClass));
         }
     }
 
@@ -125,8 +144,12 @@ public final class JDBCKeyValueMapper {
         T targetObject;
         try {
             targetObject = constructor.newInstance();
-            for (String fieldName : columnValues.keySet()) {
-                Object value = columnValues.get(fieldName);
+            for (Map.Entry<String, Object> columnNameAndValue : columnValues.entrySet()) {
+                String fieldName = columnNameAndValue.getKey();
+                if (KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName)) {
+                    continue;
+                }
+                Object value = columnNameAndValue.getValue();
                 Field declaredField = targetClass.getDeclaredField(fieldName);
                 declaredField.setAccessible(true);
                 declaredField.set(targetObject, value);
