@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -203,19 +204,15 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                     aliveEncountered = true;
                     orphanTransactions.remove(txId);
                     if (encounteredLost > 0 || encounteredDead > 0) {
-                        int backtrackSteps = encounteredDead + encounteredLost;
-                        while (backtrackSteps > 0) {
-                            ConsumerTxScope previous = it.previous();
-                            UUID previousId = previous.getConsumerId();
+                        removePreviousTxs(it, encounteredDead + encounteredLost, txScope -> {
+                            UUID previousId = txScope.getConsumerId();
 
                             if (lostReaders.contains(previousId)) {
                                 diedReaders.add(previousId);
                                 lostReaders.remove(previousId);
                                 heartbeats.removeDead(previousId);
                             }
-                            it.remove();
-                            backtrackSteps--;
-                        }
+                        });
                         encounteredLost = 0;
                         encounteredDead = 0;
                     }
@@ -223,11 +220,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             } else if (isLost) {
                 if (encounteredDead > 0) {
                     orphanTransactions.remove(txId);
-                    while (encounteredDead > 0) {
-                        it.previous();
-                        it.remove();
-                        encounteredDead--;
-                    }
+                    removePreviousTxs(it, encounteredDead, txScope -> {});
+                    encounteredDead = 0;
                 } else if (aliveEncountered) {
                     diedReaders.add(consumerId);
                     lostReaders.remove(consumerId);
@@ -245,6 +239,21 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 diedReaders.add(consumerId);
             }
         }
+    }
+
+    private static void removePreviousTxs(
+        ListIterator<ConsumerTxScope> it,
+        int number,
+        Consumer<ConsumerTxScope> removedTxsProcessor
+    ) {
+        it.previous(); // To not remove current element;
+        for (int i = 0; i < number; i++) {
+            ConsumerTxScope scope = it.previous();
+
+            it.remove();
+            removedTxsProcessor.accept(scope);
+        }
+        it.next();
     }
 
     private Set<UUID> mergeWithDeduplication(Set<UUID> lostReaders, List<ConsumerTxScope> mergedBuffer) {
