@@ -43,7 +43,7 @@ public class CommitServitor {
             kafkaLogCommitter.commitTransaction(txId);
             return true;
         } catch (Exception e) {
-            lead.notifyFailed(nodeId, txId);
+            lead.notifyFailed(readerId, txId);
             return false;
         }
     }

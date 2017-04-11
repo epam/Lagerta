@@ -125,7 +125,7 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
-            LOGGER.trace("[R] {} polled {}", nodeId, scopes);
+            LOGGER.trace("[R] {} polled {}", readerId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
@@ -136,7 +136,7 @@ public class Reader extends Scheduler {
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
-            LOGGER.trace("[R] {} told to commit {}", nodeId, txIdsToCommit);
+            LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
 
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
             lead.notifyCommitted(committed);
