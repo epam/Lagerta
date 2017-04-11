@@ -59,7 +59,7 @@ public class Reader extends Scheduler {
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
-    private final UUID nodeId;
+    private final UUID readerId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
 
@@ -67,19 +67,21 @@ public class Reader extends Scheduler {
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy) {
+                  CommitStrategy commitStrategy, UUID readerId) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL);
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
+                readerId);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
+                  UUID readerId) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = UUID.randomUUID();
+        this.readerId = readerId;
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -92,6 +94,15 @@ public class Reader extends Scheduler {
             registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
         }
+    }
+
+    public void resendReadTransactions() {
+        pushTask(() -> {
+            List<TransactionScope> collect = buffer.values().stream()
+                    .map(TransactionData::getTransactionScope)
+                    .collect(Collectors.toList());
+            approveAndCommitTransactionsBatch(collect);
+        });
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
@@ -121,7 +132,7 @@ public class Reader extends Scheduler {
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);

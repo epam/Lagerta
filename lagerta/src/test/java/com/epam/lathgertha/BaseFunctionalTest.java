@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
@@ -36,8 +37,9 @@ public abstract class BaseFunctionalTest {
     protected final String CACHE_NAME = "someCache";
     protected static final AppContextOneProcessClusterManager CLUSTER_MANAGER =
             new AppContextOneProcessClusterManager("/com/epam/lathgertha/functional/config.xml");
+    private static final int NUMBER_OF_NODES = 2;
     private static final IgniteClusterResource CLUSTER_RESOURCE =
-            new IgniteClusterResource(2, CLUSTER_MANAGER);
+            new IgniteClusterResource(NUMBER_OF_NODES, CLUSTER_MANAGER);
 
     protected KafkaMockFactory kafkaMockFactory;
     protected Ignite ignite;
@@ -47,7 +49,6 @@ public abstract class BaseFunctionalTest {
     @BeforeSuite
     public void initCluster() {
         CLUSTER_RESOURCE.setUp();
-        ignite = CLUSTER_RESOURCE.ignite();
     }
 
     @AfterSuite
@@ -55,9 +56,15 @@ public abstract class BaseFunctionalTest {
         CLUSTER_RESOURCE.tearDown();
     }
 
+    @BeforeClass
+    public void getIgnite() {
+        ignite = CLUSTER_RESOURCE.ignite();
+    }
+
     @BeforeMethod
     public void setUp() {
         kafkaMockFactory = CLUSTER_MANAGER.getBean(KafkaMockFactory.class);
+        kafkaMockFactory.setNumberOfNodes(NUMBER_OF_NODES);
     }
 
     @AfterMethod
