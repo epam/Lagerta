@@ -137,17 +137,22 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
         } else {
             Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
+            boolean someoneDied = !diedReaders.isEmpty();
 
-            // ToDo: Cleanup in progress.
-            diedReaders
-                .stream()
-                .peek(lostReaders::remove)
-                .forEach(heartbeats::removeDead);
-            allTransactions
-                .stream()
-                .filter(scope -> diedReaders.contains(scope.getConsumerId()))
-                .forEach(ConsumerTxScope::markOrphan);
-            deduplicate(lostReaders, allTransactions);
+            if (someoneDied) {
+                // ToDo: Cleanup in progress.
+                diedReaders
+                        .stream()
+                        .peek(lostReaders::remove)
+                        .forEach(heartbeats::removeDead);
+                allTransactions
+                        .stream()
+                        .filter(scope -> diedReaders.contains(scope.getConsumerId()))
+                        .forEach(ConsumerTxScope::markOrphan);
+            }
+            if (someoneDied || duplicatesPruningScheduled) {
+                deduplicate(lostReaders, allTransactions);
+            }
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
