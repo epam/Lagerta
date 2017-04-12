@@ -18,6 +18,8 @@ package com.epam.lathgertha.subscriber;
 
 import com.epam.lathgertha.BaseIntegrationTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
+import org.apache.ignite.IgniteCache;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -42,5 +44,20 @@ public class SubscriberIntegrationTest extends BaseIntegrationTest {
         awaitTransactions();
 
         assertObjectsInDB(asBinary, entry(1, secondPerson));
+    }
+
+    @Test(dataProvider = CACHE_INFO_PROVIDER)
+    public void testWriteThroughAndReadThrough(String cacheName, boolean asBinary) throws Exception {
+        Person expected = new Person(312, "name");
+
+        writePersonToCache(cacheName, 1, expected);
+        awaitTransactions();
+
+        IgniteCache<Object, Person> cache = ignite().cache(cacheName);
+        cache.withSkipStore().clear(1);
+
+        Person actual = cache.get(1);
+        Assert.assertEquals(actual.getId(), expected.getId());
+        Assert.assertEquals(actual.getName(), expected.getName());
     }
 }
