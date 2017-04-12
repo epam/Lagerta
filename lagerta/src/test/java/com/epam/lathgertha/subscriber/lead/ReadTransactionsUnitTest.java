@@ -119,7 +119,7 @@ public class ReadTransactionsUnitTest {
         // Given.
         TransactionScope tx0 = txScope(0, TX_SCOPE);
         TransactionScope tx1 = txScope(1, TX_SCOPE);
-        Set<Long> inProgress = set(1L);
+        Set<Long> inProgress = set(0L);
         Set<UUID> lostReaders = set(A);
         List<Runnable> happenedActions = list(
             () -> read.addAllOnNode(A, list(tx0)),
@@ -127,7 +127,8 @@ public class ReadTransactionsUnitTest {
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
             () -> read.addAllOnNode(B, list(tx0))
         );
-        // Expected.
+        // Expected: A reader died, tx 0 stopped being in progress. Orphan duplicate
+        // of tx 0 is pruned.
         ConsumerTxScope b0 = consumerTxScope(B, 0, false);
         ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         Set<Long> expectedInProgress = Collections.emptySet();
@@ -144,7 +145,7 @@ public class ReadTransactionsUnitTest {
         TransactionScope tx0 = txScope(0, TX_SCOPE);
         TransactionScope tx1 = txScope(1, TX_SCOPE);
         TransactionScope tx2 = txScope(2, TX_SCOPE);
-        Set<Long> inProgress = set(1L);
+        Set<Long> inProgress = set(0L);
         Set<UUID> lostReaders = set(A);
         List<Runnable> happenedActions = list(
             () -> read.addAllOnNode(A, list(tx0)),
@@ -152,11 +153,13 @@ public class ReadTransactionsUnitTest {
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
             () -> read.addAllOnNode(B, list(tx2))
         );
-        // Expected.
+        // Expected: A reader remains lost, as there was no txs sent by B
+        // which are also owned by sent after the A became lost. Lost duplicate
+        // of tx 0 is pruned.
         ConsumerTxScope b0 = consumerTxScope(B, 0, false);
         ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         ConsumerTxScope b2 = consumerTxScope(B, 2, false);
-        Set<Long> expectedInProgress = Collections.singleton(1L);
+        Set<Long> expectedInProgress = Collections.singleton(0L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
         List<ConsumerTxScope> expectedReadTxs = list(b0, b1, b2);
         return new Object[] {
@@ -170,7 +173,7 @@ public class ReadTransactionsUnitTest {
         TransactionScope tx0 = txScope(0, TX_SCOPE);
         TransactionScope tx1 = txScope(1, TX_SCOPE);
         TransactionScope tx2 = txScope(2, TX_SCOPE);
-        Set<Long> inProgress = set(1L);
+        Set<Long> inProgress = set(0L);
         Set<UUID> lostReaders = set(A);
         List<Runnable> happenedActions = list(
             () -> read.addAllOnNode(A, list(tx0)),
@@ -179,7 +182,7 @@ public class ReadTransactionsUnitTest {
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
             () -> read.addAllOnNode(B, list(tx0))
         );
-        // Expected.
+        // Expected. A claimed dead, tx 2 orphan, tx 0 stopped being in progress.
         ConsumerTxScope b0 = consumerTxScope(B, 0, false);
         ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         ConsumerTxScope a2 = consumerTxScope(A, 2, true);
@@ -204,12 +207,12 @@ public class ReadTransactionsUnitTest {
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
             () -> read.addAllOnNode(C, list(tx0))
         );
-        // Expected.
+        // Expected: A claimed dead, B remains lost.
         ConsumerTxScope c0 = consumerTxScope(C, 0, false);
-        ConsumerTxScope a1 = consumerTxScope(A, 1, true);
+        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         Set<Long> expectedInProgress = Collections.emptySet();
         Set<UUID> expectedLostReaders = Collections.singleton(B);
-        List<ConsumerTxScope> expectedReadTxs = list(c0, a1);
+        List<ConsumerTxScope> expectedReadTxs = list(c0, b1);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -217,11 +220,11 @@ public class ReadTransactionsUnitTest {
     }
 
     private Object[] threeLostThirdOneComesBackToLife() {
-        // Given.
+        // Given. Muliple nodes receive same txs due to rebalancing.
         TransactionScope tx0 = txScope(0, TX_SCOPE);
         TransactionScope tx1 = txScope(1, TX_SCOPE);
         TransactionScope tx2 = txScope(2, TX_SCOPE);
-        Set<Long> inProgress = set(1L, 2L);
+        Set<Long> inProgress = set(0L, 1L, 2L);
         Set<UUID> lostReaders = set(A, B);
         List<Runnable> happenedActions = list(
             () -> read.addAllOnNode(A, list(tx0, tx2)),
@@ -230,11 +233,15 @@ public class ReadTransactionsUnitTest {
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
             () -> read.addAllOnNode(C, list(tx1))
         );
-        // Expected.
+        // Expected: B claimed dead, A remains lost, tx 2 duplicate from A pruned,
+        // tx infos from B pruned.
+        // Note: no knowledge which node progresses a txs at a moment - it can be any of them
+        // as the ordering of merge procedure is not defined, though it places new duplicates after
+        // the existing ones.
         ConsumerTxScope a0 = consumerTxScope(A, 0, false);
         ConsumerTxScope c1 = consumerTxScope(C, 1, false);
         ConsumerTxScope c2 = consumerTxScope(C, 2, false);
-        Set<Long> expectedInProgress = Collections.emptySet();
+        Set<Long> expectedInProgress = set(0L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
         List<ConsumerTxScope> expectedReadTxs = list(a0, c1, c2);
         return new Object[] {
