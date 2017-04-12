@@ -22,7 +22,7 @@ public class CommitServitor {
     private final Serializer serializer;
     private final KafkaLogCommitter kafkaLogCommitter;
     private final LeadService lead;
-    private UUID readerId = UUID.randomUUID();
+    private final UUID readerId = UUID.randomUUID();
 
     public CommitServitor(Serializer serializer, Committer committer, KafkaLogCommitter kafkaLogCommitter, Ignite ignite) {
         this.serializer = serializer;
