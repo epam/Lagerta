@@ -75,7 +75,7 @@ public abstract class BaseIntegrationTest {
         return new JDBCCommitter(ENTITY_DESCRIPTOR_MAP, getDBUrl(), "", "");
     }
 
-    private static DataCapturerLoader personJDBDataCapturerLoader() {
+    private static DataCapturerLoader personJDBCDataCapturerLoader() {
         return new JDBCDataCapturerLoader(ENTITY_DESCRIPTOR_MAP, getDBUrl(), "", "");
     }
 
