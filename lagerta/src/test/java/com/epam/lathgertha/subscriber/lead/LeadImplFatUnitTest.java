@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
 
@@ -45,15 +48,14 @@ public class LeadImplFatUnitTest {
     private static final String CACHE1 = "cache1";
     private static final String CACHE2 = "cache2";
 
-    private LeadImpl lead;
+    private Lead lead;
 
     private void startDefaultLead() {
-        lead = new LeadImpl(MOCK_STATE_ASSISTANT, new ReadTransactions(), CommittedTransactions.createNotReady());
-        ForkJoinPool.commonPool().submit(() -> lead.execute());
+        startConfiguredLead(MOCK_STATE_ASSISTANT);
     }
 
-    private void startConfiguredLead(LeadStateAssistant assistant, CommittedTransactions committed) {
-        lead = new LeadImpl(assistant, new ReadTransactions(), committed);
+    private void startConfiguredLead(LeadStateAssistant assistant) {
+        lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady());
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
@@ -64,20 +66,17 @@ public class LeadImplFatUnitTest {
 
     @Test
     public void compressDuplicateTransactions() {
-        LeadStateAssistant assistant = new LeadStateAssistant() {
-            @Override
-            public void saveState(Lead lead) {
-            }
+        LeadStateAssistant assistantMock = mock(LeadStateAssistant.class);
+        doAnswer(invocation -> {
+            CommittedTransactions newCommitted = new CommittedTransactions();
+            newCommitted.addAll(list(0L, 1L, 2L, 4L, 5L));
+            newCommitted.compress();
+            Lead lead = invocation.getArgument(0);
+            lead.updateState(newCommitted);
+            return null;
+        }).when(assistantMock).load(any(Lead.class));
 
-            @Override
-            public void load(Lead lead) {
-                CommittedTransactions newCommitted = new CommittedTransactions();
-                newCommitted.addAll(list(0L, 1L, 2L, 4L, 5L));
-                newCommitted.compress();
-                lead.updateState(newCommitted);
-            }
-        };
-        startConfiguredLead(assistant, CommittedTransactions.createNotReady());
+        startConfiguredLead(assistantMock);
 
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
