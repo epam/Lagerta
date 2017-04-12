@@ -22,15 +22,13 @@ public class CommitServitor {
     private final Serializer serializer;
     private final KafkaLogCommitter kafkaLogCommitter;
     private final LeadService lead;
-    private final UUID readerId;
+    private UUID readerId = UUID.randomUUID();
 
-    public CommitServitor(Serializer serializer, Committer committer, KafkaLogCommitter kafkaLogCommitter,
-                          UUID readerId, Ignite ignite) {
+    public CommitServitor(Serializer serializer, Committer committer, KafkaLogCommitter kafkaLogCommitter, Ignite ignite) {
         this.serializer = serializer;
         this.committer = committer;
         this.kafkaLogCommitter = kafkaLogCommitter;
-        this.readerId = readerId;
-        lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
+        this.lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
     }
 
     @SuppressWarnings("unchecked")

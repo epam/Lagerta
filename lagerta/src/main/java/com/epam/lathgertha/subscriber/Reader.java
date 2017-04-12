@@ -59,7 +59,7 @@ public class Reader extends Scheduler {
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
-    private final UUID readerId;
+    private final UUID nodeId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
 
@@ -67,21 +67,19 @@ public class Reader extends Scheduler {
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, UUID readerId) {
+                  CommitStrategy commitStrategy) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
-                readerId);
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
-                  UUID readerId) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        this.readerId = readerId;
+        nodeId = UUID.randomUUID();
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -125,21 +123,21 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
-            LOGGER.trace("[R] {} polled {}", readerId, scopes);
+            LOGGER.trace("[R] {} polled {}", nodeId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
-            LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
+            LOGGER.trace("[R] {} told to commit {}", nodeId, txIdsToCommit);
 
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(readerId, committed);
+            lead.notifyCommitted(nodeId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
     }
