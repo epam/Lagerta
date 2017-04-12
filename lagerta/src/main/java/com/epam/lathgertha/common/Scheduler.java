@@ -15,6 +15,7 @@
  */
 package com.epam.lathgertha.common;
 
+import org.apache.ignite.IgniteInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +62,8 @@ public class Scheduler {
                     tasks.poll().run();
                 }
                 rules.forEach(Runnable::run);
+            } catch (IgniteInterruptedException e) {
+                running = false;
             } catch (Exception e) {
                 LOG.error("Error while running a bunch of tasks", e);
             }

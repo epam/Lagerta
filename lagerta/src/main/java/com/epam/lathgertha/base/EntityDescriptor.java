@@ -69,15 +69,16 @@ public class EntityDescriptor<T> {
         statement.addBatch();
     }
 
-    public Map<Object, T> transform(ResultSet resultSet) throws Exception {
-        Map<Object, T> result = new HashMap<>();
+    @SuppressWarnings("unchecked")
+    public <K> Map<K, T> transform(ResultSet resultSet) throws Exception {
+        Map<K, T> result = new HashMap<>();
         while (resultSet.next()) {
             Map<String, Object> objectParameters = new HashMap<>(fieldDescriptors.size());
             for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
                 objectParameters.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
             }
             JDBCKeyValueMapper.KeyAndValue<T> keyAndValue = JDBCKeyValueMapper.getObject(objectParameters, clazz);
-            result.put(keyAndValue.getKey(), keyAndValue.getValue());
+            result.put((K) keyAndValue.getKey(), keyAndValue.getValue());
         }
         return result;
     }

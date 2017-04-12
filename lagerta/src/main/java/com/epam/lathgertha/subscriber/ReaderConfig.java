@@ -52,7 +52,7 @@ public class ReaderConfig {
 
     @Bean
     public CommitStrategy commitStrategy(CommitServitor commitServitor) {
-        return new ParallelCommitStrategy(commitServitor);
+        return new SequentialCommitStrategy(commitServitor);
     }
 
     @Bean
