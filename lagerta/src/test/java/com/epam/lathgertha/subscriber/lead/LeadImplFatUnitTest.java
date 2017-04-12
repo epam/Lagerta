@@ -38,7 +38,6 @@ import static org.mockito.Mockito.mock;
 public class LeadImplFatUnitTest {
 
     private static final long TIMEOUT = 1000L;
-    private static final int INVOCATION_COUNT = 1000;
 
     private static final LeadStateAssistant MOCK_STATE_ASSISTANT = mock(LeadStateAssistant.class);
 
@@ -64,7 +63,7 @@ public class LeadImplFatUnitTest {
         lead.stop();
     }
 
-    @Test(invocationCount = INVOCATION_COUNT, timeOut = TIMEOUT)
+    @Test(timeOut = TIMEOUT)
     public void regressionTestOnBlockedTransactionsLogicInPlanner() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
@@ -79,7 +78,7 @@ public class LeadImplFatUnitTest {
     }
 
     // (0 -> 2) + (1 -> 2)
-    @Test(invocationCount = INVOCATION_COUNT, timeOut = TIMEOUT)
+    @Test(timeOut = TIMEOUT)
     public void sequenceBlockedFromOutside() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
@@ -101,7 +100,7 @@ public class LeadImplFatUnitTest {
 
     //    (0 -> 1 -> 2) + (1 -> 3) + (4 -> 5 -> 6) + (7 -> 8 -> 9)
     //      + (9 -> 10 -> 11) + (12 -> 14) + (13 -> 14)
-    @Test(invocationCount = INVOCATION_COUNT, timeOut = TIMEOUT)
+    @Test(timeOut = TIMEOUT)
     public void forksJoinsAndBlockedPaths() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE1, 1L)),
