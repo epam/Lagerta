@@ -36,18 +36,19 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     public JDBCDataCapturerLoader(Map<String, EntityDescriptor> entityDescriptors,
                                   String dbUrl, String dbUser, String dbPassword) {
+        this.entityDescriptors = entityDescriptors;
         this.dbUrl = dbUrl;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
-        this.entityDescriptors = entityDescriptors;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Object load(String cacheName, Object key) {
+    public <V> V load(String cacheName, Object key) {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
-            return loadMapResult(Collections.singletonList(key), entityDescriptor, statement).get(key);
+            return (V) loadMapResult(Collections.singletonList(key), entityDescriptor, statement).get(key);
         } catch (Exception e) {
             throw new CacheLoaderException(e);
         }
@@ -64,9 +65,9 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
         }
     }
 
-    private <K, V> Map<K, V> loadMapResult(Iterable<? extends K> keys,
-                                           EntityDescriptor entityDescriptor,
-                                           PreparedStatement statement) throws Exception {
+    private static <K, V> Map<K, V> loadMapResult(Iterable<? extends K> keys,
+                                                  EntityDescriptor entityDescriptor,
+                                                  PreparedStatement statement) throws Exception {
         List<K> keysInList = new ArrayList<>();
         keys.iterator().forEachRemaining(keysInList::add);
         statement.setObject(1, keysInList.toArray());
