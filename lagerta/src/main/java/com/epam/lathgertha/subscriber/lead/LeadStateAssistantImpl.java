@@ -22,12 +22,10 @@ import com.epam.lathgertha.util.Atomic;
 import com.epam.lathgertha.util.AtomicsHelper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.SpringResource;
-
-import java.util.Collection;
 
 public class LeadStateAssistantImpl implements LeadStateAssistant {
 
@@ -52,17 +50,11 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
                 .compute()
                 .withAsync();
         asyncCompute
-                .call(createLoadTask());
+                .call(new LoadStateTask());
         asyncCompute
                 .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
-        Collection<ReaderService> services = ignite.services().services(ReaderService.NAME);
-        services.forEach(ReaderService::resendReadTransactions);
-    }
-
-    @IgniteAsyncSupported
-    private IgniteCallable<CommittedTransactions> createLoadTask() {
-        return new LoadStateTask();
+        ignite.compute().broadcast(new Resend());
     }
 
     private static class LoadStateTask implements IgniteCallable<CommittedTransactions> {
@@ -83,6 +75,19 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
             return lastDense > CommittedTransactions.INITIAL_READY_COMMIT_ID
                     ? loader.loadCommitsAfter(lastDense)
                     : new CommittedTransactions();
+        }
+    }
+
+    private static class Resend implements IgniteRunnable {
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        @Override
+        public void run() {
+            ReaderService service = ignite.services().service(ReaderService.NAME);
+            if (service != null) {
+                service.resendReadTransactions();
+            }
         }
     }
 }

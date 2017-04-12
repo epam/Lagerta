@@ -76,7 +76,7 @@ public class CommittedTransactions implements Serializable {
         Iterator<Long> iterator = sparseCommitted.iterator();
         while (iterator.hasNext()) {
             Long next = iterator.next();
-            if (lastDenseCommit + 1 == next) {
+            if (lastDenseCommit + 1 >= next) {
                 iterator.remove();
                 lastDenseCommit = next;
             } else {
