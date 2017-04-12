@@ -260,6 +260,7 @@ public class ReadTransactionsUnitTest {
     ) {
         Mockito.doReturn(-1L).when(COMMITTED).getLastDenseCommit();
         happenedActions.forEach(Runnable::run);
+        read.scheduleDuplicatesPruning();
         read.pruneCommitted(COMMITTED, heartbeats, lostReaders, inProgress);
 
         // ToDo: Enable when inProgress cleaning is fully implemented.
