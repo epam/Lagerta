@@ -138,7 +138,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         } else {
             Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
 
-            deduplicate(lostReaders, allTransactions);
             diedReaders
                 .stream()
                 .peek(lostReaders::remove)
@@ -149,6 +148,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 .peek(ConsumerTxScope::markOrphan)
                 .map(ConsumerTxScope::getTransactionId)
                 .forEach(inProgress::remove);
+            deduplicate(lostReaders, allTransactions);
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
