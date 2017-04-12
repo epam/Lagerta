@@ -64,7 +64,7 @@ public class LeadImplFatUnitTest {
         lead.stop();
     }
 
-    @Test
+    @Test(timeOut = TIMEOUT * 2)
     public void compressDuplicateTransactions() {
         LeadStateAssistant assistantMock = mock(LeadStateAssistant.class);
         doAnswer(invocation -> {
