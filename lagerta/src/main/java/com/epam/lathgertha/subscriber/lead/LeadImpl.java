@@ -108,7 +108,6 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     private void plan() {
-        // return not committed duplicates
         Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
         if (!ready.isEmpty()) {
             LOGGER.trace("[L] Planned {}", ready);
