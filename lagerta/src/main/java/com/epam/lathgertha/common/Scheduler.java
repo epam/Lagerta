@@ -63,7 +63,7 @@ public class Scheduler {
                 }
                 rules.forEach(Runnable::run);
             } catch (IgniteInterruptedException e) {
-                break;
+                running = false;
             } catch (Exception e) {
                 LOG.error("Error while running a bunch of tasks", e);
             }
