@@ -91,6 +91,8 @@ public class LeadImplFatUnitTest {
         notifyCommitted(A, list(0L, 1L, 2L));
         notifyRead(A, aScope);
         assertPlanned(A, list(3L));
+        notifyCommitted(A, list(3L));
+        waitForLastDenseCommitted(5L);
     }
 
     @Test(timeOut = TIMEOUT)
