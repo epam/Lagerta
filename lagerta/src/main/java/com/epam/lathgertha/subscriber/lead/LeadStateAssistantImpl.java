@@ -22,7 +22,6 @@ import com.epam.lathgertha.util.Atomic;
 import com.epam.lathgertha.util.AtomicsHelper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -51,16 +50,11 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
                 .compute()
                 .withAsync();
         asyncCompute
-                .call(createLoadTask());
+                .call(new LoadStateTask());
         asyncCompute
                 .<CommittedTransactions>future()
                 .listen(future -> lead.updateState(future.get()));
         ignite.compute().broadcast(new Resend());
-    }
-
-    @IgniteAsyncSupported
-    private IgniteCallable<CommittedTransactions> createLoadTask() {
-        return new LoadStateTask();
     }
 
     private static class LoadStateTask implements IgniteCallable<CommittedTransactions> {
