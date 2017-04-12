@@ -59,7 +59,7 @@ public class Reader extends Scheduler {
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
-    private final UUID nodeId;
+    private final UUID readerId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
 
@@ -79,7 +79,7 @@ public class Reader extends Scheduler {
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = UUID.randomUUID();
+        readerId = UUID.randomUUID();
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -123,21 +123,21 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
-            LOGGER.trace("[R] {} polled {}", nodeId, scopes);
+            LOGGER.trace("[R] {} polled {}", readerId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
-            LOGGER.trace("[R] {} told to commit {}", nodeId, txIdsToCommit);
+            LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
 
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(nodeId, committed);
+            lead.notifyCommitted(readerId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
     }
