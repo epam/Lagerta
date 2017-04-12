@@ -18,8 +18,6 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.google.common.util.concurrent.Uninterruptibles;
-import java.util.Collections;
-import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -49,16 +47,12 @@ public class LeadImplFatUnitTest {
     private static final String CACHE2 = "cache2";
 
     private LeadImpl lead;
-    private ReadTransactions read;
-    private CommittedTransactions commit;
-    private Heartbeats heartbeats;
-    private DynamicRule dynamicRule;
 
     @BeforeMethod
     public void setUp() throws Exception {
         ReadTransactions read = new ReadTransactions();
         CommittedTransactions committed = new CommittedTransactions();
-        heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
+        Heartbeats heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
         lead = new LeadImpl(MOCK_STATE_ASSISTANT, read, committed, heartbeats);
         lead.updateState(committed);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
