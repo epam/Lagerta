@@ -24,6 +24,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.mock;
 public class LeadImplFatUnitTest {
 
     private static final long TIMEOUT = 1000L;
-    private static final int INVOCATION_COUNT = 500;
+    private static final int INVOCATION_COUNT = 1000;
 
     private static final LeadStateAssistant MOCK_STATE_ASSISTANT = mock(LeadStateAssistant.class);
 
@@ -63,7 +64,7 @@ public class LeadImplFatUnitTest {
         lead.stop();
     }
 
-    @Test(timeOut = TIMEOUT)
+    @Test(invocationCount = INVOCATION_COUNT, timeOut = TIMEOUT)
     public void regressionTestOnBlockedTransactionsLogicInPlanner() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
@@ -78,7 +79,7 @@ public class LeadImplFatUnitTest {
     }
 
     // (0 -> 2) + (1 -> 2)
-    @Test(timeOut = TIMEOUT)
+    @Test(invocationCount = INVOCATION_COUNT, timeOut = TIMEOUT)
     public void sequenceBlockedFromOutside() {
         List<TransactionScope> aScope = list(
                 txScope(0, cacheScope(CACHE2, 1L)),
@@ -138,16 +139,15 @@ public class LeadImplFatUnitTest {
         assertPlanned(A, list(11L));
         notifyCommitted(A, list(11L));
         waitForLastDenseCommitted(13L);
-        Assert.assertTrue(lead.getLastDenseCommitted() == 13L);
     }
 
     private void assertPlanned(UUID uuid, List<Long> nonEmptyExpected) {
-        List<Long> actual;
+        List<Long> buffer = new ArrayList<>(nonEmptyExpected.size());
         do {
             Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-            actual = notifyRead(uuid, list());
-        } while (actual.isEmpty());
-        assertEquals(actual, nonEmptyExpected);
+            buffer.addAll(notifyRead(uuid, list()));
+        } while (buffer.isEmpty() || buffer.size() < nonEmptyExpected.size());
+        assertEquals(buffer, nonEmptyExpected);
     }
 
     private List<Long> notifyRead(UUID uuid, List<TransactionScope> scope) {
