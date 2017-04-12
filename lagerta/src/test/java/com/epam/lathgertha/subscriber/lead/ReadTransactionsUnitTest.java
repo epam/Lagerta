@@ -154,14 +154,13 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(B, list(tx2))
         );
         // Expected: A reader remains lost, as there was no txs sent by B
-        // which are also owned by sent after the A became lost. Lost duplicate
-        // of tx 0 is pruned.
-        ConsumerTxScope b0 = consumerTxScope(B, 0, false);
+        // which are also owned by sent after the A became lost.
+        ConsumerTxScope a0 = consumerTxScope(B, 0, false);
         ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         ConsumerTxScope b2 = consumerTxScope(B, 2, false);
-        Set<Long> expectedInProgress = Collections.singleton(0L);
+        Set<Long> expectedInProgress = Collections.emptySet();
         Set<UUID> expectedLostReaders = Collections.singleton(A);
-        List<ConsumerTxScope> expectedReadTxs = list(b0, b1, b2);
+        List<ConsumerTxScope> expectedReadTxs = list(a0, b1, b2);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
