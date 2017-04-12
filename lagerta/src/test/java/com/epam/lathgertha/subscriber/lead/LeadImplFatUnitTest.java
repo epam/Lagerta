@@ -145,7 +145,7 @@ public class LeadImplFatUnitTest {
         do {
             Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
             buffer.addAll(notifyRead(uuid, list()));
-        } while (buffer.isEmpty() || buffer.size() < nonEmptyExpected.size());
+        } while (buffer.size() < nonEmptyExpected.size());
         assertEquals(buffer, nonEmptyExpected);
     }
 
