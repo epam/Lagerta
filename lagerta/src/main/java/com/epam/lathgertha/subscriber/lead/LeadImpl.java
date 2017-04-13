@@ -20,6 +20,7 @@ import com.epam.lathgertha.common.CallableKeyListTask;
 import com.epam.lathgertha.common.CallableKeyTask;
 import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.Scheduler;
+import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +28,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 public class LeadImpl extends Scheduler implements Lead {
     private static final Logger LOGGER = LoggerFactory.getLogger(LeadImpl.class);
@@ -132,14 +135,17 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     private void plan() {
-        Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
+        List<ConsumerTxScope> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
         if (!ready.isEmpty()) {
             LOGGER.trace("[L] Planned {}", ready);
         }
-        for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
-            inProgress.addAll(entry.getValue());
-            toCommit.append(entry.getKey(), entry.getValue());
-        }
+        ready.stream()
+                .peek(ConsumerTxScope::markInProgress)
+                .peek(scope -> inProgress.add(scope.getTransactionId()))
+                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .entrySet()
+                .forEach(entry -> toCommit.append(entry.getKey(),
+                        entry.getValue().stream().map(TransactionScope::getTransactionId).collect(toList())));
     }
 
     @Override

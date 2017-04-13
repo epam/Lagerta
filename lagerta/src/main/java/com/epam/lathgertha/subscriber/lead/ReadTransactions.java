@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -126,7 +127,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             boolean someoneDied = !diedReaders.isEmpty();
 
             if (someoneDied) {
-                // ToDo: Cleanup in progress.
                 diedReaders
                         .stream()
                         .peek(lostReaders::remove)
@@ -137,7 +137,12 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                         .forEach(ConsumerTxScope::markOrphan);
             }
             if (someoneDied || duplicatesPruningScheduled) {
-                deduplicate(lostReaders, scopes);
+                Consumer<ConsumerTxScope> onRemove = tx -> {
+                    if (tx.isInProgress() && tx.isOrphan()) {
+                        inProgress.remove(tx.getTransactionId());
+                    }
+                };
+                deduplicate(lostReaders, scopes, onRemove);
                 duplicatesPruningScheduled = false;
             }
         }
@@ -164,7 +169,6 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 a = getNext(firstIter);
             } else if (lostReaders.contains(a.getConsumerId())) {
                 diedReaders.add(a.getConsumerId());
-                firstIter.remove();
                 a = getNext(firstIter);
             }
         }
@@ -175,7 +179,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         return diedReaders;
     }
 
-    private static void deduplicate(Set<UUID> lostReaders, List<ConsumerTxScope> transactions) {
+    private static void deduplicate(Set<UUID> lostReaders, List<ConsumerTxScope> transactions,
+                                    Consumer<ConsumerTxScope> onRemove) {
         if (transactions.isEmpty()) {
             return;
         }
@@ -193,6 +198,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             int thisLevel = getLevel(tx, lostReaders);
             if (thisLevel < level) {
                 it.remove();
+                onRemove.accept(tx);
             } else {
                 if (thisLevel > level) {
                     level = thisLevel;
@@ -200,6 +206,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                     while (count > 0) {
                         it.previous();
                         it.remove();
+                        onRemove.accept(tx);
                         count--;
                     }
                     it.next();

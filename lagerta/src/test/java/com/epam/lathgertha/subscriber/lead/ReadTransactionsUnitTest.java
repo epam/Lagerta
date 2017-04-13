@@ -19,18 +19,18 @@ package com.epam.lathgertha.subscriber.lead;
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.google.common.collect.Lists;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 import org.mockito.Mockito;
 import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -67,7 +67,7 @@ public class ReadTransactionsUnitTest {
     public void setUp() {
         Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
         read = new ReadTransactions();
-        read.setReadyAndPrune(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         heartbeats = Mockito.mock(Heartbeats.class);
     }
 

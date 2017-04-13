@@ -16,6 +16,7 @@
 package com.epam.lathgertha.subscriber.util;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
 import com.epam.lathgertha.subscriber.lead.Heartbeats;
 import com.epam.lathgertha.subscriber.lead.ReadTransactions;
@@ -31,11 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.NodeTransactionsBuilder;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
 
 public class PlannerUtilUnitTest {
@@ -62,7 +66,13 @@ public class PlannerUtilUnitTest {
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
         transactions.pruneCommitted(EMPTY_COMMITTED, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
-        Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
+        List<ConsumerTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
+        Map<UUID, List<Long>> plan = ready.stream()
+                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        entry -> entry.getValue().stream().map(TransactionScope::getTransactionId).collect(toList())));
         assertEquals(plan, expected);
     }
 

@@ -26,6 +26,7 @@ public class ConsumerTxScope extends TransactionScope {
     private final UUID consumerId;
 
     private boolean orphan;
+    private boolean inProgress;
 
     public ConsumerTxScope(UUID consumerId, long transactionId, List<Map.Entry<String, List>> scope) {
         super(transactionId, scope);
@@ -42,6 +43,14 @@ public class ConsumerTxScope extends TransactionScope {
 
     public void markOrphan() {
         orphan = true;
+    }
+
+    public boolean isInProgress() {
+        return inProgress;
+    }
+
+    public void markInProgress() {
+        inProgress = true;
     }
 
     @Override
