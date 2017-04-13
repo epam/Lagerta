@@ -16,8 +16,9 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -30,42 +31,42 @@ public class LeadResponse implements Serializable {
     public static final LeadResponse EMPTY = new LeadResponse(null, null);
 
     @Nullable
-    private final TLongList toCommitIds;
+    private final LongList toCommitIds;
 
     @Nullable
-    private final TLongList alreadyProcessedIds;
+    private final LongList alreadyProcessedIds;
 
-    public LeadResponse(@Nullable TLongList toCommitIds, @Nullable TLongList alreadyProcessedIds) {
+    public LeadResponse(@Nullable LongList toCommitIds, @Nullable LongList alreadyProcessedIds) {
         this.toCommitIds = toCommitIds;
         this.alreadyProcessedIds = alreadyProcessedIds;
     }
 
     @Nullable
-    public TLongList getToCommitIds() {
+    public LongList getToCommitIds() {
         return toCommitIds;
     }
 
     @Nullable
-    public TLongList getAlreadyProcessedIds() {
+    public LongList getAlreadyProcessedIds() {
         return alreadyProcessedIds;
     }
 
     public LeadResponse add(LeadResponse other) {
-        TLongList toCommitIds = join(this.toCommitIds, other.toCommitIds);
-        TLongList alreadyProcessedIds = join(this.alreadyProcessedIds, other.alreadyProcessedIds);
+        LongList toCommitIds = join(this.toCommitIds, other.toCommitIds);
+        LongList alreadyProcessedIds = join(this.alreadyProcessedIds, other.alreadyProcessedIds);
         return toCommitIds == this.toCommitIds && alreadyProcessedIds == this.alreadyProcessedIds
                 ? this
                 : new LeadResponse(toCommitIds, alreadyProcessedIds);
     }
 
-    private static TLongList join(TLongList a, TLongList b) {
+    private static LongList join(LongList a, LongList b) {
         if (b == null) {
             return a;
         }
         if (a == null) {
-            return new TLongArrayList(b);
+            return LongArrayList.newList(b);
         }
-        TLongList result = new TLongArrayList(a);
+        MutableLongList result = LongArrayList.newList(a);
         result.addAll(b);
         return result;
     }

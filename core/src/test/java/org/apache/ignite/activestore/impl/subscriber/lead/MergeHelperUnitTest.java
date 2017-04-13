@@ -21,10 +21,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import gnu.trove.list.array.TLongArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,10 +102,10 @@ public class MergeHelperUnitTest {
     @Test
     @Parameters(source = MergeToLongProvider.class)
     public void testMergeToLong(long[] to, long[] from, long dense, long[] expectedResult, long expectedDense) {
-        TLongArrayList actualResult = new TLongArrayList(to);
-        long result = MergeHelper.mergeWithDenseCompaction(new TLongArrayList(from), actualResult, dense);
+        MutableLongList actualResult = new LongArrayList(to);
+        long result = MergeHelper.mergeWithDenseCompaction(LongLists.immutable.of(from), actualResult, dense);
         Assert.assertEquals(expectedDense, result);
-        Assert.assertEquals(new TLongArrayList(expectedResult), actualResult);
+        Assert.assertEquals(LongLists.immutable.of(expectedResult), actualResult);
     }
 
     @SuppressWarnings("unused")

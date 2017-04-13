@@ -16,10 +16,8 @@
 
 package org.apache.ignite.load.subscriber;
 
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.TLongList;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
  * @author Evgeniy_Ignatiev
@@ -27,20 +25,20 @@ import gnu.trove.list.TLongList;
  */
 public class TxIdGenerator {
     private final int period;
-    private final TLongList pattern;
+    private final LongList pattern;
 
     private long shift;
-    private TLongIterator it;
+    private LongIterator it;
 
-    public TxIdGenerator(int period, TLongList pattern) {
+    public TxIdGenerator(int period, LongList pattern) {
         this.period = period;
         this.pattern = pattern;
-        it = pattern.iterator();
+        it = pattern.longIterator();
     }
 
     public long nextId() {
         if (!it.hasNext()) {
-            it = pattern.iterator();
+            it = pattern.longIterator();
             shift += period;
         }
         return it.next() + shift;

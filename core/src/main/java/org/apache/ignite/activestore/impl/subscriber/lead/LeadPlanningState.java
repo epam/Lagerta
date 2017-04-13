@@ -17,11 +17,11 @@
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
 import com.google.inject.Inject;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
 import org.apache.ignite.activestore.commons.Reference;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -36,9 +36,9 @@ public class LeadPlanningState {
     static final long NOT_INITIALIZED = -2;
 
     private final LinkedList<TxInfo> txInfos = new LinkedList<>();
-    private final TLongSet inProgressTransactions = new TLongHashSet();
-    private final TLongList sparseCommitted = new TLongArrayList();
-    private final TLongSet orphanTransactions = new TLongHashSet();
+    private final MutableLongSet inProgressTransactions = new LongHashSet();
+    private final MutableLongList sparseCommitted = new LongArrayList();
+    private final MutableLongSet orphanTransactions = new LongHashSet();
     private final List<TxInfo> toRemove = new ArrayList<>();
 
     private long lastDenseRead = NOT_INITIALIZED;
@@ -67,15 +67,15 @@ public class LeadPlanningState {
         return txInfos.listIterator();
     }
 
-    TLongSet inProgressTransactions() {
+    MutableLongSet inProgressTransactions() {
         return inProgressTransactions;
     }
 
-    TLongList sparseCommitted() {
+    MutableLongList sparseCommitted() {
         return sparseCommitted;
     }
 
-    TLongSet orphanTransactions() {
+    MutableLongSet orphanTransactions() {
         return orphanTransactions;
     }
 

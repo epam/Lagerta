@@ -17,10 +17,10 @@
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
 import com.google.inject.Provider;
-import gnu.trove.list.TLongList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.activestore.commons.ProxyService;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -62,13 +62,13 @@ public class DoubleLeadService extends LeadServiceAdapter {
     }
 
     @Override
-    public void notifyTransactionsCommitted(UUID consumerId, TLongList transactionsIds) {
+    public void notifyTransactionsCommitted(UUID consumerId, LongList transactionsIds) {
         workInstead.notifyTransactionsCommitted(consumerId, transactionsIds);
         real.get().notifyTransactionsCommitted(consumerId, transactionsIds);
     }
 
     @Override
-    public void updateInitialContext(UUID localLoaderId, TLongList txIds) {
+    public void updateInitialContext(UUID localLoaderId, LongList txIds) {
         workInstead.updateInitialContext(localLoaderId, txIds);
         real.get().updateInitialContext(localLoaderId, txIds);
     }

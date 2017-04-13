@@ -16,13 +16,13 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
 import org.apache.ignite.activestore.commons.Lazy;
 import org.apache.ignite.activestore.commons.Reference;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,7 +51,7 @@ public class LeadPlannerUnitTest {
 
         @Before
         public void updateInitialContext() {
-            planner.updateContext(-1, new TLongArrayList());
+            planner.updateContext(-1, LongLists.immutable.empty());
         }
 
         @Test
@@ -372,7 +372,7 @@ public class LeadPlannerUnitTest {
 
         @Before
         public void updateInitialContext() {
-            planner.updateContext(-1, new TLongArrayList());
+            planner.updateContext(-1, LongLists.immutable.empty());
         }
 
         @Test
@@ -498,7 +498,7 @@ public class LeadPlannerUnitTest {
         planner.markCommitted(consumerId, ids(txIds));
     }
 
-    private static Map.Entry<UUID, LeadResponse> response(UUID nodeId, TLongList toCommitIds, TLongList toRemoveIds) {
+    private static Map.Entry<UUID, LeadResponse> response(UUID nodeId, LongList toCommitIds, LongList toRemoveIds) {
         return new AbstractMap.SimpleImmutableEntry<>(nodeId, new LeadResponse(toCommitIds, toRemoveIds));
     }
 
@@ -517,8 +517,8 @@ public class LeadPlannerUnitTest {
         return new TxInfo(consumerId, txMetadata);
     }
 
-    private static TLongList ids(long... txIds) {
-        return new TLongArrayList(txIds);
+    private static LongList ids(long... txIds) {
+        return LongLists.immutable.of(txIds);
     }
 
     private static class SimpleReference<T> implements Reference<T> {

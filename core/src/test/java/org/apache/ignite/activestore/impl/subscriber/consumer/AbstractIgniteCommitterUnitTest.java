@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.ignite.Ignite;
@@ -41,6 +39,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,9 +74,9 @@ public abstract class AbstractIgniteCommitterUnitTest {
 
         final Thread main = Thread.currentThread();
         Committer committer = create(ignite);
-        committer.commitAsync(ids(input), supplier(input), mock(IgniteInClosure.class), new IgniteInClosure<TLongList>() {
+        committer.commitAsync(ids(input), supplier(input), mock(IgniteInClosure.class), new IgniteInClosure<LongList>() {
             @Override
-            public void apply(TLongList tLongList) {
+            public void apply(LongList tLongList) {
                 main.interrupt();
             }
         });
@@ -165,8 +166,8 @@ public abstract class AbstractIgniteCommitterUnitTest {
         return result;
     }
 
-    private static TLongList ids(Map<Long, Map.Entry<List<IgniteBiTuple<String, List>>, List<List>>> map) {
-        TLongList result = new TLongArrayList(map.size());
+    private static LongList ids(Map<Long, Map.Entry<List<IgniteBiTuple<String, List>>, List<List>>> map) {
+        MutableLongList result = new LongArrayList(map.size());
         for (Long id : map.keySet()) {
             result.add(id);
         }

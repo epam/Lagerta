@@ -16,10 +16,10 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
 import org.apache.ignite.activestore.commons.injection.ActiveStoreService;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.services.ServiceContext;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -54,7 +54,7 @@ public class LeadServiceImpl extends ActiveStoreService implements LeadService {
         return lead.notifyTransactionsRead(consumerId, metadatas);
     }
 
-    @Override public void updateInitialContext(UUID localLoaderId, TLongList txIds) {
+    @Override public void updateInitialContext(UUID localLoaderId, LongList txIds) {
         lead.updateInitialContext(localLoaderId, txIds);
     }
 
@@ -62,7 +62,7 @@ public class LeadServiceImpl extends ActiveStoreService implements LeadService {
         lead.notifyLocalLoaderStalled(leadId, localLoaderId);
     }
 
-    @Override public void notifyTransactionsCommitted(UUID consumerId, TLongList transactionsIds) {
+    @Override public void notifyTransactionsCommitted(UUID consumerId, LongList transactionsIds) {
         lead.notifyTransactionsCommitted(consumerId, transactionsIds);
     }
 

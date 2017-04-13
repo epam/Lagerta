@@ -16,13 +16,13 @@
 
 package org.apache.ignite.activestore.impl.subscriber.consumer;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
 import javax.inject.Inject;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.activestore.subscriber.Committer;
 import org.apache.ignite.activestore.subscriber.TransactionSupplier;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
  * @author Aleksandr_Meterko
@@ -36,11 +36,11 @@ public class IgniteCommitter extends AbstractIgniteCommitter implements Committe
     }
 
     @Override public void commitAsync(
-            TLongList txIds,
+            LongList txIds,
             TransactionSupplier txSupplier,
-            IgniteInClosure<Long> onSingleCommit, IgniteInClosure<TLongList> onFullCommit
+            IgniteInClosure<Long> onSingleCommit, IgniteInClosure<LongList> onFullCommit
     ) {
-        for (TLongIterator it = txIds.iterator(); it.hasNext(); ) {
+        for (LongIterator it = txIds.longIterator(); it.hasNext(); ) {
             singleCommit(txSupplier, onSingleCommit, it.next());
         }
         onFullCommit.apply(txIds);

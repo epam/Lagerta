@@ -25,13 +25,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.set.TLongSet;
 import org.apache.ignite.activestore.commons.Lazy;
 import org.apache.ignite.activestore.impl.transactions.JointTxScope;
 import org.apache.ignite.lang.IgniteClosure;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 /**
  * @author Evgeniy_Ignatiev
@@ -44,10 +46,10 @@ class LeadPlanner {
         }
     };
 
-    private static final IgniteClosure<UUID, TLongList> ARRAY_LIST = new IgniteClosure<UUID, TLongList>() {
+    private static final IgniteClosure<UUID, MutableLongList> ARRAY_LIST = new IgniteClosure<UUID, MutableLongList>() {
         @Override
-        public TLongList apply(UUID consumerId) {
-            return new TLongArrayList();
+        public MutableLongList apply(UUID consumerId) {
+            return new LongArrayList();
         }
     };
 
@@ -81,15 +83,15 @@ class LeadPlanner {
     }
 
     public Map<UUID, LeadResponse> plan() {
-        Lazy<UUID, TLongList> toCommit = findToCommitPerNode();
-        Lazy<UUID, TLongList> toRemove = takeToRemoveAsLazyMap();
+        Lazy<UUID, MutableLongList> toCommit = findToCommitPerNode();
+        Lazy<UUID, MutableLongList> toRemove = takeToRemoveAsLazyMap();
         Map<UUID, LeadResponse> result = new HashMap<>(toCommit.keySet().size());
 
-        for (Map.Entry<UUID, TLongList> entry : toCommit) {
-            TLongList toRemoveList = toRemove.containsKey(entry.getKey()) ? toRemove.get(entry.getKey()) : null;
+        for (Map.Entry<UUID, MutableLongList> entry : toCommit) {
+            LongList toRemoveList = toRemove.containsKey(entry.getKey()) ? toRemove.get(entry.getKey()) : null;
             result.put(entry.getKey(), new LeadResponse(entry.getValue(), toRemoveList));
         }
-        for (Map.Entry<UUID, TLongList> entry : toRemove) {
+        for (Map.Entry<UUID, MutableLongList> entry : toRemove) {
             if (!result.containsKey(entry.getKey())) {
                 result.put(entry.getKey(), new LeadResponse(null, entry.getValue()));
             }
@@ -97,10 +99,10 @@ class LeadPlanner {
         return result;
     }
 
-    private Lazy<UUID, TLongList> findToCommitPerNode() {
+    private Lazy<UUID, MutableLongList> findToCommitPerNode() {
         JointTxScope globallyBlockedScope = new JointTxScope();
         Lazy<UUID, JointTxScope> ownedScopePerNode = new Lazy<>(TX_SCOPE);
-        Lazy<UUID, TLongList> toCommit = new Lazy<>(ARRAY_LIST);
+        Lazy<UUID, MutableLongList> toCommit = new Lazy<>(ARRAY_LIST);
 
         for (TxInfo txInfo : state.txInfos()) {
             long id = txInfo.id();
@@ -125,8 +127,8 @@ class LeadPlanner {
         return toCommit;
     }
 
-    private Lazy<UUID, TLongList> takeToRemoveAsLazyMap() {
-        Lazy<UUID, TLongList> toRemoveLazyMap = new Lazy<>(ARRAY_LIST);
+    private Lazy<UUID, MutableLongList> takeToRemoveAsLazyMap() {
+        Lazy<UUID, MutableLongList> toRemoveLazyMap = new Lazy<>(ARRAY_LIST);
 
         for (TxInfo txInfo : state.toRemove()) {
             toRemoveLazyMap.get(txInfo.consumerId()).add(txInfo.id());
@@ -135,8 +137,8 @@ class LeadPlanner {
         return toRemoveLazyMap;
     }
 
-    public void markCommitted(UUID consumerId, TLongList txIds) {
-        TLongIterator txIdIt = txIds.iterator();
+    public void markCommitted(UUID consumerId, LongList txIds) {
+        LongIterator txIdIt = txIds.longIterator();
         ListIterator<TxInfo> txInfoIterator = state.txInfoListIterator();
         long currentTxId = txIdIt.next(); // Should always be at least one value.
 
@@ -183,8 +185,8 @@ class LeadPlanner {
         return true;
     }
 
-    public void markInProgressTransactions(TLongList txIds) {
-        for (TLongIterator it = txIds.iterator(); it.hasNext(); ) {
+    public void markInProgressTransactions(LongList txIds) {
+        for (LongIterator it = txIds.longIterator(); it.hasNext(); ) {
             state.inProgressTransactions().add(it.next());
         }
     }
@@ -220,7 +222,7 @@ class LeadPlanner {
         return result;
     }
 
-    public void updateContext(long loadedLastDenseCommitted, TLongList loadedSparseCommitted) {
+    public void updateContext(long loadedLastDenseCommitted, LongList loadedSparseCommitted) {
         long lastDenseCommitted = MergeHelper.mergeWithDenseCompaction(loadedSparseCommitted, state.sparseCommitted(),
             loadedLastDenseCommitted);
         state.setLastDenseCommitted(lastDenseCommitted);
@@ -231,7 +233,7 @@ class LeadPlanner {
         long next = state.lastDenseCommitted() + 1;
         ListIterator<TxInfo> txInfoIt = state.txInfoListIterator();
 
-        for (TLongIterator sparseIt = state.sparseCommitted().iterator(); sparseIt.hasNext(); ) {
+        for (LongIterator sparseIt = state.sparseCommitted().longIterator(); sparseIt.hasNext(); ) {
             long sparseId = sparseIt.next();
 
             if (sparseId > next) {
@@ -279,8 +281,8 @@ class LeadPlanner {
         }
     }
 
-    private void filterCommitted(TLongSet ids) {
-        for (TLongIterator it = ids.iterator(); it.hasNext(); ) {
+    private void filterCommitted(MutableLongSet ids) {
+        for (MutableLongIterator it = ids.longIterator(); it.hasNext(); ) {
             long id = it.next();
             if (id <= state.lastDenseCommitted() || state.sparseCommitted().contains(id)) {
                 it.remove();

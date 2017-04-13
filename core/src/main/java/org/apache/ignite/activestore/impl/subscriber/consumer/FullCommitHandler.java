@@ -16,10 +16,10 @@
 
 package org.apache.ignite.activestore.impl.subscriber.consumer;
 
-import gnu.trove.list.TLongList;
 import org.apache.ignite.activestore.impl.DataCapturerBusConfiguration;
 import org.apache.ignite.activestore.impl.subscriber.lead.LeadService;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import static org.apache.ignite.activestore.commons.UUIDFormat.f;
  * @author Aleksandr_Meterko
  * @since 12/19/2016
  */
-class FullCommitHandler extends TransactionsBufferHolder<FullCommitHandler> implements IgniteInClosure<TLongList> {
+class FullCommitHandler extends TransactionsBufferHolder<FullCommitHandler> implements IgniteInClosure<LongList> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FullCommitHandler.class);
 
     private final UUID consumerId;
@@ -45,7 +45,7 @@ class FullCommitHandler extends TransactionsBufferHolder<FullCommitHandler> impl
         this.lead = lead;
     }
 
-    @Override public void apply(TLongList txIds) {
+    @Override public void apply(LongList txIds) {
         LOGGER.debug("[C] Committed {} in {}", txIds, f(consumerId));
         buffer.markCommitted(txIds);
         lead.notifyTransactionsCommitted(consumerId, txIds);

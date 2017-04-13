@@ -16,9 +16,8 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.iterator.TObjectLongIterator;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ class ConsumerPingManager {
 
     private final Set<UUID> consumerOutOfOrder = new HashSet<>();
     private final Set<UUID> staleConsumers = new HashSet<>();
-    private final TObjectLongMap<UUID> pingTimes = new TObjectLongHashMap<>();
+    private final MutableObjectLongMap<UUID> pingTimes = new ObjectLongHashMap<>();
 
     private final ConsumerPingCheckStrategy strategy;
     private final Map<UUID, LeadResponse> availableWorkBuffer;
@@ -64,10 +63,8 @@ class ConsumerPingManager {
             }
             staleConsumers.removeAll(cleaned);
         }
-        for (TObjectLongIterator<UUID> it = pingTimes.iterator(); it.hasNext(); ) {
-            it.advance();
-            UUID consumerId = it.key();
-            if (strategy.isOutOfOrder(currentTime, it.value())) {
+        pingTimes.forEachKeyValue((consumerId, pingTime) -> {
+            if (strategy.isOutOfOrder(currentTime, pingTime)) {
                 if (consumerOutOfOrder.add(consumerId)) {
                     LOGGER.info("[L] Consumer {} is out of order", f(consumerId));
                     staleConsumers.add(consumerId);
@@ -77,7 +74,7 @@ class ConsumerPingManager {
             else if (consumerOutOfOrder.remove(consumerId)) {
                 planner.reuniteConsumer(consumerId);
             }
-        }
+        });
     }
 
     public boolean areConsumersStalled() {

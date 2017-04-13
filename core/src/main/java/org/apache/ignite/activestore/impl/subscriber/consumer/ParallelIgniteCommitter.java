@@ -16,11 +16,6 @@
 
 package org.apache.ignite.activestore.impl.subscriber.consumer;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.activestore.impl.transactions.JointTxScope;
@@ -29,6 +24,12 @@ import org.apache.ignite.activestore.subscriber.TransactionSupplier;
 import org.apache.ignite.activestore.transactions.TransactionScopeIterator;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +59,9 @@ public class ParallelIgniteCommitter implements Committer, LifecycleAware {
 
     @Override
     public void commitAsync(
-        TLongList txIds,
+        LongList txIds,
         TransactionSupplier txSupplier,
-        IgniteInClosure<Long> onSingleCommit, IgniteInClosure<TLongList> onFullCommit
+        IgniteInClosure<Long> onSingleCommit, IgniteInClosure<LongList> onFullCommit
     ) {
         new CommitterContext(ignite, executor, txSupplier, onSingleCommit, onFullCommit, txIds).schedule();
     }
@@ -94,19 +95,19 @@ public class ParallelIgniteCommitter implements Committer, LifecycleAware {
         private final ExecutorService executor;
         private final TransactionSupplier txSupplier;
         private final IgniteInClosure<Long> onSingleCommit;
-        private final IgniteInClosure<TLongList> onFullCommit;
+        private final IgniteInClosure<LongList> onFullCommit;
 
-        private final TLongList ready;
-        private final TLongSet wip;
-        private final TLongSet committed;
+        private final LongList ready;
+        private final MutableLongSet wip;
+        private final MutableLongSet committed;
 
         public CommitterContext(
                 Ignite ignite,
                 ExecutorService executor,
                 TransactionSupplier txSupplier,
                 IgniteInClosure<Long> onSingleCommit,
-                IgniteInClosure<TLongList> onFullCommit,
-                TLongList ready
+                IgniteInClosure<LongList> onFullCommit,
+                LongList ready
         ) {
             this.ignite = ignite;
             this.ready = ready;
@@ -115,12 +116,12 @@ public class ParallelIgniteCommitter implements Committer, LifecycleAware {
             this.onFullCommit = onFullCommit;
             this.executor = executor;
 
-            wip = new TLongHashSet();
-            committed = new TLongHashSet();
+            wip = new LongHashSet();
+            committed = new LongHashSet();
         }
 
         public void schedule() {
-            for (TLongIterator it = getAvailableTasks().iterator(); it.hasNext(); ) {
+            for (LongIterator it = getAvailableTasks().longIterator(); it.hasNext(); ) {
                 executor.submit(new Task(ignite, txSupplier, onSingleCommit, this, it.next()));
             }
         }
@@ -132,12 +133,12 @@ public class ParallelIgniteCommitter implements Committer, LifecycleAware {
             schedule();
         }
 
-        private TLongList getAvailableTasks() {
-            TLongList tasks = new TLongArrayList();
+        private LongList getAvailableTasks() {
+            MutableLongList tasks = new LongArrayList();
             boolean allDone = true;
             synchronized (this) {
                 JointTxScope blocked = new JointTxScope();
-                for (TLongIterator it = ready.iterator(); it.hasNext(); ) {
+                for (LongIterator it = ready.longIterator(); it.hasNext(); ) {
                     long id = it.next();
                     if (!committed.contains(id)) {
                         TransactionScopeIterator scopeIt = txSupplier.scopeIterator(id);
