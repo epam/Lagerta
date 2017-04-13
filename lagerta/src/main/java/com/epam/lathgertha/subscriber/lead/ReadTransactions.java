@@ -78,12 +78,12 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     }
 
     /**
-     * makes this ready to process transactions and shifts lastDenseRead to proper id
+     * Makes {@code ReadTransactions} ready to process transactions.
+     * After this method must be called {@link #pruneCommitted(CommittedTransactions)}
      */
-    public void setReadyAndPrune(CommittedTransactions committed) {
+    public void makeReady() {
         if (lastDenseRead == INITIAL_READ_ID) {
             lastDenseRead = INITIAL_READY_READ_ID;
-            pruneCommitted(committed);
         }
     }
 
