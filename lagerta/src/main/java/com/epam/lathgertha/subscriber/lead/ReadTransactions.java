@@ -80,9 +80,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     }
 
     public void scheduleDuplicatesPruning() {
-        if (!duplicatesPruningScheduled) {
-            duplicatesPruningScheduled = true;
-        }
+        duplicatesPruningScheduled = true;
     }
 
     public void pruneCommitted(

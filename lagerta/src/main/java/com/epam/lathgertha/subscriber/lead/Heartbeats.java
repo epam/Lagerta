@@ -42,8 +42,8 @@ public class Heartbeats {
         return System.currentTimeMillis() - beat > expirationThreshold;
     }
 
-    public void update(UUID consumerId, long beat) {
-        beats.put(consumerId, beat);
+    public void update(UUID consumerId) {
+        beats.put(consumerId, System.currentTimeMillis());
     }
 
     public void removeDead(UUID consumerId) {

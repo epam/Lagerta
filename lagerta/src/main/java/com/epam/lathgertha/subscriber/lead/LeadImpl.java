@@ -61,7 +61,8 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     public LeadImpl(LeadStateAssistant stateAssistant) {
-        this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady(), new Heartbeats(DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
+        this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady(),
+                new Heartbeats(DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
     }
 
     /**
@@ -72,15 +73,13 @@ public class LeadImpl extends Scheduler implements Lead {
         if (!txScopes.isEmpty()) {
             LOGGER.trace("[L] notify read from {} ->  {}", readerId, txScopes);
         }
+        pushTask(() -> heartbeats.update(readerId));
         List<Long> result = !txScopes.isEmpty()
                 ? toCommit.call(readerId, () -> readTransactions.addAllOnNode(readerId, txScopes))
                 : toCommit.call(readerId);
         if (result != null) {
             LOGGER.trace("[L] ready to commit for {} ->  {}", readerId, result);
         }
-        long beat = System.currentTimeMillis();
-
-        pushTask(() -> heartbeats.update(readerId, beat));
         return result == null ? Collections.emptyList() : result;
     }
 
@@ -90,12 +89,10 @@ public class LeadImpl extends Scheduler implements Lead {
     @Override
     public void notifyCommitted(UUID readerId, List<Long> ids) {
         LOGGER.trace("[L] notify committed from {} -> {} ", readerId, ids);
-        long beat = System.currentTimeMillis();
-
         pushTask(() -> {
             committed.addAll(ids);
             inProgress.removeAll(ids);
-            heartbeats.update(readerId, beat);
+            heartbeats.update(readerId);
         });
     }
 
@@ -119,17 +116,12 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     private void markLostAndFound() {
-        for (UUID consumerId : heartbeats.knownReaders()) {
-            boolean knownAsLost = lostReaders.contains(consumerId);
-
-            if (heartbeats.isAvailable(consumerId)) {
-                if (knownAsLost) {
-                    lostReaders.remove(consumerId);
+        for (UUID readerId : heartbeats.knownReaders()) {
+            boolean knownAsLost = lostReaders.contains(readerId);
+            if (heartbeats.isAvailable(readerId) == knownAsLost) {
+                if (knownAsLost ? lostReaders.remove(readerId) : lostReaders.add(readerId)) {
                     readTransactions.scheduleDuplicatesPruning();
                 }
-            } else if (!knownAsLost) {
-                lostReaders.add(consumerId);
-                readTransactions.scheduleDuplicatesPruning();
             }
         }
     }
