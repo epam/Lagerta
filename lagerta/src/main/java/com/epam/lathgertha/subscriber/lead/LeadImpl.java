@@ -48,7 +48,12 @@ public class LeadImpl extends Scheduler implements Lead {
     private final ReadTransactions readTransactions;
     private final Heartbeats heartbeats;
 
-    LeadImpl(LeadStateAssistant stateAssistant, ReadTransactions readTransactions, CommittedTransactions committed, Heartbeats heartbeats) {
+    LeadImpl(
+            LeadStateAssistant stateAssistant,
+            ReadTransactions readTransactions,
+            CommittedTransactions committed,
+            Heartbeats heartbeats
+    ) {
         this.readTransactions = readTransactions;
         this.committed = committed;
         this.heartbeats = heartbeats;
