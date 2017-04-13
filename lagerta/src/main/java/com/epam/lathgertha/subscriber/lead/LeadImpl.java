@@ -20,6 +20,7 @@ import com.epam.lathgertha.common.CallableKeyListTask;
 import com.epam.lathgertha.common.CallableKeyTask;
 import com.epam.lathgertha.common.PeriodicRule;
 import com.epam.lathgertha.common.Scheduler;
+import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.util.PlannerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,33 +28,46 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 public class LeadImpl extends Scheduler implements Lead {
     private static final Logger LOGGER = LoggerFactory.getLogger(LeadImpl.class);
 
     private static final long SAVE_STATE_PERIOD = 1000L;
+    static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
 
     private final Set<Long> inProgress = new HashSet<>();
+    private final Set<UUID> lostReaders = new HashSet<>();
     private final CallableKeyTask<List<Long>, UUID, List<Long>> toCommit = new CallableKeyListTask<>(this);
 
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
+    private final Heartbeats heartbeats;
 
-    LeadImpl(LeadStateAssistant stateAssistant, ReadTransactions readTransactions, CommittedTransactions committed) {
+    LeadImpl(
+            LeadStateAssistant stateAssistant,
+            ReadTransactions readTransactions,
+            CommittedTransactions committed,
+            Heartbeats heartbeats
+    ) {
         this.readTransactions = readTransactions;
         this.committed = committed;
+        this.heartbeats = heartbeats;
         pushTask(() -> stateAssistant.load(this));
         registerRule(this.committed::compress);
-        registerRule(() -> this.readTransactions.pruneCommitted(this.committed));
+        registerRule(new PeriodicRule(this::markLostAndFound, DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
+        registerRule(() -> this.readTransactions.pruneCommitted(this.committed, heartbeats, lostReaders, inProgress));
         registerRule(this::plan);
         registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), SAVE_STATE_PERIOD));
     }
 
     public LeadImpl(LeadStateAssistant stateAssistant) {
-        this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady());
+        this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady(),
+                new Heartbeats(DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
     }
 
     /**
@@ -64,6 +78,7 @@ public class LeadImpl extends Scheduler implements Lead {
         if (!txScopes.isEmpty()) {
             LOGGER.trace("[L] notify read from {} ->  {}", readerId, txScopes);
         }
+        pushTask(() -> heartbeats.update(readerId));
         List<Long> result = !txScopes.isEmpty()
                 ? toCommit.call(readerId, () -> readTransactions.addAllOnNode(readerId, txScopes))
                 : toCommit.call(readerId);
@@ -82,6 +97,7 @@ public class LeadImpl extends Scheduler implements Lead {
         pushTask(() -> {
             committed.addAll(ids);
             inProgress.removeAll(ids);
+            heartbeats.update(readerId);
         });
     }
 
@@ -103,19 +119,32 @@ public class LeadImpl extends Scheduler implements Lead {
         pushTask(() -> {
             committed.addAll(newCommitted);
             readTransactions.makeReady();
-            readTransactions.pruneCommitted(committed);
+            readTransactions.pruneCommitted(committed, heartbeats, lostReaders, inProgress);
         });
     }
 
+    private void markLostAndFound() {
+        for (UUID readerId : heartbeats.knownReaders()) {
+            boolean knownAsLost = lostReaders.contains(readerId);
+            if (heartbeats.isAvailable(readerId) == knownAsLost) {
+                if (knownAsLost ? lostReaders.remove(readerId) : lostReaders.add(readerId)) {
+                    readTransactions.scheduleDuplicatesPruning();
+                }
+            }
+        }
+    }
+
     private void plan() {
-        Map<UUID, List<Long>> ready = PlannerUtil.plan(readTransactions, committed, inProgress);
+        List<ConsumerTxScope> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
         if (!ready.isEmpty()) {
             LOGGER.trace("[L] Planned {}", ready);
         }
-        for (Map.Entry<UUID, List<Long>> entry : ready.entrySet()) {
-            inProgress.addAll(entry.getValue());
-            toCommit.append(entry.getKey(), entry.getValue());
-        }
+        ready.stream()
+                .peek(ConsumerTxScope::markInProgress)
+                .peek(scope -> inProgress.add(scope.getTransactionId()))
+                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .forEach((key, value) -> toCommit.append(key,
+                        value.stream().map(TransactionScope::getTransactionId).collect(toList())));
     }
 
     @Override

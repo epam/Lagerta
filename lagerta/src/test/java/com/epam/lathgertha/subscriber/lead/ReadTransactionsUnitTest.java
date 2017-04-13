@@ -20,13 +20,16 @@ import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.google.common.collect.Lists;
 import org.mockito.Mockito;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,30 +38,37 @@ import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
+@SuppressWarnings("unchecked")
 public class ReadTransactionsUnitTest {
-
+    private static final String DUPLICATES_PRUNING_PROVIDER = "duplicatesPruningProvider";
     private static final String LIST_OF_TRANSACTIONS = "listOfTransactions";
     private static final UUID NODE = java.util.UUID.randomUUID();
     private static final String CACHE = "cacheName";
+    private static final Set<UUID> EMPTY_LOST_READERS = Collections.emptySet();
+    private static final Set<Long> EMPTY_IN_PROGRESS = Collections.emptySet();
 
     private static final CommittedTransactions COMMITTED = Mockito.mock(CommittedTransactions.class);
     private static final List<Map.Entry<String, List>> CACHE_SCOPE = Mockito.mock(List.class);
+    private static final Map.Entry<String, List> TX_SCOPE = Mockito.mock(Map.Entry.class);
 
     private static final long LAST_DENSE_COMMITTED = 1L;
     private static final long EXPECTED_LAST_DENSE_READ = 4L;
 
-    private ReadTransactions read;
+    // Reader letter name put as a second part of UUID.
+    private static final UUID A = UUID.fromString("00000000-aaaa-0000-0000-000000000000");
+    private static final UUID B = UUID.fromString("00000000-bbbb-0000-0000-000000000000");
+    private static final UUID C = UUID.fromString("00000000-cccc-0000-0000-000000000000");
 
-    @BeforeClass
-    public static void setUpClass() {
-        Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
-    }
+    private ReadTransactions read;
+    private Heartbeats heartbeats;
 
     @BeforeMethod
     public void setUp() {
+        Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
         read = new ReadTransactions();
         read.makeReady();
-        read.pruneCommitted(COMMITTED);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
+        heartbeats = Mockito.mock(Heartbeats.class);
     }
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
@@ -94,12 +104,189 @@ public class ReadTransactionsUnitTest {
                 list(txScope(12, cacheScope(CACHE, 6L, 7L, 42L, 49L))));
     }
 
+    @DataProvider(name = DUPLICATES_PRUNING_PROVIDER)
+    private Object[][] provideForCheckDuplicatesPruning() {
+        return new Object[][] {
+            readerGotLostAndThenDied(),
+            twoReadersGotLostOneGotBackToLife(),
+            twoReadersGotLostOneGotBackToLifeFirstDied(),
+            twoReadersLostThirdComesFirstBecomesDead(),
+            threeLostThirdOneComesBackToLife()
+        };
+    }
+
+    private Object[] readerGotLostAndThenDied() {
+        // Given.
+        TransactionScope tx0 = txScope(0, TX_SCOPE);
+        TransactionScope tx1 = txScope(1, TX_SCOPE);
+        Set<Long> inProgress = set(0L);
+        Set<UUID> lostReaders = set(A);
+        List<Runnable> happenedActions = list(
+            () -> read.addAllOnNode(A, list(tx0)),
+            () -> read.addAllOnNode(B, list(tx1)),
+            () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
+            () -> read.addAllOnNode(B, list(tx0))
+        );
+        // Expected: A reader died, tx 0 stopped being in progress. Orphan duplicate
+        // of tx 0 is pruned.
+        ConsumerTxScope b0 = consumerTxScope(B, 0, false);
+        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        Set<Long> expectedInProgress = Collections.emptySet();
+        Set<UUID> expectedLostReaders = Collections.emptySet();
+        List<ConsumerTxScope> expectedReadTxs = list(b0, b1);
+        return new Object[] {
+            happenedActions, lostReaders, inProgress, expectedInProgress,
+            expectedLostReaders, expectedReadTxs
+        };
+    }
+
+    private Object[] twoReadersGotLostOneGotBackToLife() {
+        // Given.
+        TransactionScope tx0 = txScope(0, TX_SCOPE);
+        TransactionScope tx1 = txScope(1, TX_SCOPE);
+        TransactionScope tx2 = txScope(2, TX_SCOPE);
+        Set<Long> inProgress = set(0L);
+        Set<UUID> lostReaders = set(A);
+        List<Runnable> happenedActions = list(
+            () -> read.addAllOnNode(A, list(tx0)),
+            () -> read.addAllOnNode(B, list(tx0, tx1)),
+            () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
+            () -> read.addAllOnNode(B, list(tx2))
+        );
+        // Expected: A reader remains lost, as there was no txs sent by B
+        // which are also owned by sent after the A became lost.
+        ConsumerTxScope a0 = consumerTxScope(B, 0, false);
+        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        ConsumerTxScope b2 = consumerTxScope(B, 2, false);
+        Set<Long> expectedInProgress = Collections.singleton(0L);
+        Set<UUID> expectedLostReaders = Collections.singleton(A);
+        List<ConsumerTxScope> expectedReadTxs = list(a0, b1, b2);
+        return new Object[] {
+            happenedActions, lostReaders, inProgress, expectedInProgress,
+            expectedLostReaders, expectedReadTxs
+        };
+    }
+
+    private Object[] twoReadersGotLostOneGotBackToLifeFirstDied() {
+        // Given.
+        TransactionScope tx0 = txScope(0, TX_SCOPE);
+        TransactionScope tx1 = txScope(1, TX_SCOPE);
+        TransactionScope tx2 = txScope(2, TX_SCOPE);
+        Set<Long> inProgress = set(0L);
+        Set<UUID> lostReaders = set(A);
+        List<Runnable> happenedActions = list(
+            () -> read.addAllOnNode(A, list(tx0)),
+            () -> read.addAllOnNode(A, list(tx2)),
+            () -> read.addAllOnNode(B, list(tx1)),
+            () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
+            () -> read.addAllOnNode(B, list(tx0))
+        );
+        // Expected. A claimed dead, tx 2 orphan, tx 0 stopped being in progress.
+        ConsumerTxScope b0 = consumerTxScope(B, 0, false);
+        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        ConsumerTxScope a2 = consumerTxScope(A, 2, true);
+        Set<Long> expectedInProgress = Collections.emptySet();
+        Set<UUID> expectedLostReaders = Collections.emptySet();
+        List<ConsumerTxScope> expectedReadTxs = list(b0, b1, a2);
+        return new Object[] {
+            happenedActions, lostReaders, inProgress, expectedInProgress,
+            expectedLostReaders, expectedReadTxs
+        };
+    }
+
+    private Object[] twoReadersLostThirdComesFirstBecomesDead() {
+        // Given.
+        TransactionScope tx0 = txScope(0, TX_SCOPE);
+        TransactionScope tx1 = txScope(1, TX_SCOPE);
+        Set<Long> inProgress = set();
+        Set<UUID> lostReaders = set(A, B);
+        List<Runnable> happenedActions = list(
+            () -> read.addAllOnNode(A, list(tx0, tx1)),
+            () -> read.addAllOnNode(B, list(tx1)),
+            () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> read.addAllOnNode(C, list(tx0))
+        );
+        // Expected: A claimed dead, B remains lost.
+        ConsumerTxScope c0 = consumerTxScope(C, 0, false);
+        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        Set<Long> expectedInProgress = Collections.emptySet();
+        Set<UUID> expectedLostReaders = Collections.singleton(B);
+        List<ConsumerTxScope> expectedReadTxs = list(c0, b1);
+        return new Object[] {
+            happenedActions, lostReaders, inProgress, expectedInProgress,
+            expectedLostReaders, expectedReadTxs
+        };
+    }
+
+    private Object[] threeLostThirdOneComesBackToLife() {
+        // Given. Muliple nodes receive same txs due to rebalancing.
+        TransactionScope tx0 = txScope(0, TX_SCOPE);
+        TransactionScope tx1 = txScope(1, TX_SCOPE);
+        TransactionScope tx2 = txScope(2, TX_SCOPE);
+        Set<Long> inProgress = set(0L, 1L, 2L);
+        Set<UUID> lostReaders = set(A, B);
+        List<Runnable> happenedActions = list(
+            () -> read.addAllOnNode(A, list(tx0, tx2)),
+            () -> read.addAllOnNode(B, list(tx1, tx2)),
+            () -> read.addAllOnNode(C, list(tx2)),
+            () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L, 1L, 2L),
+            () -> read.addAllOnNode(C, list(tx1))
+        );
+        // Expected: B claimed dead, A remains lost, tx 2 duplicate from A pruned,
+        // tx infos from B pruned.
+        // Note: no knowledge which node progresses a txs at a moment - it can be any of them
+        // as the ordering of merge procedure is not defined, though it places new duplicates after
+        // the existing ones.
+        ConsumerTxScope a0 = consumerTxScope(A, 0, false);
+        ConsumerTxScope c1 = consumerTxScope(C, 1, false);
+        ConsumerTxScope c2 = consumerTxScope(C, 2, false);
+        Set<Long> expectedInProgress = set(0L, 2L);
+        Set<UUID> expectedLostReaders = Collections.singleton(A);
+        List<ConsumerTxScope> expectedReadTxs = list(a0, c1, c2);
+        return new Object[] {
+            happenedActions, lostReaders, inProgress, expectedInProgress,
+            expectedLostReaders, expectedReadTxs
+        };
+    }
+
+    @Test(dataProvider = DUPLICATES_PRUNING_PROVIDER)
+    public void checkDuplicatesPruning(
+        List<Runnable> happenedActions,
+        Set<UUID> lostReaders,
+        Set<Long> inProgress,
+        Set<Long> expectedInProgress,
+        Set<UUID> expectedLostReaders,
+        List<ConsumerTxScope> expectedReadTxs
+    ) {
+        Mockito.doReturn(CommittedTransactions.INITIAL_READY_COMMIT_ID).when(COMMITTED).getLastDenseCommit();
+        happenedActions.forEach(Runnable::run);
+        read.scheduleDuplicatesPruning();
+        read.pruneCommitted(COMMITTED, heartbeats, lostReaders, inProgress);
+
+        assertEquals(expectedInProgress, inProgress);
+        assertEquals(expectedLostReaders, lostReaders);
+
+        Iterator<ConsumerTxScope> it = read.iterator();
+
+        for (ConsumerTxScope scope : expectedReadTxs) {
+            ConsumerTxScope actualScope = it.next();
+
+            assertEquals(actualScope.getConsumerId(), scope.getConsumerId());
+            assertEquals(actualScope.getTransactionId(), scope.getTransactionId());
+            assertEquals(actualScope.isOrphan(), scope.isOrphan());
+        }
+    }
+
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
     public void pruningWorksWithAddManyLists(
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         long commitAfterCompress = read.getLastDenseRead();
         assertEquals(commitAfterCompress, EXPECTED_LAST_DENSE_READ);
     }
@@ -109,7 +296,7 @@ public class ReadTransactionsUnitTest {
             List<List<TransactionScope>> transactions,
             List<ConsumerTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
-        read.pruneCommitted(COMMITTED);
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         List<Long> actual = Lists.newArrayList(read.iterator()).stream()
                 .map(ConsumerTxScope::getTransactionId)
                 .collect(Collectors.toList());
@@ -119,7 +306,31 @@ public class ReadTransactionsUnitTest {
         assertEquals(actual, expected);
     }
 
+    private void markInProgress(Long... txIds) {
+        Set<Long> ids = set(txIds);
+
+        for (ConsumerTxScope scope : read) {
+            if (ids.contains(scope.getTransactionId())) {
+                scope.markInProgress();
+            }
+        }
+    }
+
+    private static ConsumerTxScope consumerTxScope(UUID readerId, long transactionId, boolean isOrphan) {
+        ConsumerTxScope result = new ConsumerTxScope(readerId, transactionId, CACHE_SCOPE);
+
+        if (isOrphan) {
+            result.markOrphan();
+        }
+        return result;
+    }
+
     private static ConsumerTxScope consumerTxScope(long transactionId) {
-        return new ConsumerTxScope(NODE, transactionId, CACHE_SCOPE);
+        return consumerTxScope(NODE, transactionId, false);
+    }
+
+    @SafeVarargs
+    private static <T> Set<T> set(T... objects) {
+        return new HashSet<>(list(objects));
     }
 }

@@ -55,7 +55,9 @@ public class LeadImplFatUnitTest {
     }
 
     private void startConfiguredLead(LeadStateAssistant assistant) {
-        lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady());
+        Heartbeats heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
+
+        lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 

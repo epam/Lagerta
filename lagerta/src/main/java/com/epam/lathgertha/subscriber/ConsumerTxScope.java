@@ -25,6 +25,9 @@ public class ConsumerTxScope extends TransactionScope {
 
     private final UUID consumerId;
 
+    private boolean orphan;
+    private boolean inProgress;
+
     public ConsumerTxScope(UUID consumerId, long transactionId, List<Map.Entry<String, List>> scope) {
         super(transactionId, scope);
         this.consumerId = consumerId;
@@ -32,5 +35,37 @@ public class ConsumerTxScope extends TransactionScope {
 
     public UUID getConsumerId() {
         return consumerId;
+    }
+
+    public boolean isOrphan() {
+        return orphan;
+    }
+
+    public void markOrphan() {
+        orphan = true;
+    }
+
+    public boolean isInProgress() {
+        return inProgress;
+    }
+
+    public void markInProgress() {
+        inProgress = true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ConsumerTxScope)) {
+            return false;
+        }
+        if (this == obj) {
+            return true;
+        }
+        return getTransactionId() == ((ConsumerTxScope) obj).getTransactionId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(getTransactionId());
     }
 }
