@@ -15,10 +15,12 @@
  */
 package com.epam.lathgertha;
 
+import com.epam.lathgertha.base.jdbc.H2DataSource;
 import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import com.epam.lathgertha.mocks.InputProducer;
 import com.epam.lathgertha.mocks.KafkaMockFactory;
 import com.epam.lathgertha.resources.IgniteClusterResource;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -77,8 +79,8 @@ public abstract class BaseFunctionalTest {
         CLUSTER_RESOURCE.clearCluster();
     }
 
-    protected DataSource getJdbcDataSource(String url) {
-        return BaseIntegrationTest.getJdbcDataSource(url);
+    protected BasicDataSource getJdbcDataSource(String url) {
+        return H2DataSource.create(url);
     }
 
     protected int getNextTxId() {

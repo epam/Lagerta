@@ -17,6 +17,7 @@
 package com.epam.lathgertha;
 
 import com.epam.lathgertha.base.EntityDescriptor;
+import com.epam.lathgertha.base.jdbc.H2DataSource;
 import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.common.Person;
@@ -26,11 +27,10 @@ import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.resources.DBResource;
 import com.epam.lathgertha.resources.FullClusterResource;
 import com.epam.lathgertha.subscriber.Committer;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
-import org.h2.jdbcx.JdbcConnectionPool;
-import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.AssertJUnit;
@@ -38,7 +38,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -61,6 +60,7 @@ public abstract class BaseIntegrationTest {
     private static final long TX_WAIT_TIME = 10_000;
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
+    private static final BasicDataSource BASIC_DATA_SOURCE = H2DataSource.create(getDBUrl());
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -76,21 +76,11 @@ public abstract class BaseIntegrationTest {
     }
 
     private static Committer personJDBCCommitter() {
-        return new JDBCCommitter(ENTITY_DESCRIPTOR_MAP, getDBUrl(), "", "");
+        return new JDBCCommitter(BASIC_DATA_SOURCE, ENTITY_DESCRIPTOR_MAP);
     }
 
     private static DataCapturerLoader personJDBCDataCapturerLoader() {
-        return new JDBCDataCapturerLoader(getJdbcDataSource(getDBUrl()), ENTITY_DESCRIPTOR_MAP);
-    }
-
-    static DataSource getJdbcDataSource(String url) {
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setUrl(url);
-        dataSource.setUser("");
-        dataSource.setPassword("");
-        JdbcConnectionPool jdbcConnectionPool = JdbcConnectionPool.create(dataSource);
-        jdbcConnectionPool.setMaxConnections(5);
-        return jdbcConnectionPool;
+        return new JDBCDataCapturerLoader(BASIC_DATA_SOURCE, ENTITY_DESCRIPTOR_MAP);
     }
 
     public static String adjustTopicNameForTest(String topic) {

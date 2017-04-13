@@ -35,7 +35,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test(dataProvider = DATA_PROVIDER_VAL_NAME)
     public void valCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource(dbUrl));
         Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
         expectedResult.put(Person.PERSON_KEY, key);
         expectedResult.put(Person.PERSON_VAL, val);
@@ -54,7 +54,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test
     public void binaryObjectEntityCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource(dbUrl));
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
 
@@ -79,7 +79,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test
     public void binaryObjectAndValEntriesCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource(dbUrl));
         int keyVal = 22;
         int val = 10;
         int keyPerson = 23;
