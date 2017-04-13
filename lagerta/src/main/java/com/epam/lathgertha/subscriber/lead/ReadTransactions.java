@@ -44,6 +44,12 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final long INITIAL_READY_READ_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
+    // Reader availability levels.
+    private static final int UNKNOWN = 0;
+    private static final int DEAD = 1;
+    private static final int LOST = 2;
+    private static final int ALIVE = 3;
+
     private final List<ConsumerTxScope> scopes = new LinkedList<>();
     private long lastDenseRead;
 
@@ -193,7 +199,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         if (transactions.isEmpty()) {
             return;
         }
-        int level = 0;          //0 - Unknown, 1 - Dead, 2 - Lost, 3 - Alive
+        int level = UNKNOWN;
         int count = 0;
         long id = INITIAL_READ_ID;
         for (ListIterator<ConsumerTxScope> it = transactions.listIterator(); it.hasNext(); ) {
@@ -201,7 +207,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
             long thisId = tx.getTransactionId();
             if (thisId > id) {
                 id = thisId;
-                level = 0;
+                level = UNKNOWN;
                 count = 0;
             }
             int thisLevel = getLevel(tx, lostReaders);
@@ -227,9 +233,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
 
     private static int getLevel(ConsumerTxScope scope, Set<UUID> lostReaders) {
         return scope.isOrphan()
-                ? 1
+                ? DEAD
                 : lostReaders.contains(scope.getConsumerId())
-                ? 2
-                : 3;
+                ? LOST
+                : ALIVE;
     }
 }
