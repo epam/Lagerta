@@ -20,7 +20,6 @@ import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.google.common.collect.Lists;
 import org.mockito.Mockito;
-import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -125,6 +124,7 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(A, list(tx0)),
             () -> read.addAllOnNode(B, list(tx1)),
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
             () -> read.addAllOnNode(B, list(tx0))
         );
         // Expected: A reader died, tx 0 stopped being in progress. Orphan duplicate
@@ -151,6 +151,7 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(A, list(tx0)),
             () -> read.addAllOnNode(B, list(tx0, tx1)),
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
             () -> read.addAllOnNode(B, list(tx2))
         );
         // Expected: A reader remains lost, as there was no txs sent by B
@@ -158,7 +159,7 @@ public class ReadTransactionsUnitTest {
         ConsumerTxScope a0 = consumerTxScope(B, 0, false);
         ConsumerTxScope b1 = consumerTxScope(B, 1, false);
         ConsumerTxScope b2 = consumerTxScope(B, 2, false);
-        Set<Long> expectedInProgress = Collections.emptySet();
+        Set<Long> expectedInProgress = Collections.singleton(0L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
         List<ConsumerTxScope> expectedReadTxs = list(a0, b1, b2);
         return new Object[] {
@@ -179,6 +180,7 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(A, list(tx2)),
             () -> read.addAllOnNode(B, list(tx1)),
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L),
             () -> read.addAllOnNode(B, list(tx0))
         );
         // Expected. A claimed dead, tx 2 orphan, tx 0 stopped being in progress.
@@ -230,6 +232,7 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(B, list(tx1, tx2)),
             () -> read.addAllOnNode(C, list(tx2)),
             () -> read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS),
+            () -> markInProgress(0L, 1L, 2L),
             () -> read.addAllOnNode(C, list(tx1))
         );
         // Expected: B claimed dead, A remains lost, tx 2 duplicate from A pruned,
@@ -240,7 +243,7 @@ public class ReadTransactionsUnitTest {
         ConsumerTxScope a0 = consumerTxScope(A, 0, false);
         ConsumerTxScope c1 = consumerTxScope(C, 1, false);
         ConsumerTxScope c2 = consumerTxScope(C, 2, false);
-        Set<Long> expectedInProgress = set(0L);
+        Set<Long> expectedInProgress = set(0L, 2L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
         List<ConsumerTxScope> expectedReadTxs = list(a0, c1, c2);
         return new Object[] {
@@ -263,9 +266,8 @@ public class ReadTransactionsUnitTest {
         read.scheduleDuplicatesPruning();
         read.pruneCommitted(COMMITTED, heartbeats, lostReaders, inProgress);
 
-        // ToDo: Enable when inProgress cleaning is fully implemented.
-        //AssertJUnit.assertEquals(expectedInProgress, inProgress);
-        AssertJUnit.assertEquals(expectedLostReaders, lostReaders);
+        assertEquals(expectedInProgress, inProgress);
+        assertEquals(expectedLostReaders, lostReaders);
 
         Iterator<ConsumerTxScope> it = read.iterator();
 
@@ -301,6 +303,16 @@ public class ReadTransactionsUnitTest {
                 .map(ConsumerTxScope::getTransactionId)
                 .collect(Collectors.toList());
         assertEquals(actual, expected);
+    }
+
+    private void markInProgress(Long... txIds) {
+        Set<Long> ids = set(txIds);
+
+        for (ConsumerTxScope scope : read) {
+            if (ids.contains(scope.getTransactionId())) {
+                scope.markInProgress();
+            }
+        }
     }
 
     private static ConsumerTxScope consumerTxScope(UUID readerId, long transactionId, boolean isOrphan) {
