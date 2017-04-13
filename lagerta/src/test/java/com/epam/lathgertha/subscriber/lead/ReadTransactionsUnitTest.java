@@ -262,7 +262,7 @@ public class ReadTransactionsUnitTest {
         Set<UUID> expectedLostReaders,
         List<ConsumerTxScope> expectedReadTxs
     ) {
-        Mockito.doReturn(-1L).when(COMMITTED).getLastDenseCommit();
+        Mockito.doReturn(CommittedTransactions.INITIAL_READY_COMMIT_ID).when(COMMITTED).getLastDenseCommit();
         happenedActions.forEach(Runnable::run);
         read.scheduleDuplicatesPruning();
         read.pruneCommitted(COMMITTED, heartbeats, lostReaders, inProgress);
