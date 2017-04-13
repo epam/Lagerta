@@ -18,12 +18,12 @@ package org.apache.ignite.load.subscriber;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import gnu.trove.list.array.TLongArrayList;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import org.apache.ignite.activestore.impl.subscriber.lead.Lead;
 import org.apache.ignite.load.statistics.Statistics;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 /**
  * @author Evgeniy_Ignatiev
@@ -52,7 +52,7 @@ class WorkerProvider implements Provider<LeadLoadWorker> {
 
     public WorkerProvider(long[] pattern) {
         this.pattern = pattern;
-        idGenerator = new TxIdGenerator(BaseLeadLoadTest.ID_PATTERN_PERIOD, new TLongArrayList(pattern));
+        idGenerator = new TxIdGenerator(BaseLeadLoadTest.ID_PATTERN_PERIOD, LongLists.immutable.of(pattern));
     }
 
     @Override public LeadLoadWorker get() {

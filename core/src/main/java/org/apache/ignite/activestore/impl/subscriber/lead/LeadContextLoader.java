@@ -19,9 +19,8 @@ package org.apache.ignite.activestore.impl.subscriber.lead;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.linked.TLongLinkedList;
 import javax.inject.Inject;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.activestore.commons.Reference;
 import org.apache.ignite.activestore.commons.injection.ActiveStoreIgniteRunnable;
@@ -30,6 +29,9 @@ import org.apache.ignite.activestore.impl.kafka.KafkaFactory;
 import org.apache.ignite.activestore.impl.publisher.PublisherKafkaService;
 import org.apache.ignite.activestore.impl.util.ClusterGroupService;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +55,7 @@ public class LeadContextLoader {
 
     private final DataRecoveryConfig dataRecoveryConfig;
 
-    private final TLongList sparseCommitted = new TLongLinkedList();
+    private final MutableLongList sparseCommitted = new LongArrayList();
 
     private final Reference<Long> storedLastDenseCommitted;
 
@@ -100,7 +102,7 @@ public class LeadContextLoader {
         ignite.compute().broadcast(new StopContextLoadingJob());
     }
 
-    public void processCommittedTxs(UUID localLoaderId, TLongList txIds) {
+    public void processCommittedTxs(UUID localLoaderId, LongList txIds) {
         lastDenseCommitted = MergeHelper.mergeWithDenseCompaction(txIds, sparseCommitted, lastDenseCommitted);
         stalledLoadingJobs.remove(localLoaderId);
     }
@@ -114,7 +116,7 @@ public class LeadContextLoader {
         return lastDenseCommitted;
     }
 
-    public TLongList getSparseCommitted() {
+    public LongList getSparseCommitted() {
         return sparseCommitted;
     }
 

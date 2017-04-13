@@ -16,11 +16,11 @@
 
 package org.apache.ignite.load.simulation.dr;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.activestore.impl.subscriber.lead.LeadServiceProxyRetry;
 import org.apache.ignite.load.statistics.Statistics;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import javax.inject.Inject;
 import java.util.UUID;
@@ -39,9 +39,9 @@ public class SingleCommitNotificationSniffingLeadService extends LeadServiceProx
     }
 
     @Override
-    public void notifyTransactionsCommitted(UUID consumerId, TLongList transactionsIds) {
+    public void notifyTransactionsCommitted(UUID consumerId, LongList transactionsIds) {
         super.notifyTransactionsCommitted(consumerId, transactionsIds);
-        for (TLongIterator it = transactionsIds.iterator(); it.hasNext(); ) {
+        for (LongIterator it = transactionsIds.longIterator(); it.hasNext(); ) {
             stats.recordOperationEndTime(it.next(), System.currentTimeMillis());
         }
     }

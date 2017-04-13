@@ -17,7 +17,6 @@
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
 import com.google.inject.name.Named;
-import gnu.trove.list.TLongList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.activestore.commons.Reference;
@@ -32,6 +31,7 @@ import org.apache.ignite.activestore.impl.publisher.PublisherKafkaService;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.activestore.impl.util.AtomicsHelper;
 import org.apache.ignite.activestore.impl.util.ClusterGroupService;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +158,7 @@ public class Lead extends ExtendedScheduler {
                 Map<UUID, LeadResponse> ready = planner.plan();
                 for (Map.Entry<UUID, LeadResponse> entry : ready.entrySet()) {
                     LeadResponse availableTxs = availableWorkBuffer.remove(entry.getKey());
-                    TLongList toCommitIds = entry.getValue().getToCommitIds();
+                    LongList toCommitIds = entry.getValue().getToCommitIds();
                     if (toCommitIds != null) {
                         LOGGER.debug("[L] Plan you {} on {}", toCommitIds, f(entry.getKey()));
                         planner.markInProgressTransactions(toCommitIds);
@@ -212,7 +212,7 @@ public class Lead extends ExtendedScheduler {
         return LeadResponse.EMPTY;
     }
 
-    public void updateInitialContext(UUID localLoaderId, TLongList txIds) {
+    public void updateInitialContext(UUID localLoaderId, LongList txIds) {
         enqueueTask(new UpdateInitialContextTask(localLoaderId, txIds, loader));
     }
 
@@ -222,7 +222,7 @@ public class Lead extends ExtendedScheduler {
         }
     }
 
-    public void notifyTransactionsCommitted(UUID consumerId, TLongList transactionsIds) {
+    public void notifyTransactionsCommitted(UUID consumerId, LongList transactionsIds) {
         if (running) {
             LOGGER.debug("[L] Committed {} in {}", transactionsIds, f(consumerId));
             enqueueTask(new DoneTask(consumerId, pingManager, planner, transactionsIds));

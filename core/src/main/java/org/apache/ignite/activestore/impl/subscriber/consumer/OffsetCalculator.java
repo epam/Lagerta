@@ -16,19 +16,21 @@
 
 package org.apache.ignite.activestore.impl.subscriber.consumer;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import gnu.trove.list.array.TLongArrayList;
 import org.apache.ignite.activestore.commons.Lazy;
 import org.apache.ignite.activestore.impl.subscriber.lead.MergeHelper;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Aleksandr_Meterko
@@ -48,7 +50,7 @@ class OffsetCalculator {
         if (txToCommit.isEmpty()) {
             return Collections.emptyMap();
         }
-        Lazy<TopicPartition, TLongArrayList> offsetsFromTransactions = calculateOffsetsFromTransactions(txToCommit);
+        Lazy<TopicPartition, MutableLongList> offsetsFromTransactions = calculateOffsetsFromTransactions(txToCommit);
         Collection<TopicPartition> allTopics = new HashSet<>(offsets.keySet());
         allTopics.addAll(offsetsFromTransactions.keySet());
         Map<TopicPartition, OffsetAndMetadata> result = new HashMap<>();
@@ -65,17 +67,17 @@ class OffsetCalculator {
         return result;
     }
 
-    private Lazy<TopicPartition, TLongArrayList> calculateOffsetsFromTransactions(
+    private Lazy<TopicPartition, MutableLongList> calculateOffsetsFromTransactions(
         List<List<TransactionWrapper>> txToCommit) {
-        Lazy<TopicPartition, TLongArrayList> topicToSparseOffsets = new Lazy<>(new IgniteClosure<TopicPartition, TLongArrayList>() {
-            @Override public TLongArrayList apply(TopicPartition s) {
-                return new TLongArrayList();
+        Lazy<TopicPartition, MutableLongList> topicToSparseOffsets = new Lazy<>(new IgniteClosure<TopicPartition, MutableLongList>() {
+            @Override public MutableLongList apply(TopicPartition s) {
+                return new LongArrayList();
             }
         });
 
         for (List<TransactionWrapper> batch : txToCommit) {
             for (TransactionWrapper wrapper : batch) {
-                TLongArrayList sparseOffsets = topicToSparseOffsets.get(wrapper.topicPartition());
+                MutableLongList sparseOffsets = topicToSparseOffsets.get(wrapper.topicPartition());
                 sparseOffsets.add(wrapper.offset());
             }
         }

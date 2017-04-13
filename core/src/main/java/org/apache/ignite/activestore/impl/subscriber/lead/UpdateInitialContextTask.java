@@ -18,7 +18,7 @@ package org.apache.ignite.activestore.impl.subscriber.lead;
 
 import java.util.UUID;
 
-import gnu.trove.list.TLongList;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
  * @author Evgeniy_Ignatiev
@@ -26,10 +26,10 @@ import gnu.trove.list.TLongList;
  */
 class UpdateInitialContextTask implements Runnable {
     private final UUID localLoaderId;
-    private final TLongList txIds;
+    private final LongList txIds;
     private final LeadContextLoader loader;
 
-    UpdateInitialContextTask(UUID localLoaderId, TLongList txIds, LeadContextLoader loader) {
+    UpdateInitialContextTask(UUID localLoaderId, LongList txIds, LeadContextLoader loader) {
         this.localLoaderId = localLoaderId;
         this.txIds = txIds;
         this.loader = loader;

@@ -26,23 +26,23 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
-import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.procedure.TLongObjectProcedure;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 /**
  * @author Evgeniy_Ignatiev
  * @since 12/27/2016 7:47 PM
  */
 class TransactionsBuffer {
-    private final TLongObjectMap<TransactionWrapper> buffer = new TLongObjectHashMap<>();
+    private final MutableLongObjectMap<TransactionWrapper> buffer = new LongObjectHashMap<>();
     private final Map<Long, TransactionWrapper> inProgressTransactions = new ConcurrentHashMap<>();
     private final Queue<List<TransactionWrapper>> committedTxs = new ConcurrentLinkedQueue<>();
 
     public Collection<TransactionWrapper> getUncommittedTxs() {
-        return buffer.valueCollection();
+        return buffer.values();
     }
 
     public void add(TransactionWrapper transactionWrapper) {
@@ -53,26 +53,26 @@ class TransactionsBuffer {
         return inProgressTransactions.get(txId);
     }
 
-    public void markInProgress(TLongList txIds) {
-        for (TLongIterator it = txIds.iterator(); it.hasNext(); ) {
+    public void markInProgress(LongList txIds) {
+        for (LongIterator it = txIds.longIterator(); it.hasNext(); ) {
             long id = it.next();
             inProgressTransactions.put(id, buffer.get(id));
         }
     }
 
-    public void markCommitted(TLongList txIds) {
+    public void markCommitted(LongList txIds) {
         List<TransactionWrapper> transactions = new ArrayList<>(txIds.size());
 
-        for (TLongIterator it = txIds.iterator(); it.hasNext(); ) {
+        for (LongIterator it = txIds.longIterator(); it.hasNext(); ) {
             transactions.add(inProgressTransactions.remove(it.next()));
         }
         committedTxs.add(transactions);
     }
 
-    public void markAlreadyCommitted(TLongList txIds) {
+    public void markAlreadyCommitted(LongList txIds) {
         List<TransactionWrapper> transactions = new ArrayList<>();
 
-        for (TLongIterator it = txIds.iterator(); it.hasNext(); ) {
+        for (LongIterator it = txIds.longIterator(); it.hasNext(); ) {
             TransactionWrapper wrapper = buffer.get(it.next());
 
             if (wrapper != null) {
@@ -107,24 +107,16 @@ class TransactionsBuffer {
     }
 
     public void compact(long lastDenseCommittedId) {
-        buffer.retainEntries(new CompactificationRetainer(lastDenseCommittedId, inProgressTransactions));
+        for (MutableLongIterator it = buffer.keySet().longIterator(); it.hasNext(); ) {
+            long txId = it.next();
+
+            if (txId <= lastDenseCommittedId && !inProgressTransactions.containsKey(txId)) {
+                it.remove();
+            }
+        }
     }
 
     public int size() {
         return buffer.size();
-    }
-
-    private static class CompactificationRetainer implements TLongObjectProcedure<TransactionWrapper> {
-        private final long lastDenseCommittedId;
-        private final Map<Long, TransactionWrapper> inProgressTransactions;
-
-        CompactificationRetainer(long lastDenseCommittedId, Map<Long, TransactionWrapper> inProgressTransactions) {
-            this.lastDenseCommittedId = lastDenseCommittedId;
-            this.inProgressTransactions = inProgressTransactions;
-        }
-
-        @Override public boolean execute(long txId, TransactionWrapper wrapper) {
-            return txId > lastDenseCommittedId || inProgressTransactions.containsKey(txId);
-        }
     }
 }

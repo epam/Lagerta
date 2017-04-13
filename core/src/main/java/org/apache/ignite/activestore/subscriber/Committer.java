@@ -16,8 +16,8 @@
 
 package org.apache.ignite.activestore.subscriber;
 
-import gnu.trove.list.TLongList;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
  * @author Aleksandr_Meterko
@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 public interface Committer {
     /** */
     void commitAsync(
-        TLongList txIds,
+        LongList txIds,
         TransactionSupplier txSupplier,
-        IgniteInClosure<Long> onSingleCommit, IgniteInClosure<TLongList> onFullCommit);
+        IgniteInClosure<Long> onSingleCommit, IgniteInClosure<LongList> onFullCommit);
 }

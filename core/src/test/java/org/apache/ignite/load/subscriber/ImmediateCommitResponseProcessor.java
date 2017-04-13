@@ -16,9 +16,9 @@
 
 package org.apache.ignite.load.subscriber;
 
-import gnu.trove.list.TLongList;
 import org.apache.ignite.activestore.impl.subscriber.lead.Lead;
 import org.apache.ignite.activestore.impl.subscriber.lead.LeadResponse;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import javax.inject.Inject;
 import java.util.UUID;
@@ -36,7 +36,7 @@ public class ImmediateCommitResponseProcessor implements LeadResponseProcessor {
     }
 
     @Override public void processResponse(UUID consumerId, LeadResponse response) {
-        TLongList ids = response.getToCommitIds();
+        LongList ids = response.getToCommitIds();
 
         if (ids != null) {
             lead.notifyTransactionsCommitted(consumerId, ids);

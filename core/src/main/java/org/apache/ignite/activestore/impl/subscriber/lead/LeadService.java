@@ -16,9 +16,9 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.services.Service;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,9 +37,9 @@ public interface LeadService extends Service {
 
     LeadResponse notifyTransactionsRead(UUID consumerId, List<TransactionMetadata> metadatas);
 
-    void notifyTransactionsCommitted(UUID consumerId, TLongList transactionsIds);
+    void notifyTransactionsCommitted(UUID consumerId, LongList transactionsIds);
 
-    void updateInitialContext(UUID localLoaderId, TLongList txIds);
+    void updateInitialContext(UUID localLoaderId, LongList txIds);
 
     void notifyLocalLoaderStalled(UUID leadId, UUID localLoaderId);
 

@@ -21,8 +21,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import gnu.trove.list.TLongList;
-import gnu.trove.set.TLongSet;
+
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 
 /**
  * @author Andrei_Yakushin
@@ -67,7 +68,7 @@ public class MergeHelper {
         }
     }
 
-    public static long mergeWithDenseCompaction(TLongList from, TLongList to, long dense) {
+    public static long mergeWithDenseCompaction(LongList from, MutableLongList to, long dense) {
         int i = 0;
         int j = 0;
         long nextDense = dense + 1;
@@ -87,13 +88,13 @@ public class MergeHelper {
                     nextDense++;
                 }
                 else {
-                    to.insert(i, b);
+                    to.addAtIndex(i, b);
                     i++;
                 }
             } else {
                 if (a == nextDense) {
                     nextDense++;
-                    to.remove(i, 1);
+                    to.removeAtIndex(i);
                 } else {
                     i++;
                 }
@@ -102,7 +103,7 @@ public class MergeHelper {
         while (i < to.size()) {
             if (to.get(i) == nextDense) {
                 nextDense++;
-                to.remove(i, 1);
+                to.removeAtIndex(i);
             } else {
                 break;
             }

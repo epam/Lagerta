@@ -19,8 +19,6 @@ package org.apache.ignite.activestore.impl.publisher;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.ignite.Ignite;
@@ -34,6 +32,8 @@ import org.apache.ignite.activestore.impl.kafka.KafkaFactory;
 import org.apache.ignite.activestore.impl.subscriber.lead.LeadContextLoader;
 import org.apache.ignite.activestore.impl.util.ClusterGroupService;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,8 +103,8 @@ public class Reconciler {
         ignite.compute().broadcast(new StopReconciliationJob(replicaId));
     }
 
-    public void fixMissedIds(TLongList missedIds) {
-        for (TLongIterator it = missedIds.iterator(); it.hasNext();) {
+    public void fixMissedIds(LongList missedIds) {
+        for (LongIterator it = missedIds.longIterator(); it.hasNext();) {
             long id = it.next();
             for (KeyValueListener listener : allListeners) {
                 listener.writeGapTransaction(id);
