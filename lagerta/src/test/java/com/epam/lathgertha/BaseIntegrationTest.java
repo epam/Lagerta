@@ -29,6 +29,8 @@ import com.epam.lathgertha.subscriber.Committer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.AssertJUnit;
@@ -36,6 +38,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -58,6 +61,7 @@ public abstract class BaseIntegrationTest {
     private static final long TX_WAIT_TIME = 10_000;
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
+
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -76,7 +80,17 @@ public abstract class BaseIntegrationTest {
     }
 
     private static DataCapturerLoader personJDBCDataCapturerLoader() {
-        return new JDBCDataCapturerLoader(ENTITY_DESCRIPTOR_MAP, getDBUrl(), "", "");
+        return new JDBCDataCapturerLoader(getJdbcDataSource(getDBUrl()), ENTITY_DESCRIPTOR_MAP);
+    }
+
+    static DataSource getJdbcDataSource(String url) {
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setUrl(url);
+        dataSource.setUser("");
+        dataSource.setPassword("");
+        JdbcConnectionPool jdbcConnectionPool = JdbcConnectionPool.create(dataSource);
+        jdbcConnectionPool.setMaxConnections(5);
+        return jdbcConnectionPool;
     }
 
     public static String adjustTopicNameForTest(String topic) {
