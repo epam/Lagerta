@@ -49,22 +49,28 @@ public final class AtomicsHelper {
 
         @Override
         public V get() {
-            return cache.get(name);
+            return cache == null ? null : cache.get(name);
         }
 
         @Override
         public void set(V value) {
-            if (value == null) {
-                cache.remove(name);
-            } else {
-                cache.put(name, value);
+            if (cache != null) {
+                if (value == null) {
+                    cache.remove(name);
+                } else {
+                    cache.put(name, value);
+                }
             }
         }
 
         @Override
         public V initIfAbsent(V value) {
-            cache.putIfAbsent(name, value);
-            return get();
+            if (cache != null) {
+                cache.putIfAbsent(name, value);
+                return get();
+            } else {
+                return null;
+            }
         }
     }
 }
