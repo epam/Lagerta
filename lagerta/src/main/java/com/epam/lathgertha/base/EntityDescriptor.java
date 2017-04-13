@@ -45,7 +45,7 @@ public class EntityDescriptor<T> {
         String maskFields = fieldDescriptors.entrySet().stream()
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
-        //todo need customization sql syntax issues #95
+        //maybe customization sql syntax for different dialect in future
         upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + keyField + ")" +
                 " VALUES (" + maskFields + ")";
         // specific IN semantic for h2
