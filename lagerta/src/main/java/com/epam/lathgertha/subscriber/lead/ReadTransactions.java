@@ -72,9 +72,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         return lastDenseRead;
     }
 
-    public void addAllOnNode(UUID consumerId, List<TransactionScope> scopes) {
+    public void addAllOnNode(UUID readerId, List<TransactionScope> scopes) {
         List<ConsumerTxScope> collect = scopes.stream()
-                .map(tx -> new ConsumerTxScope(consumerId, tx.getTransactionId(), tx.getScope()))
+                .map(tx -> new ConsumerTxScope(readerId, tx.getTransactionId(), tx.getScope()))
                 .collect(Collectors.toList());
         buffer.add(collect);
     }
