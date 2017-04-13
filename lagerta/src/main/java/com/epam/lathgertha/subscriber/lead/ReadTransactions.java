@@ -202,9 +202,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                     level = thisLevel;
                     it.previous();
                     while (count > 0) {
-                        it.previous();
+                        ConsumerTxScope previous = it.previous();
                         it.remove();
-                        onRemove.accept(tx);
+                        onRemove.accept(previous);
                         count--;
                     }
                     it.next();
