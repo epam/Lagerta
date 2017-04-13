@@ -85,7 +85,8 @@
         </property>
     </bean>
 
-    <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
+    <bean id="cache-loader" class="com.epam.lathgertha.BaseIntegrationTest"
+          factory-method="personJDBDataCapturerLoader"/>
 
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
           p:remoteTopic="remoteTopic"
@@ -101,7 +102,7 @@
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="jdbc-committer" class="com.epam.lathgertha.BaseIntegrationTest"
+    <bean name="committer" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter" scope="prototype">

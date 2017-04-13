@@ -22,6 +22,7 @@ import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
 
+import javax.sql.DataSource;
 import javax.sql.rowset.serial.SerialBlob;
 import java.nio.ByteBuffer;
 import java.sql.Blob;
@@ -61,10 +62,10 @@ public class PersonEntries {
         return new JDBCCommitter(personEntityDescriptor, dbUrl, "", "");
     }
 
-    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(String dbUrl) {
+    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(DataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
-        return new JDBCDataCapturerLoader(personEntityDescriptor, dbUrl, "", "");
+        return new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
     }
 
     public static List<String> getPersonColumns() {

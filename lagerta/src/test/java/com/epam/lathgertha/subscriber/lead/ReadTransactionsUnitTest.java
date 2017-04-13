@@ -66,6 +66,7 @@ public class ReadTransactionsUnitTest {
     public void setUp() {
         Mockito.when(COMMITTED.getLastDenseCommit()).thenReturn(LAST_DENSE_COMMITTED);
         read = new ReadTransactions();
+        read.makeReady();
         read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         heartbeats = Mockito.mock(Heartbeats.class);
     }

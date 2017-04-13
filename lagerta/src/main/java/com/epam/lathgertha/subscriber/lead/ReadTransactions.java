@@ -40,7 +40,8 @@ import static com.epam.lathgertha.subscriber.util.MergeUtil.getNext;
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
             Comparator.comparingLong(ConsumerTxScope::getTransactionId);
-    private static final long INITIAL_READ_ID = -1L;
+    private static final long INITIAL_READ_ID = -2L;
+    private static final long INITIAL_READY_READ_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<ConsumerTxScope> scopes = new LinkedList<>();
@@ -66,6 +67,16 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 .filter(tx -> tx.getTransactionId() <= lastDenseRead)
                 .distinct()
                 .iterator();
+    }
+
+    /**
+     * Makes {@code ReadTransactions} ready to process transactions.
+     * After this method must be called {@link #pruneCommitted}
+     */
+    public void makeReady() {
+        if (lastDenseRead == INITIAL_READ_ID) {
+            lastDenseRead = INITIAL_READY_READ_ID;
+        }
     }
 
     public long getLastDenseRead() {

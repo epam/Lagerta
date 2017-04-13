@@ -65,6 +65,7 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
+        transactions.makeReady();
         transactions.pruneCommitted(EMPTY_COMMITTED, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         List<ConsumerTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> plan = ready.stream()
@@ -228,6 +229,7 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(list(0L));
         committed.compress();
+        transactions.makeReady();
         transactions.pruneCommitted(committed, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
@@ -245,6 +247,7 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
+        transactions.makeReady();
         transactions.pruneCommitted(committed, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }

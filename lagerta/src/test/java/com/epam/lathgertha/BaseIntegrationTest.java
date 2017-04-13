@@ -21,11 +21,16 @@ import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
+import com.epam.lathgertha.capturer.DataCapturerLoader;
+import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.resources.DBResource;
 import com.epam.lathgertha.resources.FullClusterResource;
+import com.epam.lathgertha.subscriber.Committer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.AssertJUnit;
@@ -33,14 +38,13 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class BaseIntegrationTest {
@@ -56,16 +60,37 @@ public abstract class BaseIntegrationTest {
     );
     private static final long TX_WAIT_TIME = 10_000;
 
+    private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
+
+    static {
+        ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
+        ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
+    }
+
     private static int TEST_NUMBER = 0;
 
     private final FullClusterResource allResources = new FullClusterResource(DB_NAME);
 
-    private static JDBCCommitter personJDBCCommitter() {
-        String dbUrl = String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);
-        Map<String, EntityDescriptor> entityDescriptors = new HashMap<>(2);
-        entityDescriptors.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
-        entityDescriptors.put(BaseIntegrationTest.BINARY_KEEPING_CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
-        return new JDBCCommitter(entityDescriptors, dbUrl, "", "");
+    private static String getDBUrl() {
+        return String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);
+    }
+
+    private static Committer personJDBCCommitter() {
+        return new JDBCCommitter(ENTITY_DESCRIPTOR_MAP, getDBUrl(), "", "");
+    }
+
+    private static DataCapturerLoader personJDBCDataCapturerLoader() {
+        return new JDBCDataCapturerLoader(getJdbcDataSource(getDBUrl()), ENTITY_DESCRIPTOR_MAP);
+    }
+
+    static DataSource getJdbcDataSource(String url) {
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setUrl(url);
+        dataSource.setUser("");
+        dataSource.setPassword("");
+        JdbcConnectionPool jdbcConnectionPool = JdbcConnectionPool.create(dataSource);
+        jdbcConnectionPool.setMaxConnections(5);
+        return jdbcConnectionPool;
     }
 
     public static String adjustTopicNameForTest(String topic) {

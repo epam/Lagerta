@@ -98,7 +98,7 @@ limitations under the License.
     <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"
           c:stateAssistant-ref="stateAssistant"/>
 
-    <bean id="stateAssistant" class="com.epam.lathgertha.mocks.LeadStateMockAssistant" scope="prototype"/>
+    <bean id="stateAssistant" class="com.epam.lathgertha.mocks.LeadStateAssistantMock" scope="prototype"/>
 
     <bean id="inCacheCommitter" class="com.epam.lathgertha.subscriber.InCacheCommitter" scope="prototype"
           c:ignite-ref="ignite-bean"/>

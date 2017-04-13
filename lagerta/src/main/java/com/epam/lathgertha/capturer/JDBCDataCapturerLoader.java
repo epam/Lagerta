@@ -19,8 +19,8 @@ package com.epam.lathgertha.capturer;
 import com.epam.lathgertha.base.EntityDescriptor;
 
 import javax.cache.integration.CacheLoaderException;
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -29,24 +29,20 @@ import java.util.List;
 import java.util.Map;
 
 public class JDBCDataCapturerLoader implements DataCapturerLoader {
-    private final Map<String, EntityDescriptor> entityDescriptors;
-    private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
 
-    public JDBCDataCapturerLoader(Map<String, EntityDescriptor> entityDescriptors,
-                                  String dbUrl, String dbUser, String dbPassword) {
+    private final DataSource dataSource;
+    private final Map<String, EntityDescriptor> entityDescriptors;
+
+    public JDBCDataCapturerLoader(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
+        this.dataSource = dataSource;
         this.entityDescriptors = entityDescriptors;
-        this.dbUrl = dbUrl;
-        this.dbUser = dbUser;
-        this.dbPassword = dbPassword;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <V> V load(String cacheName, Object key) {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
-        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        try (Connection conn = dataSource.getConnection()) {
             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
             return (V) loadMapResult(Collections.singletonList(key), entityDescriptor, statement).get(key);
         } catch (Exception e) {
@@ -57,7 +53,7 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     @Override
     public <K, V> Map<K, V> loadAll(String cacheName, Iterable<? extends K> keys) throws CacheLoaderException {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
-        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        try (Connection conn = dataSource.getConnection()) {
             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
             return loadMapResult(keys, entityDescriptor, statement);
         } catch (Exception e) {
