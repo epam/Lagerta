@@ -143,9 +143,8 @@ public class LeadImpl extends Scheduler implements Lead {
                 .peek(ConsumerTxScope::markInProgress)
                 .peek(scope -> inProgress.add(scope.getTransactionId()))
                 .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
-                .entrySet()
-                .forEach(entry -> toCommit.append(entry.getKey(),
-                        entry.getValue().stream().map(TransactionScope::getTransactionId).collect(toList())));
+                .forEach((key, value) -> toCommit.append(key,
+                        value.stream().map(TransactionScope::getTransactionId).collect(toList())));
     }
 
     @Override
