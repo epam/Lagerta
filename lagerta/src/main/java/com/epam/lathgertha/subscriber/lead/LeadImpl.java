@@ -119,7 +119,7 @@ public class LeadImpl extends Scheduler implements Lead {
         pushTask(() -> {
             committed.addAll(newCommitted);
             readTransactions.makeReady();
-            pushTask(() -> readTransactions.pruneCommitted(committed, heartbeats, lostReaders, inProgress));
+            readTransactions.pruneCommitted(committed, heartbeats, lostReaders, inProgress);
         });
     }
 
