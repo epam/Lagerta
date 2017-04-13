@@ -34,16 +34,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.epam.lathgertha.subscriber.util.MergeUtil.getNext;
+
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
             Comparator.comparingLong(ConsumerTxScope::getTransactionId);
-    private static final long INITIAL_READY_READ_ID = -1L;
-    private static final long INITIAL_READ_ID = -2L;
+    private static final long INITIAL_READ_ID = -1L;
     private static final int INITIAL_CAPACITY = 100;
 
-    private final List<ConsumerTxScope> allTransactions = new LinkedList<>();
-
+    private final List<ConsumerTxScope> scopes = new LinkedList<>();
     private long lastDenseRead;
+
     private List<List<ConsumerTxScope>> buffer;
     private boolean duplicatesPruningScheduled = false;
 
@@ -55,26 +56,19 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         buffer = new ArrayList<>(INITIAL_CAPACITY);
     }
 
-    public long getLastDenseRead() {
-        return lastDenseRead;
+    @Override
+    public Iterator<ConsumerTxScope> iterator() {
+        Spliterator<ConsumerTxScope> spliterator = Spliterators.spliteratorUnknownSize(
+                scopes.iterator(), Spliterator.SORTED | Spliterator.ORDERED);
+        return StreamSupport
+                .stream(spliterator, false)
+                .filter(tx -> tx.getTransactionId() <= lastDenseRead)
+                .distinct()
+                .iterator();
     }
 
-    public void pruneCommitted(
-            CommittedTransactions committed,
-            Heartbeats heartbeats,
-            Set<UUID> lostReaders,
-            Set<Long> inProgress
-    ) {
-        compress(heartbeats, lostReaders, inProgress);
-        Iterator<ConsumerTxScope> iterator = allTransactions.iterator();
-        long commit = committed.getLastDenseCommit();
-        while (iterator.hasNext()) {
-            if (iterator.next().getTransactionId() <= commit) {
-                iterator.remove();
-            } else {
-                break;
-            }
-        }
+    public long getLastDenseRead() {
+        return lastDenseRead;
     }
 
     public void addAllOnNode(UUID consumerId, List<TransactionScope> scopes) {
@@ -90,35 +84,27 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
-    @Override
-    public Iterator<ConsumerTxScope> iterator() {
-        Spliterator<ConsumerTxScope> spliterator = Spliterators.spliteratorUnknownSize(
-            allTransactions.iterator(), Spliterator.SORTED | Spliterator.ORDERED);
-        return StreamSupport
-            .stream(spliterator, false)
-            .filter(tx -> tx.getTransactionId() <= lastDenseRead)
-            .distinct()
-            .iterator();
-    }
-
-    /**
-     * makes this ready to process transactions and shifts lastDenseRead to proper id
-     */
-    public void setReadyAndPrune(
-        CommittedTransactions committed,
-        Heartbeats heartbeats,
-        Set<UUID> lostReaders,
-        Set<Long> inProgress
+    public void pruneCommitted(
+            CommittedTransactions committed,
+            Heartbeats heartbeats,
+            Set<UUID> lostReaders,
+            Set<Long> inProgress
     ) {
-        if (lastDenseRead == INITIAL_READ_ID) {
-            lastDenseRead = INITIAL_READY_READ_ID;
-            pruneCommitted(committed, heartbeats, lostReaders, inProgress);
+        compress(heartbeats, lostReaders, inProgress);
+        Iterator<ConsumerTxScope> iterator = scopes.iterator();
+        long commit = committed.getLastDenseCommit();
+        while (iterator.hasNext()) {
+            if (iterator.next().getTransactionId() <= commit) {
+                iterator.remove();
+            } else {
+                break;
+            }
         }
     }
 
     private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         mergeCollections(heartbeats, lostReaders, inProgress);
-        for (ConsumerTxScope next : allTransactions) {
+        for (ConsumerTxScope next : scopes) {
             long nextId = next.getTransactionId();
             if (lastDenseRead >= nextId) {
                 // skip
@@ -134,9 +120,9 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         List<ConsumerTxScope> mergedBuffer = MergeUtil.mergeBuffer(buffer, SCOPE_COMPARATOR);
 
         if (!duplicatesPruningScheduled && lostReaders.isEmpty()) {
-            MergeUtil.merge(allTransactions, mergedBuffer, SCOPE_COMPARATOR);
+            MergeUtil.merge(scopes, mergedBuffer, SCOPE_COMPARATOR);
         } else {
-            Set<UUID> diedReaders = mergeWithDeduplication(lostReaders, mergedBuffer);
+            Set<UUID> diedReaders = mergeWithDeduplication(scopes, mergedBuffer, SCOPE_COMPARATOR, lostReaders);
             boolean someoneDied = !diedReaders.isEmpty();
 
             if (someoneDied) {
@@ -145,16 +131,48 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                         .stream()
                         .peek(lostReaders::remove)
                         .forEach(heartbeats::removeDead);
-                allTransactions
+                scopes
                         .stream()
                         .filter(scope -> diedReaders.contains(scope.getConsumerId()))
                         .forEach(ConsumerTxScope::markOrphan);
             }
             if (someoneDied || duplicatesPruningScheduled) {
-                deduplicate(lostReaders, allTransactions);
+                deduplicate(lostReaders, scopes);
+                duplicatesPruningScheduled = false;
             }
         }
         buffer = new ArrayList<>(INITIAL_CAPACITY);
+    }
+
+    private static Set<UUID> mergeWithDeduplication(List<ConsumerTxScope> scopes, List<ConsumerTxScope> mergedBuffer,
+                                                    Comparator<ConsumerTxScope> comparator, Set<UUID> lostReaders) {
+        Set<UUID> diedReaders = new HashSet<>();
+        ListIterator<ConsumerTxScope> firstIter = scopes.listIterator();
+        Iterator<ConsumerTxScope> secondIter = mergedBuffer.iterator();
+        ConsumerTxScope a = getNext(firstIter);
+        ConsumerTxScope b = getNext(secondIter);
+
+        while (a != null && b != null) {
+            int cmp = comparator.compare(a, b);
+
+            if (cmp > 0) {
+                firstIter.previous();
+                firstIter.add(b);
+                firstIter.next();
+                b = getNext(secondIter);
+            } else if (cmp < 0) {
+                a = getNext(firstIter);
+            } else if (lostReaders.contains(a.getConsumerId())) {
+                diedReaders.add(a.getConsumerId());
+                firstIter.remove();
+                a = getNext(firstIter);
+            }
+        }
+        while (b != null) {
+            firstIter.add(b);
+            b = getNext(secondIter);
+        }
+        return diedReaders;
     }
 
     private static void deduplicate(Set<UUID> lostReaders, List<ConsumerTxScope> transactions) {
@@ -163,7 +181,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
         int level = 0;          //0 - Unknown, 1 - Dead, 2 - Lost, 3 - Alive
         int count = 0;
-        long id = -2L;
+        long id = INITIAL_READ_ID;
         for (ListIterator<ConsumerTxScope> it = transactions.listIterator(); it.hasNext(); ) {
             ConsumerTxScope tx = it.next();
             long thisId = tx.getTransactionId();
@@ -197,35 +215,5 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 : lostReaders.contains(scope.getConsumerId())
                 ? 2
                 : 3;
-    }
-
-    private Set<UUID> mergeWithDeduplication(Set<UUID> lostReaders, List<ConsumerTxScope> mergedBuffer) {
-        Set<UUID> diedReaders = new HashSet<>();
-        ListIterator<ConsumerTxScope> firstIter = allTransactions.listIterator();
-        Iterator<ConsumerTxScope> secondIter = mergedBuffer.iterator();
-        ConsumerTxScope a = MergeUtil.getNext(firstIter);
-        ConsumerTxScope b = MergeUtil.getNext(secondIter);
-
-        while (a != null && b != null) {
-            int cmp = SCOPE_COMPARATOR.compare(a, b);
-
-            if (cmp > 0) {
-                firstIter.previous();
-                firstIter.add(b);
-                firstIter.next();
-                b = MergeUtil.getNext(secondIter);
-            } else if (cmp < 0) {
-                a = MergeUtil.getNext(firstIter);
-            } else if (lostReaders.contains(a.getConsumerId())) {
-                diedReaders.add(a.getConsumerId());
-                firstIter.remove();
-                a = MergeUtil.getNext(firstIter);
-            }
-        }
-        while (b != null) {
-            firstIter.add(b);
-            b = MergeUtil.getNext(secondIter);
-        }
-        return diedReaders;
     }
 }

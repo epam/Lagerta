@@ -112,7 +112,7 @@ public class LeadImpl extends Scheduler implements Lead {
     public void updateState(CommittedTransactions newCommitted) {
         LOGGER.info("[L] initialized {}", newCommitted);
         pushTask(() -> committed.addAll(newCommitted));
-        pushTask(() -> readTransactions.setReadyAndPrune(committed, heartbeats, lostReaders, inProgress));
+        pushTask(() -> readTransactions.pruneCommitted(committed, heartbeats, lostReaders, inProgress));
     }
 
     private void markLostAndFound() {
