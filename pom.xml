@@ -40,6 +40,7 @@
     <properties>
         <ignite.version>1.8.0</ignite.version>
         <slf4j.version>1.7.22</slf4j.version>
+        <eclipse-collections.version>8.1.0</eclipse-collections.version>
     </properties>
 
     <dependencyManagement>
@@ -67,12 +68,12 @@
             <dependency>
                 <groupId>org.eclipse.collections</groupId>
                 <artifactId>eclipse-collections-api</artifactId>
-                <version>8.1.0</version>
+                <version>${eclipse-collections.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.collections</groupId>
                 <artifactId>eclipse-collections</artifactId>
-                <version>8.1.0</version>
+                <version>${eclipse-collections.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.inject</groupId>
