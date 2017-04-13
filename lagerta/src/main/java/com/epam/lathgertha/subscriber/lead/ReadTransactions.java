@@ -233,9 +233,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
 
     private static int getLevel(ConsumerTxScope scope, Set<UUID> lostReaders) {
         return scope.isOrphan()
-                ? DEAD
-                : lostReaders.contains(scope.getConsumerId())
-                ? LOST
-                : ALIVE;
+                ? DEAD : lostReaders.contains(scope.getConsumerId())
+                            ? LOST
+                            : ALIVE;
     }
 }
