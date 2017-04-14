@@ -137,7 +137,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
                             .forEach(tasks::add);
                 }
             } catch (InterruptedException | IgniteInterruptedException e) {
-                //do nothing
+                LOGGER.error("[R] Exception while committing with ParallelCommitStrategy", e);
             }
         }
 
