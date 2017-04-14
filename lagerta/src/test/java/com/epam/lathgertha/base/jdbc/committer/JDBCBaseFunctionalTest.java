@@ -27,7 +27,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -50,6 +49,8 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
         };
     }
 
+    protected DataSource dataSource;
+
     @BeforeClass
     public void init() throws Exception {
         dbResource.setUp();
@@ -63,22 +64,11 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
     @BeforeMethod()
     public void initState() throws SQLException {
         dbResource.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        dataSource = dbResource.getDataSource();
     }
 
     @AfterMethod
     public void clearBase() throws SQLException {
         dbResource.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
-    }
-
-    protected void applyInConnection(SQLSupplier<Connection> function) {
-        try (Connection connection = dbResource.getDataSource().getConnection()) {
-            function.apply(connection);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected DataSource getJdbcDataSource() {
-        return dbResource.getDataSource();
     }
 }

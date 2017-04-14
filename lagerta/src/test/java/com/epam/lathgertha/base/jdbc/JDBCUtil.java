@@ -17,11 +17,13 @@
 package com.epam.lathgertha.base.jdbc;
 
 import com.epam.lathgertha.base.FieldDescriptor;
+import com.epam.lathgertha.base.jdbc.committer.SQLSupplier;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
+import javax.sql.DataSource;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,6 +49,24 @@ public final class JDBCUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void applyInConnection(DataSource dataSource, SQLSupplier<Connection> function) {
+        try (Connection connection = dataSource.getConnection()) {
+            function.apply(connection);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void insertIntoPersonTable(
+            DataSource dataSource,
+            Integer key,
+            Object val,
+            String name,
+            Integer id
+    ) throws SQLException {
+        applyInConnection(dataSource, connection -> insertIntoPersonTable(connection, key, val, name, id));
     }
 
     public static void insertIntoPersonTable(
