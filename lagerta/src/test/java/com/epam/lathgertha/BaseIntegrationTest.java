@@ -26,6 +26,7 @@ import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.resources.DBResource;
 import com.epam.lathgertha.resources.FullClusterResource;
 import com.epam.lathgertha.subscriber.Committer;
+import com.epam.lathgertha.subscriber.DataProviderUtil;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
@@ -37,6 +38,7 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -50,6 +52,7 @@ import java.util.Map;
 public abstract class BaseIntegrationTest {
     public static final String CACHE_NAME = "cache";
     public static final String BINARY_KEEPING_CACHE_NAME = "binaryKeepingCache";
+    public static final String CACHE_NAME_PROVIDER = "cacheNameProvider";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseIntegrationTest.class);
     private static final String DB_NAME = "testDB";
@@ -70,6 +73,14 @@ public abstract class BaseIntegrationTest {
     private static int TEST_NUMBER = 0;
 
     private final FullClusterResource allResources = new FullClusterResource(DB_NAME);
+
+    @DataProvider(name = CACHE_NAME_PROVIDER)
+    public static Object[][] provideCacheName() {
+        return new Object[][] {
+                {CACHE_NAME},
+                {BINARY_KEEPING_CACHE_NAME}
+        };
+    }
 
     private static String getDBUrl() {
         return String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);

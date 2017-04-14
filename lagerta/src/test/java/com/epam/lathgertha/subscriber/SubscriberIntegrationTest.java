@@ -27,11 +27,8 @@ public class SubscriberIntegrationTest extends BaseIntegrationTest {
     private static final String CACHE_INFO_PROVIDER = "cacheInfoProvider";
 
     @DataProvider(name = CACHE_INFO_PROVIDER)
-    public Object[][] provideCacheInformation() {
-        return new Object[][] {
-                {CACHE_NAME, false},
-                {BINARY_KEEPING_CACHE_NAME, true}
-        };
+    public static Object[][] provideCacheInformation() {
+        return DataProviderUtil.concat(provideCacheName(), new Object[][]{{false}, {true}});
     }
 
     @Test(dataProvider = CACHE_INFO_PROVIDER)
@@ -46,8 +43,8 @@ public class SubscriberIntegrationTest extends BaseIntegrationTest {
         assertObjectsInDB(asBinary, entry(1, secondPerson));
     }
 
-    @Test(dataProvider = CACHE_INFO_PROVIDER)
-    public void testWriteThroughAndReadThrough(String cacheName, boolean asBinary) throws Exception {
+    @Test(dataProvider = CACHE_NAME_PROVIDER)
+    public void testWriteThroughAndReadThrough(String cacheName) throws Exception {
         Person expected = new Person(312, "name");
 
         writePersonToCache(cacheName, 1, expected);
