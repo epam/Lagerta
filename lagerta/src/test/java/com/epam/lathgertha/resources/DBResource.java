@@ -16,61 +16,44 @@
 
 package com.epam.lathgertha.resources;
 
+import com.epam.lathgertha.base.jdbc.H2HikariDataSource;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class DBResource implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(DBResource.class);
 
-    public static final String CONNECTION_STR_PATTERN = "jdbc:h2:mem:%s";
+    private final String dbName;
 
-    private final String dbUrl;
-
-    private final List<Connection> connections = new ArrayList<>();
-
-    // Connection to be hold while resource is active to avoid dropping db
-    // because all connections were closed.
-    private Connection connection;
+    private HikariDataSource dataSource;
 
     public DBResource(String dbName) {
-        this.dbUrl = String.format(CONNECTION_STR_PATTERN, dbName);
+        this.dbName = dbName;
+    }
+
+    public HikariDataSource getDataSource() {
+        return dataSource;
     }
 
     @Override
-    public void setUp() throws SQLException {
-        connection = getConnection();
+    public void setUp() {
+        dataSource = H2HikariDataSource.create(dbName);
     }
 
     @Override
-    public void tearDown() throws SQLException {
-        connection.close();
-        for (Connection connection : connections) {
-            if (!connection.isClosed()) {
-                LOG.warn("Some connections aren't closed yet.");
-            }
-        }
-        connections.clear();
+    public void tearDown() {
+        dataSource.close();
     }
 
-    public void reset() throws SQLException {
-        tearDown();
-        setUp();
+    public void initState(String resourceName) throws SQLException {
+        JDBCUtil.executeUpdateQueryFromResource(dataSource.getConnection(), resourceName);
     }
 
-    public Connection getConnection() throws SQLException {
-        Connection connection = DriverManager.getConnection(dbUrl);
-
-        connections.add(connection);
-        return connection;
-    }
-
-    public String getDBUrl() {
-        return dbUrl;
+    public void clearState(String resourceName) throws SQLException {
+        JDBCUtil.executeUpdateQueryFromResource(dataSource.getConnection(), resourceName);
     }
 }

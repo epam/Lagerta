@@ -34,8 +34,8 @@ public class FullClusterResource implements Resource {
     private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE,
             new AppContextOneProcessClusterManager(CONFIG_XML));
 
-    public FullClusterResource(String dbName) {
-        dbResource = new DBResource(dbName);
+    public FullClusterResource(DBResource dbResource) {
+        this.dbResource = dbResource;
     }
 
     public IgniteClusterResource igniteCluster() {
@@ -58,7 +58,6 @@ public class FullClusterResource implements Resource {
 
     public void cleanUpClusters() throws SQLException {
         cluster.stopACSServicesAndCaches();
-        dbResource.reset();
         cluster.startACSServicesAndCaches();
     }
 
