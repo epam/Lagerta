@@ -24,14 +24,17 @@ import org.apache.ignite.IgniteCache;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static org.testng.Assert.assertTrue;
 
 public class JDBCDataCapturerLoaderIntegrationTest extends BaseIntegrationTest {
@@ -87,9 +90,13 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseIntegrationTest {
 
     @Test(dataProvider = LOAD_PERSON_PROVIDER)
     public void partiallyFoundLoadAll(String cacheName, PersonDescriptor descriptor) throws SQLException {
-        try (Connection connection = getDBConnection()) {
-            JDBCUtil.insertIntoPersonTable(connection, descriptor.key, descriptor.value, descriptor.name, descriptor.id);
-        }
+        JDBCUtil.insertIntoPersonTable(
+                dataSource,
+                descriptor.key,
+                descriptor.value,
+                descriptor.name,
+                descriptor.id
+        );
 
         IgniteCache<Integer, Person> cache = ignite().cache(cacheName);
 
@@ -101,9 +108,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseIntegrationTest {
 
     @Test(dataProvider = LOAD_PERSON_PROVIDER)
     public void loadPerson(String cacheName, PersonDescriptor descriptor) throws SQLException {
-        try (Connection connection = getDBConnection()) {
-            JDBCUtil.insertIntoPersonTable(connection, descriptor.key, descriptor.value, descriptor.name, descriptor.id);
-        }
+        JDBCUtil.insertIntoPersonTable(dataSource, descriptor.key, descriptor.value, descriptor.name, descriptor.id);
 
         IgniteCache<Integer, Person> cache = ignite().cache(cacheName);
 
@@ -112,7 +117,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseIntegrationTest {
 
     @Test(dataProvider = LOAD_ALL_PERSONS_PROVIDER)
     public void loadAllPersons(String cacheName, List<PersonDescriptor> descriptors) throws SQLException {
-        try (Connection connection = getDBConnection()) {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
             for (PersonDescriptor descriptor : descriptors) {
                 JDBCUtil.insertIntoPersonTable(
                         connection,
@@ -122,7 +127,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseIntegrationTest {
                         descriptor.id
                 );
             }
-        }
+        });
 
         Map<Integer, Person> expectedResults = descriptors
                 .stream()
