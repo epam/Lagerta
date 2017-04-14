@@ -109,7 +109,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e){
-                LOGGER.error("[R] Exception while committing with ParallelCommitStrategy");
+                LOGGER.error("[R] Exception while committing with ParallelCommitStrategy", e);
             }
         }
 
