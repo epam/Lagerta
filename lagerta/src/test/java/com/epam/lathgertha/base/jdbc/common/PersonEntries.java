@@ -21,8 +21,8 @@ import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
-import com.zaxxer.hikari.HikariDataSource;
 
+import javax.sql.DataSource;
 import javax.sql.rowset.serial.SerialBlob;
 import java.nio.ByteBuffer;
 import java.sql.Blob;
@@ -57,12 +57,12 @@ public class PersonEntries {
         return actualResults;
     }
 
-    public static JDBCCommitter getPersonOnlyJDBCCommitter(HikariDataSource dataSource) {
+    public static JDBCCommitter getPersonOnlyJDBCCommitter(DataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor = Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
         return new JDBCCommitter(dataSource, personEntityDescriptor);
     }
 
-    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(HikariDataSource dataSource) {
+    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(DataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
         return new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
