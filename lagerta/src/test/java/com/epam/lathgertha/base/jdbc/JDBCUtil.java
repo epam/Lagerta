@@ -43,6 +43,7 @@ public final class JDBCUtil {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate(query);
             }
+            connection.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

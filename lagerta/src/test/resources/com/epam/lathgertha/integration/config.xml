@@ -86,7 +86,7 @@
     </bean>
 
     <bean id="cache-loader" class="com.epam.lathgertha.BaseIntegrationTest"
-          factory-method="personJDBDataCapturerLoader"/>
+          factory-method="personJDBCDataCapturerLoader"/>
 
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
           p:remoteTopic="remoteTopic"

@@ -18,8 +18,8 @@ package com.epam.lathgertha.base.jdbc.committer;
 import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.subscriber.Committer;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -30,17 +30,12 @@ public class JDBCCommitter implements Committer {
 
     private static final int BATCH_SIZE = 50_000;
 
+    private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
-    private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
 
-    public JDBCCommitter(Map<String, EntityDescriptor> entityDescriptors,
-                         String dbUrl, String dbUser, String dbPassword) {
+    public JDBCCommitter(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
+        this.dataSource = dataSource;
         this.entityDescriptors = entityDescriptors;
-        this.dbUrl = dbUrl;
-        this.dbUser = dbUser;
-        this.dbPassword = dbPassword;
     }
 
     @Override
@@ -49,7 +44,7 @@ public class JDBCCommitter implements Committer {
             //no data for commit
             return;
         }
-        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             executeBatches(names, keys, values, conn);
             conn.commit();

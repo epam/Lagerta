@@ -40,7 +40,7 @@ public class PersonEntries {
     private static final String SQL_BASE_PATH = "/com/epam/lathgertha/base/jdbc/committer/";
 
     public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
-    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "clear_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "drop_tables.sql";
 
     public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
         Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
@@ -57,9 +57,9 @@ public class PersonEntries {
         return actualResults;
     }
 
-    public static JDBCCommitter getPersonOnlyJDBCCommitter(String dbUrl) {
+    public static JDBCCommitter getPersonOnlyJDBCCommitter(DataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor = Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
-        return new JDBCCommitter(personEntityDescriptor, dbUrl, "", "");
+        return new JDBCCommitter(dataSource, personEntityDescriptor);
     }
 
     public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(DataSource dataSource) {

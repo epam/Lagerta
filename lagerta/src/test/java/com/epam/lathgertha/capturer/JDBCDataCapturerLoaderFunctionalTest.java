@@ -21,10 +21,13 @@ import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
+import com.zaxxer.hikari.HikariDataSource;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.sql.DataSource;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -63,7 +66,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test
     public void notFoundDataForKey() throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
-                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
+                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource());
         Object load = jdbcDataCapturerLoader.load(Person.PERSON_CACHE, 1);
         assertNull(load);
     }
@@ -71,7 +74,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test
     public void loadNotBinaryDataForKey() throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
-                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
+                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource());
         int key = 1;
         Person expectedPerson = new Person(1, "Name");
         JDBCUtil.insertIntoPersonTable(connection, key, expectedPerson, null, null);
@@ -82,7 +85,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test(dataProvider = DATA_PROVIDER_NOT_PERSON, expectedExceptions = RuntimeException.class)
     public void notLoadIncorrectTypeDataForKey(Integer key, Object notPersonVal) throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
-                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
+                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource());
         JDBCUtil.insertIntoPersonTable(connection, key, notPersonVal, null, null);
         jdbcDataCapturerLoader.load(Person.PERSON_CACHE, key);
     }
@@ -94,7 +97,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
-        DataSource dataSource = getJdbcDataSource(dbUrl);
+        HikariDataSource dataSource = getJdbcDataSource();
         JDBCDataCapturerLoader jdbcDataCapturerLoader = new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
         JDBCUtil.insertIntoPersonTable(connection, key, val, personName, personId);
 
@@ -105,7 +108,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test
     public void loadBinaryObject() throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
-                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
+                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource());
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
         JDBCUtil.insertIntoPersonTable(connection, key, null, expectedPerson.getName(), expectedPerson.getId());
@@ -120,7 +123,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
-        DataSource dataSource = getJdbcDataSource(dbUrl);
+        HikariDataSource dataSource = getJdbcDataSource();
         JDBCDataCapturerLoader jdbcDataCapturerLoader = new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
         Iterator<Integer> keysIterator = keys.iterator();
         Iterator<Object> valuesIterator = values.iterator();
@@ -139,7 +142,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test
     public void loadAllBinaryObject() throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
-                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
+                .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource());
         List<Integer> keys = Arrays.asList(1, 2, 3);
         List<Person> values = Arrays.asList(new Person(1, "Name1"), new Person(2, "Name2"), new Person(3, "Name3"));
         Iterator<Integer> keysIterator = keys.iterator();

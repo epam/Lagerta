@@ -17,10 +17,10 @@
 package com.epam.lathgertha.base.jdbc.committer;
 
 import com.epam.lathgertha.BaseFunctionalTest;
-import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.resources.DBResource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -28,8 +28,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -37,6 +35,8 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
 
     protected static final String DATA_BASE_NAME = "h2_functional_test";
     protected static final String DATA_PROVIDER_VAL_NAME = "val";
+
+    private final DBResource dbResource = new DBResource(DATA_BASE_NAME);
 
     @DataProvider(name = DATA_PROVIDER_VAL_NAME)
     public static Object[][] primitives() {
@@ -50,36 +50,35 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
         };
     }
 
-    protected Connection connection;
-    protected String dbUrl;
-
     @BeforeClass
     public void init() throws Exception {
-        DBResource dbResource = new DBResource(DATA_BASE_NAME);
-        dbUrl = dbResource.getDBUrl();
-        connection = dbResource.getConnection();
+        dbResource.setUp();
     }
 
     @AfterClass
     public void clean() throws Exception {
-        connection.close();
+        dbResource.tearDown();
     }
 
     @BeforeMethod()
     public void initState() throws SQLException {
-        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        dbResource.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
     }
 
     @AfterMethod
     public void clearBase() throws SQLException {
-        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.DROP_TABLE_SQL_RESOUCE);
+        dbResource.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
     }
 
-    protected ResultSet executeQuery(String query) throws SQLException {
-        return connection.createStatement().executeQuery(query);
+    protected void applyInConnection(SQLSupplier<Connection> function) {
+        try (Connection connection = dbResource.getDataSource().getConnection()) {
+            function.apply(connection);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    protected PreparedStatement getPrepareStatement(String query) throws SQLException {
-        return connection.prepareStatement(query);
+    protected HikariDataSource getJdbcDataSource() {
+        return dbResource.getDataSource();
     }
 }
