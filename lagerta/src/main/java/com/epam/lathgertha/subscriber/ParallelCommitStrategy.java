@@ -1,8 +1,9 @@
 package com.epam.lathgertha.subscriber;
 
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteScheduler;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.thread.IgniteThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -11,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -21,14 +26,15 @@ import java.util.stream.Stream;
  * Implemented parallel logic to commit batch of transactions.
  */
 public class ParallelCommitStrategy implements CommitStrategy {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParallelCommitStrategy.class);
     private static final int POOL_COUNT = 5;
 
     private final CommitServitor commitServitor;
-    private final IgniteScheduler scheduler;
+    private final ExecutorService executor;
 
-    public ParallelCommitStrategy(CommitServitor commitServitor, IgniteScheduler scheduler) {
+    public ParallelCommitStrategy(CommitServitor commitServitor, String localGridName) {
         this.commitServitor = commitServitor;
-        this.scheduler = scheduler;
+        this.executor = Executors.newFixedThreadPool(POOL_COUNT, new IgniteThreadFactory(localGridName));
     }
 
     @SuppressWarnings("unchecked")
@@ -69,9 +75,9 @@ public class ParallelCommitStrategy implements CommitStrategy {
                     .range(0, Math.min(POOL_COUNT, relationMap.size()))
                     .boxed()
                     .map(i -> (Runnable) this::execute)
-                    .map(scheduler::runLocal)
+                    .map(executor::submit)
                     .collect(Collectors.toList())
-                    .forEach(IgniteFuture::get);
+                    .forEach(this::join);
 
             return deadHasRisen
                     ? txIdsToCommit.stream()
@@ -97,6 +103,14 @@ public class ParallelCommitStrategy implements CommitStrategy {
                     .map(relationMap::get)
                     .peek(blocker -> blocker.addDependent(txId))
                     .count());
+        }
+
+        private void join(Future future) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e){
+                LOGGER.error("[R] Exception while committing with ParallelCommitStrategy");
+            }
         }
 
         private void execute() {

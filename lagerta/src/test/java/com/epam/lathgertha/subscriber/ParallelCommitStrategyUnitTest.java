@@ -1,28 +1,11 @@
 package com.epam.lathgertha.subscriber;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
 import com.epam.lathgertha.capturer.TransactionScope;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteScheduler;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.scheduler.SchedulerFuture;
 import org.apache.kafka.common.TopicPartition;
-import org.jetbrains.annotations.Nullable;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -31,11 +14,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class ParallelCommitStrategyUnitTest {
     private static final String TEST = "test";
@@ -96,7 +84,7 @@ public class ParallelCommitStrategyUnitTest {
                 .when(servitor)
                 .commit(anyLong(), anyMap());
 
-        ParallelCommitStrategy strategy = new ParallelCommitStrategy(servitor, new ForkJoinIgniteScheduler());
+        ParallelCommitStrategy strategy = new ParallelCommitStrategy(servitor, "localGridName");
         List<Long> actualCommitted = strategy.commit(txIdsToCommit, input);
 
         Assert.assertEquals(actualCommitted, expectedCommitted.stream().map(Integer::longValue).collect(toList()));
@@ -120,85 +108,5 @@ public class ParallelCommitStrategyUnitTest {
 
     private static <K, V> Map.Entry<K, V> pair(K k, V v) {
         return new AbstractMap.SimpleImmutableEntry<K, V>(k, v);
-    }
-
-    private static class ForkJoinIgniteScheduler implements IgniteScheduler {
-        private ForkJoinPool pool = new ForkJoinPool();
-
-        @Override
-        public IgniteFuture<?> runLocal(@Nullable Runnable r) {
-            ForkJoinTask<?> submit = pool.submit(r);
-            return new IgniteFuture<Object>() {
-                @Override
-                public Object get() throws IgniteException {
-                    return submit.join();
-                }
-
-                @Override
-                public Object get(long timeout) throws IgniteException {
-                    return null;
-                }
-
-                @Override
-                public Object get(long timeout, TimeUnit unit) throws IgniteException {
-                    return null;
-                }
-
-                @Override
-                public boolean cancel() throws IgniteException {
-                    return false;
-                }
-
-                @Override
-                public boolean isCancelled() {
-                    return false;
-                }
-
-                @Override
-                public boolean isDone() {
-                    return false;
-                }
-
-                @Override
-                public long startTime() {
-                    return 0;
-                }
-
-                @Override
-                public long duration() {
-                    return 0;
-                }
-
-                @Override
-                public void listen(IgniteInClosure<? super IgniteFuture<Object>> lsnr) {
-
-                }
-
-                @Override
-                public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<Object>, T> doneCb) {
-                    return null;
-                }
-            };
-        }
-
-        @Override
-        public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <R> IgniteFuture<R> callLocal(@Nullable Callable<R> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <R> SchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn) {
-            throw new UnsupportedOperationException();
-        }
     }
 }
