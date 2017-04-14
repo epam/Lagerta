@@ -16,8 +16,8 @@
 
 package org.apache.ignite.activestore.impl.subscriber.consumer;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 /**
  * @author Aleksandr_Meterko
@@ -26,7 +26,7 @@ import gnu.trove.list.array.TLongArrayList;
 class OffsetHolder {
 
     private long lastDenseOffset = 0;
-    private final TLongList sparseCommittedOffsets = new TLongArrayList();
+    private final MutableLongList sparseCommittedOffsets = new LongArrayList();
 
     public long getLastDenseOffset() {
         return lastDenseOffset;
@@ -36,7 +36,7 @@ class OffsetHolder {
         this.lastDenseOffset = lastDenseOffset;
     }
 
-    public TLongList getSparseCommittedOffsets() {
+    public MutableLongList getSparseCommittedOffsets() {
         return sparseCommittedOffsets;
     }
 }

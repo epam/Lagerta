@@ -15,78 +15,27 @@
  */
 package com.epam.lathgertha.base.jdbc.committer;
 
-import com.epam.lathgertha.BaseFunctionalTest;
-import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
-import com.epam.lathgertha.resources.DBResource;
 import org.apache.ignite.binary.BinaryObject;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class JDBCCommitterFunctionalTest extends BaseFunctionalTest {
+public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     private static final String SELECT_FROM_TEMPLATE = "SELECT * FROM %s";
-    private static final String DATA_PROVIDER_PRIMITIVES_NAME = "primitives";
-    private static final String DATA_BASE_NAME = "h2_functional_test";
 
-    private static Connection connection;
-    private static String dbUrl;
-
-    private static JDBCCommitter jdbcCommitter;
-
-    @BeforeClass
-    public static void init() throws Exception {
-        DBResource dbResource = new DBResource(DATA_BASE_NAME);
-        dbUrl = dbResource.getDBUrl();
-        connection = dbResource.getConnection();
-    }
-
-    @AfterClass
-    public static void clean() throws Exception {
-        connection.close();
-    }
-
-    @BeforeMethod()
-    public void initState() throws SQLException {
-        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
-    }
-
-    @AfterMethod
-    public void clearBase() throws SQLException {
-        JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.DROP_TABLE_SQL_RESOUCE);
-    }
-
-    @DataProvider(name = DATA_PROVIDER_PRIMITIVES_NAME)
-    public static Object[][] primitives() {
-        return new Object[][]{
-                {1, 2, null, 0},
-                {2, "string", null, 0},
-                {3, 'c', null, 0},
-                {4, new Date(System.currentTimeMillis()), null, 0},
-                {5, 0.2, null, 0}
-        };
-    }
-
-    @Test(dataProvider = DATA_PROVIDER_PRIMITIVES_NAME)
-    public void valPrimitivesCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
-        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+    @Test(dataProvider = DATA_PROVIDER_VAL_NAME)
+    public void valCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
         Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
         expectedResult.put(Person.PERSON_KEY, key);
         expectedResult.put(Person.PERSON_VAL, val);
@@ -98,14 +47,16 @@ public class JDBCCommitterFunctionalTest extends BaseFunctionalTest {
                 Collections.<List<?>>singletonList(Collections.singletonList(val)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
-        ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-        Assert.assertTrue(resultSet.next(), "Return empty result");
-        Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        applyInConnection(connection -> {
+            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
+            Assert.assertTrue(resultSet.next(), "Return empty result");
+            Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        });
     }
 
     @Test
     public void binaryObjectEntityCommitted() throws Exception {
-        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
 
@@ -122,15 +73,16 @@ public class JDBCCommitterFunctionalTest extends BaseFunctionalTest {
                 Collections.<List<?>>singletonList(Collections.singletonList(expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
-        ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-
-        Assert.assertTrue(resultSet.next(), "Return empty result");
-        Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        applyInConnection(connection -> {
+            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
+            Assert.assertTrue(resultSet.next(), "Return empty result");
+            Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+        });
     }
 
     @Test
     public void binaryObjectAndValEntriesCommitted() throws Exception {
-        jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dbUrl);
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
         int keyVal = 22;
         int val = 10;
         int keyPerson = 23;
@@ -156,13 +108,15 @@ public class JDBCCommitterFunctionalTest extends BaseFunctionalTest {
                 Collections.<List<?>>singletonList(Arrays.asList(val, expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
-        ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-        List<Map<String, Object>> resultList = new ArrayList<>(expectedCountRows);
-        while (resultSet.next()) {
-            resultList.add(PersonEntries.getResultMapForPerson(resultSet));
-        }
-        Assert.assertEquals(resultList.size(), expectedCountRows);
-        Assert.assertEquals(resultList.get(0), expectedResultForVal, "Return incorrect result");
-        Assert.assertEquals(resultList.get(1), expectedResultForPerson, "Return incorrect result");
+        applyInConnection(connection -> {
+            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
+            List<Map<String, Object>> resultList = new ArrayList<>(expectedCountRows);
+            while (resultSet.next()) {
+                resultList.add(PersonEntries.getResultMapForPerson(resultSet));
+            }
+            Assert.assertEquals(resultList.size(), expectedCountRows);
+            Assert.assertEquals(resultList.get(0), expectedResultForVal, "Return incorrect result");
+            Assert.assertEquals(resultList.get(1), expectedResultForPerson, "Return incorrect result");
+        });
     }
 }

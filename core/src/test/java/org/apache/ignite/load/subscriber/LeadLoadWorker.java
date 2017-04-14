@@ -16,13 +16,13 @@
 
 package org.apache.ignite.load.subscriber;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
 import org.apache.ignite.activestore.impl.subscriber.lead.Lead;
 import org.apache.ignite.activestore.impl.subscriber.lead.LeadResponse;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.load.statistics.Statistics;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,13 +121,13 @@ public class LeadLoadWorker implements LifecycleAware, Runnable {
         long startTime,
         List<TransactionMetadata> metadatas,
         long endTime,
-        TLongList toCommitIds
+        LongList toCommitIds
     ) {
         for (TransactionMetadata metadata : metadatas) {
            stats.recordOperationStartTime(metadata.getTransactionId(), startTime);
         }
         if (toCommitIds != null) {
-            for (TLongIterator it = toCommitIds.iterator(); it.hasNext(); ) {
+            for (LongIterator it = toCommitIds.longIterator(); it.hasNext(); ) {
                 stats.recordOperationEndTime(it.next(), endTime);
             }
         }

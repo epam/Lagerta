@@ -16,7 +16,7 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +29,9 @@ import java.util.UUID;
 class DoneTask extends ConsumerTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(DoneTask.class);
     private final LeadPlanner planner;
-    private final TLongList txIds;
+    private final LongList txIds;
 
-    public DoneTask(UUID consumerId, ConsumerPingManager pingManager, LeadPlanner planner, TLongList txIds) {
+    public DoneTask(UUID consumerId, ConsumerPingManager pingManager, LeadPlanner planner, LongList txIds) {
         super(consumerId, pingManager);
         this.planner = planner;
         this.txIds = txIds;

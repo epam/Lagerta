@@ -13,22 +13,20 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.epam.lathgertha.base.jdbc.committer;
 
-import com.epam.lathgertha.base.FieldDescriptor;
+package com.epam.lathgertha.mocks;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
+import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.Lead;
+import com.epam.lathgertha.subscriber.lead.LeadStateAssistant;
 
-public interface BaseMapper {
+public class LeadStateAssistantMock implements LeadStateAssistant {
+    @Override
+    public void saveState(Lead lead) {
+    }
 
-    String getCacheName();
-
-    PreparedStatement insertUpdateStatement(Connection connection, String tableName,
-                                            List<FieldDescriptor> fieldDescriptor) throws SQLException;
-
-    void addValuesToBatch(PreparedStatement statement, Map<String, Object> fieldValueMap) throws SQLException;
+    @Override
+    public void load(Lead lead) {
+        lead.updateState(new CommittedTransactions());
+    }
 }

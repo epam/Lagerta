@@ -17,7 +17,9 @@
 package com.epam.lathgertha.subscriber.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.ForkJoinPool;
@@ -28,6 +30,7 @@ public final class MergeUtil {
     private static final double LOG2 = Math.log(2);
     private static final ForkJoinPool pool = ForkJoinPool.commonPool();
 
+
     /**
      * squashes and merges buffer into container
      *
@@ -36,11 +39,28 @@ public final class MergeUtil {
      * @param comparator
      */
     public static <T> void mergeCollections(
-            List<T> container,
+        List<T> container,
+        List<List<T>> buffer,
+        Comparator<T> comparator
+    ) {
+        List<T> mergedBuffer = mergeBuffer(buffer, comparator);
+
+        merge(container, mergedBuffer, comparator);
+    }
+
+    /**
+     * squashes and merges buffer into its first element
+     *
+     * @param buffer     items to merge
+     * @param comparator
+     *
+     * @return buffer's first element containing the merged buffer
+     */
+    public static <T> List<T> mergeBuffer(
             List<List<T>> buffer,
             Comparator<T> comparator) {
         if (buffer.isEmpty()) {
-            return;
+            return Collections.emptyList();
         }
         int size = buffer.size();
         double deep = Math.ceil((Math.log(size) / LOG2));
@@ -57,7 +77,7 @@ public final class MergeUtil {
             tasks.forEach(ForkJoinTask::join);
             prevStep = step;
         }
-        merge(container, buffer.get(0), comparator);
+        return buffer.get(0);
     }
 
     /**
@@ -91,7 +111,7 @@ public final class MergeUtil {
         }
     }
 
-    private static <T> T getNext(ListIterator<T> iter) {
+    public static <T> T getNext(Iterator<T> iter) {
         return iter.hasNext() ? iter.next() : null;
     }
 }

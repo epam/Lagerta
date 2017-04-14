@@ -34,26 +34,27 @@ import java.util.function.Function;
 
 public final class PlannerUtil {
     private static final Function<UUID, Map<String, Set<?>>> CLAIMED = key -> new HashMap<>();
-    private static final Function<UUID, List<Long>> READY = key -> new ArrayList<>();
     private static final Function<String, Set<?>> NEW_HASH_SET = key -> new HashSet();
 
     private PlannerUtil() {
     }
 
-    public static Map<UUID, List<Long>> plan(
+    public static List<ConsumerTxScope> plan(
             ReadTransactions read,
             CommittedTransactions committed,
-            Set<Long> inProgress) {
+            Set<Long> inProgress,
+            Set<UUID> lostReaders) {
 
         Map<String, Set<?>> blocked = new HashMap<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
-        Map<UUID, List<Long>> plan = new HashMap<>();
+        List<ConsumerTxScope> plan = new ArrayList<>();
 
         for (ConsumerTxScope info : read) {
             long id = info.getTransactionId();
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
-                if (inProgress.contains(id) || isIntersected(blocked, scope)) {
+                if (inProgress.contains(id) || lostReaders.contains(info.getConsumerId())
+                        || info.isOrphan() || isIntersected(blocked, scope)) {
                     scope.forEach(addTo(blocked));
                 } else {
                     UUID consumerId = info.getConsumerId();
@@ -62,7 +63,7 @@ public final class PlannerUtil {
                     } else {
                         Map<String, Set<?>> claimedScope = claimed.computeIfAbsent(consumerId, CLAIMED);
                         scope.forEach(addTo(claimedScope));
-                        plan.computeIfAbsent(consumerId, READY).add(id);
+                        plan.add(info);
                     }
                 }
             }

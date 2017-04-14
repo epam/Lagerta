@@ -16,8 +16,6 @@
 
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
 import org.apache.ignite.activestore.impl.DataRecoveryConfig;
 import org.apache.ignite.activestore.impl.kafka.KafkaFactory;
 import org.apache.ignite.activestore.impl.util.PropertiesUtil;
@@ -25,6 +23,8 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,12 +107,12 @@ class LocalLeadContextLoader implements Runnable {
         if (stalled) {
             stalled = false;
         }
-        TLongList committedIds = new TLongArrayList(records.count());
+        MutableLongList committedIds = new LongArrayList(records.count());
 
         for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
             committedIds.add(record.timestamp());
         }
-        committedIds.sort();
+        committedIds.sortThis();
         lead.updateInitialContext(localLoaderId, committedIds);
         consumer.commitSync();
     }

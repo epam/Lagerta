@@ -29,6 +29,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
+
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
     private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
@@ -55,7 +59,7 @@ public class Reader extends Scheduler {
     private final SubscriberConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
-    private final UUID nodeId;
+    private final UUID readerId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
 
@@ -63,19 +67,21 @@ public class Reader extends Scheduler {
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy) {
+                  CommitStrategy commitStrategy, UUID readerId) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL);
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
+                readerId);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval) {
+                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
+                  UUID readerId) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
-        nodeId = UUID.randomUUID();
+        this.readerId = readerId;
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
     }
@@ -88,6 +94,15 @@ public class Reader extends Scheduler {
             registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
             super.execute();
         }
+    }
+
+    public void resendReadTransactions() {
+        pushTask(() -> {
+            List<TransactionScope> collect = buffer.values().stream()
+                    .map(TransactionData::getTransactionScope)
+                    .collect(Collectors.toList());
+            approveAndCommitTransactionsBatch(collect);
+        });
     }
 
     private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
@@ -110,18 +125,21 @@ public class Reader extends Scheduler {
         }
         if (!scopes.isEmpty()) {
             scopes.sort(SCOPE_COMPARATOR);
+            LOGGER.trace("[R] {} polled {}", readerId, scopes);
         }
         approveAndCommitTransactionsBatch(scopes);
     }
 
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
-        List<Long> txIdsToCommit = lead.notifyRead(nodeId, scopes);
+        List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
 
         if (!txIdsToCommit.isEmpty()) {
             txIdsToCommit.sort(Long::compareTo);
+            LOGGER.trace("[R] {} told to commit {}", readerId, txIdsToCommit);
+
             List<Long> committed = commitStrategy.commit(txIdsToCommit, buffer);
-            lead.notifyCommitted(committed);
+            lead.notifyCommitted(readerId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
     }

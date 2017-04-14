@@ -17,26 +17,54 @@ package com.epam.lathgertha.subscriber.lead;
 
 import com.epam.lathgertha.subscriber.util.MergeUtil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CommittedTransactions {
+public class CommittedTransactions implements Serializable {
 
-    private static final long INITIAL_COMMIT_ID = -1L;
+    static final long INITIAL_READY_COMMIT_ID = -1L;
+    private static final long INITIAL_COMMIT_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
-    private final List<Long> committed = new LinkedList<>();
-    private volatile long lastDenseCommit = INITIAL_COMMIT_ID;
-    private List<List<Long>> toMerge = new ArrayList<>(INITIAL_CAPACITY);
+    private final List<Long> sparseCommitted = new LinkedList<>();
+    private volatile long lastDenseCommit;
+
+    private transient List<List<Long>> toMerge;
+
+    /**
+     * creates ready to process transactions
+     */
+    public CommittedTransactions() {
+        this(INITIAL_READY_COMMIT_ID);
+    }
+
+    /**
+     * creates not ready to process transactions
+     */
+    public static CommittedTransactions createNotReady() {
+        return new CommittedTransactions(INITIAL_COMMIT_ID);
+    }
+
+    private CommittedTransactions(long initialCommitId) {
+        lastDenseCommit = initialCommitId;
+        toMerge = new ArrayList<>(INITIAL_CAPACITY);
+    }
 
     public boolean addAll(List<Long> sortedTransactions) {
         return toMerge.add(sortedTransactions);
     }
 
+    public void addAll(CommittedTransactions newCommitted) {
+        addAll(newCommitted.sparseCommitted);
+        lastDenseCommit = newCommitted.lastDenseCommit;
+        compress();
+    }
+
     public boolean contains(long l) {
-        return l <= lastDenseCommit || committed.contains(l);
+        return l <= lastDenseCommit || sparseCommitted.contains(l);
     }
 
     public long getLastDenseCommit() {
@@ -45,12 +73,14 @@ public class CommittedTransactions {
 
     public void compress() {
         mergeCollections();
-        Iterator<Long> iterator = committed.iterator();
+        Iterator<Long> iterator = sparseCommitted.iterator();
         while (iterator.hasNext()) {
             Long next = iterator.next();
             if (lastDenseCommit + 1 == next) {
                 iterator.remove();
                 lastDenseCommit = next;
+            } else if (lastDenseCommit + 1 > next) {
+                iterator.remove();
             } else {
                 break;
             }
@@ -58,7 +88,12 @@ public class CommittedTransactions {
     }
 
     private void mergeCollections() {
-        MergeUtil.mergeCollections(committed, toMerge, Long::compare);
+        MergeUtil.mergeCollections(sparseCommitted, toMerge, Long::compare);
         toMerge = new ArrayList<>(INITIAL_CAPACITY);
+    }
+
+    @Override
+    public String toString() {
+        return "Committed{" + lastDenseCommit + " -> " + sparseCommitted + '}';
     }
 }

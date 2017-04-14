@@ -16,10 +16,13 @@
 package com.epam.lathgertha.subscriber.util;
 
 import com.epam.lathgertha.capturer.TransactionScope;
+import com.epam.lathgertha.subscriber.ConsumerTxScope;
 import com.epam.lathgertha.subscriber.lead.CommittedTransactions;
+import com.epam.lathgertha.subscriber.lead.Heartbeats;
 import com.epam.lathgertha.subscriber.lead.ReadTransactions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.mockito.Mockito;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -29,11 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.epam.lathgertha.subscriber.DataProviderUtil.NodeTransactionsBuilder;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.cacheScope;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.list;
 import static com.epam.lathgertha.subscriber.DataProviderUtil.txScope;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
 
 public class PlannerUtilUnitTest {
@@ -50,6 +56,8 @@ public class PlannerUtilUnitTest {
 
     private static final CommittedTransactions EMPTY_COMMITTED = new CommittedTransactions();
     private static final HashSet<Long> EMPTY_IN_PROGRESS = Sets.newHashSet();
+    private static final Set<UUID> EMPTY_LOST_READERS = Collections.emptySet();
+    private static final Heartbeats HEARTBEATS = Mockito.mock(Heartbeats.class);
 
     @Test(dataProvider = PLANNER_INFO)
     public void planningWorks(
@@ -57,7 +65,15 @@ public class PlannerUtilUnitTest {
             CommittedTransactions committed,
             Set<Long> inProgress,
             Map<UUID, List<Long>> expected) {
-        Map<UUID, List<Long>> plan = PlannerUtil.plan(transactions, committed, inProgress);
+        transactions.makeReady();
+        transactions.pruneCommitted(EMPTY_COMMITTED, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
+        List<ConsumerTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
+        Map<UUID, List<Long>> plan = ready.stream()
+                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        entry -> entry.getValue().stream().map(TransactionScope::getTransactionId).collect(toList())));
         assertEquals(plan, expected);
     }
 
@@ -84,7 +100,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(0L, cacheScope(CACHE1, 1L)),
                 txScope(1L, cacheScope(CACHE1, 1L))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0L, 1L);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -133,7 +148,6 @@ public class PlannerUtilUnitTest {
                 txScope(1, cacheScope(CACHE1, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -146,7 +160,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(A, list(
                 txScope(1, cacheScope(CACHE1, 1)),
                 txScope(2, cacheScope(CACHE1, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 0);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }
@@ -160,7 +173,6 @@ public class PlannerUtilUnitTest {
                 txScope(3, cacheScope(CACHE1, 1, 2))));
         transactions.addAllOnNode(B, list(
                 txScope(2, cacheScope(CACHE1, 2))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1)
                 .nodeTransactions(B, 2)
@@ -179,7 +191,6 @@ public class PlannerUtilUnitTest {
                         cacheScope(CACHE2, 1))));
         transactions.addAllOnNode(B, list(
                 txScope(3, cacheScope(CACHE2, 1))));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2)
                 .nodeTransactions(B, 3)
@@ -200,7 +211,6 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(B, list(
                 txScope(4, cacheScope(CACHE2, 2))
         ));
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = NodeTransactionsBuilder.builder()
                 .nodeTransactions(A, 0, 1, 2, 3)
                 .nodeTransactions(B, 4)
@@ -217,9 +227,10 @@ public class PlannerUtilUnitTest {
         transactions.addAllOnNode(B, list(
                 txScope(1, cacheScope(CACHE2, 2))));
         CommittedTransactions committed = new CommittedTransactions();
-        committed.addAll(Lists.newArrayList(0L));
+        committed.addAll(list(0L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.makeReady();
+        transactions.pruneCommitted(committed, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         Map<UUID, List<Long>> expected = nodeTransactions(B, 1);
         return new Object[]{transactions, committed, EMPTY_IN_PROGRESS, expected};
     }
@@ -236,14 +247,14 @@ public class PlannerUtilUnitTest {
         CommittedTransactions committed = new CommittedTransactions();
         committed.addAll(Lists.newArrayList(2L));
         committed.compress();
-        transactions.pruneCommitted(committed);
+        transactions.makeReady();
+        transactions.pruneCommitted(committed, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         return new Object[]{transactions, committed, inProgress, Collections.emptyMap()};
     }
 
     private static Object[] sequence(List<TransactionScope> list) {
         ReadTransactions transactions = new ReadTransactions();
         transactions.addAllOnNode(A, list);
-        transactions.pruneCommitted(EMPTY_COMMITTED);
         Map<UUID, List<Long>> expected = nodeTransactions(A, 0, 1, 2, 3);
         return new Object[]{transactions, EMPTY_COMMITTED, EMPTY_IN_PROGRESS, expected};
     }

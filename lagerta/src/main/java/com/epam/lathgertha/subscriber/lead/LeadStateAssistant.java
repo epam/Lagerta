@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.activestore.subscriber;
+package com.epam.lathgertha.subscriber.lead;
 
-import org.apache.ignite.lang.IgniteInClosure;
-import org.eclipse.collections.api.list.primitive.LongList;
+public interface LeadStateAssistant {
 
-/**
- * @author Aleksandr_Meterko
- * @since 12/1/2016
- */
-public interface Committer {
-    /** */
-    void commitAsync(
-        LongList txIds,
-        TransactionSupplier txSupplier,
-        IgniteInClosure<Long> onSingleCommit, IgniteInClosure<LongList> onFullCommit);
+    void saveState(Lead lead);
+
+    void load(Lead lead);
 }

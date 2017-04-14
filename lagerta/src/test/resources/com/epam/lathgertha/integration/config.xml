@@ -47,13 +47,11 @@
     <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
           p:configuration-ref="ignite.cfg"/>
 
-    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"/>
-    <bean id="reader" class="com.epam.lathgertha.subscriber.Reader" lazy-init="true" scope="prototype"
-          c:ignite-ref="ignite-bean"
-          c:kafkaFactory-ref="kafka-factory"
-          c:config-ref="subscriber-config"
-          c:serializer-ref="serializer"
-          c:commitStrategy-ref="commit-strategy"/>
+    <bean id="stateAssistant" class="com.epam.lathgertha.subscriber.lead.LeadStateAssistantImpl" scope="prototype"
+          c:ignite-ref="ignite-bean"/>
+
+    <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"
+          c:stateAssistant-ref="stateAssistant"/>
 
     <bean id="lead-service" class="com.epam.lathgertha.services.LeadServiceImpl"/>
     <bean id="reader-service" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
@@ -72,6 +70,7 @@
     <util:list id="caches">
         <ref bean="cache"/>
         <ref bean="binary-cache"/>
+        <ref bean="atomicCache"/>
     </util:list>
 
     <bean name="discovery-spi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -86,7 +85,8 @@
         </property>
     </bean>
 
-    <bean id="cache-loader" class="com.epam.lathgertha.capturer.NopeDataCapturerLoader"/>
+    <bean id="cache-loader" class="com.epam.lathgertha.BaseIntegrationTest"
+          factory-method="personJDBCDataCapturerLoader"/>
 
     <bean name="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
           p:remoteTopic="remoteTopic"
@@ -102,7 +102,7 @@
     <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="jdbc-committer" class="com.epam.lathgertha.BaseIntegrationTest"
+    <bean name="committer" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter" scope="prototype">
@@ -114,15 +114,6 @@
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>
     </bean>
-
-    <bean name="commit-servitor" class="com.epam.lathgertha.subscriber.CommitServitor" scope="prototype"
-          c:serializer-ref="serializer"
-          c:committer-ref="jdbc-committer"
-          c:kafkaLogCommitter-ref="kafka-log-committer"
-          c:ignite-ref="ignite-bean"/>
-
-    <bean name="commit-strategy" class="com.epam.lathgertha.subscriber.SequentialCommitStrategy" scope="prototype"
-          c:commitServitor-ref="commit-servitor"/>
 
     <bean name="kafka-factory" class="com.epam.lathgertha.kafka.KafkaFactoryImpl"/>
 
@@ -164,4 +155,6 @@
           p:backups="2"
           p:storeKeepBinary="true"
           p:cacheStoreFactory-ref="cache-store-factory"/>
+
+    <bean id="atomicCache" class="com.epam.lathgertha.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>

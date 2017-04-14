@@ -1,11 +1,5 @@
 package com.epam.lathgertha.subscriber;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
@@ -29,8 +23,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 
 
 public class SequentialCommitStrategyUnitTest {
@@ -68,6 +69,7 @@ public class SequentialCommitStrategyUnitTest {
                 serializer,
                 statefulCommitter,
                 kafkaLogCommitter,
+                UUID.randomUUID(),
                 ignite
         ));
     }

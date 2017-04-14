@@ -20,8 +20,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.apache.ignite.activestore</groupId>
-    <artifactId>activestore</artifactId>
+    <groupId>com.epam</groupId>
+    <artifactId>lagerta</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
@@ -40,6 +40,7 @@
     <properties>
         <ignite.version>1.8.0</ignite.version>
         <slf4j.version>1.7.22</slf4j.version>
+        <eclipse-collections.version>8.1.0</eclipse-collections.version>
     </properties>
 
     <dependencyManagement>
@@ -65,9 +66,14 @@
                 <version>1.2.2</version>
             </dependency>
             <dependency>
-                <groupId>net.sf.trove4j</groupId>
-                <artifactId>trove4j</artifactId>
-                <version>3.0.3</version>
+                <groupId>org.eclipse.collections</groupId>
+                <artifactId>eclipse-collections-api</artifactId>
+                <version>${eclipse-collections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.collections</groupId>
+                <artifactId>eclipse-collections</artifactId>
+                <version>${eclipse-collections.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.inject</groupId>

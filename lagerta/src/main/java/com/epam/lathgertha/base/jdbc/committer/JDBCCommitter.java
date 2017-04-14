@@ -15,15 +15,13 @@
  */
 package com.epam.lathgertha.base.jdbc.committer;
 
-import com.epam.lathgertha.base.CacheInBaseDescriptor;
+import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.subscriber.Committer;
-import com.epam.lathgertha.util.JDBCKeyValueMapper;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,27 +30,12 @@ public class JDBCCommitter implements Committer {
 
     private static final int BATCH_SIZE = 50_000;
 
-    private final Map<String, CacheInBaseDescriptor> cacheDescriptorsMap;
-    private final Map<String, BaseMapper> mappers;
-    private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
+    private final DataSource dataSource;
+    private final Map<String, EntityDescriptor> entityDescriptors;
 
-    public JDBCCommitter(List<CacheInBaseDescriptor> cacheInBaseDescriptors, List<BaseMapper> mappers,
-                         String dbUrl, String dbUser, String dbPassword) {
-        this.cacheDescriptorsMap = new HashMap<>(cacheInBaseDescriptors.size());
-
-        for (CacheInBaseDescriptor descriptor : cacheInBaseDescriptors) {
-            this.cacheDescriptorsMap.put(descriptor.getCacheName(), descriptor);
-        }
-
-        this.mappers = new HashMap<>(cacheInBaseDescriptors.size());
-        for (BaseMapper mapper : mappers) {
-            this.mappers.put(mapper.getCacheName(), mapper);
-        }
-        this.dbUrl = dbUrl;
-        this.dbUser = dbUser;
-        this.dbPassword = dbPassword;
+    public JDBCCommitter(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
+        this.dataSource = dataSource;
+        this.entityDescriptors = entityDescriptors;
     }
 
     @Override
@@ -61,7 +44,7 @@ public class JDBCCommitter implements Committer {
             //no data for commit
             return;
         }
-        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             executeBatches(names, keys, values, conn);
             conn.commit();
@@ -80,25 +63,16 @@ public class JDBCCommitter implements Committer {
             Iterator<?> currentKeys = keysIterator.next().iterator();
             Iterator<?> currentValues = valuesIterator.next().iterator();
 
-            CacheInBaseDescriptor cacheInBaseDescriptor = cacheDescriptorsMap.get(currentCache);
-            if (cacheInBaseDescriptor == null) {
+            EntityDescriptor entityDescriptor = entityDescriptors.get(currentCache);
+            if (entityDescriptor == null) {
                 throw new RuntimeException("Not found cacheDescriptor for cache: " + currentCache);
             }
-            BaseMapper mapper = mappers.get(currentCache);
-            if (mapper == null) {
-                throw new RuntimeException("Not set mapper for cache: " + currentCache);
-            }
-
-            try (PreparedStatement statement = mapper.insertUpdateStatement(conn,
-                    cacheInBaseDescriptor.getTableName(),
-                    cacheInBaseDescriptor.getFieldDescriptors())
-            ) {
+            try (PreparedStatement statement = conn.prepareStatement(entityDescriptor.getUpsertQuery())) {
                 int elementsInBatch = 0;
                 while (currentKeys.hasNext() && currentValues.hasNext()) {
                     Object currentKey = currentKeys.next();
                     Object currentValue = currentValues.next();
-                    Map<String, Object> fieldValueMap = JDBCKeyValueMapper.keyValueMap(currentKey, currentValue);
-                    mapper.addValuesToBatch(statement, fieldValueMap);
+                    entityDescriptor.addValuesToBatch(currentKey, currentValue, statement);
                     if (++elementsInBatch >= BATCH_SIZE) {
                         statement.executeBatch();
                         elementsInBatch = 0;
@@ -108,7 +82,6 @@ public class JDBCCommitter implements Committer {
                     statement.executeBatch();
                 }
             }
-
         }
     }
 }

@@ -15,6 +15,7 @@
  */
 package com.epam.lathgertha.common;
 
+import org.apache.ignite.IgniteInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,18 @@ public class Scheduler {
 
     private volatile boolean running = false;
 
+    /**
+     * thread-safe operation
+     * @param task - closure to run once
+     */
     public void pushTask(Runnable task) {
         tasks.add(task);
     }
 
+    /**
+     * non thread-safe operation
+     * @param rule closure to run every cycle
+     */
     public void registerRule(Runnable rule) {
         rules.add(rule);
     }
@@ -46,16 +55,18 @@ public class Scheduler {
 
     public void execute() {
         running = true;
-        try {
-            while (running) {
+        while (running) {
+            try {
                 int size = tasks.size();
                 for (int i = 0; i < size; i++) {
                     tasks.poll().run();
                 }
                 rules.forEach(Runnable::run);
+            } catch (IgniteInterruptedException e) {
+                running = false;
+            } catch (Exception e) {
+                LOG.error("Error while running a bunch of tasks", e);
             }
-        } catch (Exception e) {
-            LOG.error("Error while running a bunch of tasks", e);
         }
     }
 }

@@ -17,12 +17,12 @@
 package org.apache.ignite.activestore.impl.subscriber.lead;
 
 import com.google.inject.Provider;
-import gnu.trove.list.TLongList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.activestore.commons.ProxyService;
 import org.apache.ignite.activestore.commons.retry.Retries;
 import org.apache.ignite.activestore.impl.transactions.TransactionMetadata;
 import org.apache.ignite.services.ServiceContext;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -76,7 +76,7 @@ public class LeadServiceProxyRetry implements LeadService {
     }
 
     @Override
-    public void notifyTransactionsCommitted(final UUID consumerId, final TLongList transactionsIds) {
+    public void notifyTransactionsCommitted(final UUID consumerId, final LongList transactionsIds) {
         Retries.tryMe(new Runnable() {
             @Override
             public void run() {
@@ -86,7 +86,7 @@ public class LeadServiceProxyRetry implements LeadService {
     }
 
     @Override
-    public void updateInitialContext(final UUID localLoaderId, final TLongList txIds) {
+    public void updateInitialContext(final UUID localLoaderId, final LongList txIds) {
         Retries.tryMe(new Runnable() {
             @Override
             public void run() {

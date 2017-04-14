@@ -13,12 +13,11 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.epam.lathgertha.base.jdbc.committer;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public interface JDBCTransformer {
-
-    void accept(Object t, PreparedStatement u) throws SQLException;
+public interface SQLSupplier<T> {
+    void apply(T t) throws SQLException;
 }
