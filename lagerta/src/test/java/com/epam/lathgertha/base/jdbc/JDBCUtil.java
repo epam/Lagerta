@@ -16,14 +16,23 @@
 
 package com.epam.lathgertha.base.jdbc;
 
+import com.epam.lathgertha.base.FieldDescriptor;
+import com.epam.lathgertha.base.jdbc.common.Person;
+import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class JDBCUtil {
+    private static final String INSERT_INTO_TEMPLATE = "INSERT INTO %s VALUES (%s)";
+
     private JDBCUtil() {
     }
 
@@ -36,6 +45,31 @@ public final class JDBCUtil {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void insertIntoPersonTable(
+            Connection connection,
+            Integer key,
+            Object val,
+            String name,
+            Integer id
+    ) throws SQLException {
+        String maskFields = PersonEntries.getPersonFieldDescriptor().entrySet().stream()
+                .map(i -> "?")
+                .collect(Collectors.joining(", "));
+        try (PreparedStatement preparedStatement = connection.prepareStatement(
+                String.format(INSERT_INTO_TEMPLATE, Person.PERSON_TABLE, maskFields))) {
+            Map<String, FieldDescriptor> personFieldDescriptor = PersonEntries.getPersonFieldDescriptor();
+
+            personFieldDescriptor.get(Person.PERSON_KEY).setValueInStatement(key, preparedStatement);
+            personFieldDescriptor.get(Person.PERSON_VAL).setValueInStatement(val, preparedStatement);
+            personFieldDescriptor.get(Person.PERSON_ID).setValueInStatement(id, preparedStatement);
+            personFieldDescriptor.get(Person.PERSON_NAME).setValueInStatement(name, preparedStatement);
+            preparedStatement.execute();
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
         }
     }
 }

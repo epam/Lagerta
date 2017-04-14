@@ -17,7 +17,7 @@
 package com.epam.lathgertha.capturer;
 
 import com.epam.lathgertha.base.EntityDescriptor;
-import com.epam.lathgertha.base.FieldDescriptor;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
@@ -25,8 +25,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -34,14 +32,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest {
 
-    private static final String INSERT_INTO_TEMPLATE = "INSERT INTO %s VALUES (%s)";
     private static final String DATA_PROVIDER_NOT_PERSON = "notPersonData";
     private static final String DATA_PROVIDER_LIST_VAL_NAME = "listValues";
 
@@ -78,7 +74,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
                 .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
         int key = 1;
         Person expectedPerson = new Person(1, "Name");
-        insertIntoPersonTable(key, expectedPerson, null, null);
+        JDBCUtil.insertIntoPersonTable(connection, key, expectedPerson, null, null);
         Object actual = jdbcDataCapturerLoader.load(Person.PERSON_CACHE, key);
         assertEquals(actual, expectedPerson);
     }
@@ -87,7 +83,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     public void notLoadIncorrectTypeDataForKey(Integer key, Object notPersonVal) throws Exception {
         JDBCDataCapturerLoader jdbcDataCapturerLoader = PersonEntries
                 .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
-        insertIntoPersonTable(key, notPersonVal, null, null);
+        JDBCUtil.insertIntoPersonTable(connection, key, notPersonVal, null, null);
         jdbcDataCapturerLoader.load(Person.PERSON_CACHE, key);
     }
 
@@ -100,7 +96,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
 
         DataSource dataSource = getJdbcDataSource(dbUrl);
         JDBCDataCapturerLoader jdbcDataCapturerLoader = new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
-        insertIntoPersonTable(key, val, personName, personId);
+        JDBCUtil.insertIntoPersonTable(connection, key, val, personName, personId);
 
         Object actual = jdbcDataCapturerLoader.load(Person.PERSON_CACHE, key);
         assertEquals(actual, val);
@@ -112,7 +108,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
                 .getPersonOnlyJDBCDataCapturerLoader(getJdbcDataSource(dbUrl));
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
-        insertIntoPersonTable(key, null, expectedPerson.getName(), expectedPerson.getId());
+        JDBCUtil.insertIntoPersonTable(connection, key, null, expectedPerson.getName(), expectedPerson.getId());
         Object actual = jdbcDataCapturerLoader.load(Person.PERSON_CACHE, key);
         assertEquals(actual, expectedPerson);
     }
@@ -132,7 +128,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         while (keysIterator.hasNext() && valuesIterator.hasNext()) {
             Integer nextKey = keysIterator.next();
             Object nextVal = valuesIterator.next();
-            insertIntoPersonTable(nextKey, nextVal, null, null);
+            JDBCUtil.insertIntoPersonTable(connection, nextKey, nextVal, null, null);
             expectedResult.put(nextKey, nextVal);
         }
 
@@ -152,25 +148,10 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         while (keysIterator.hasNext() && valuesIterator.hasNext()) {
             Integer nextKey = keysIterator.next();
             Person nextVal = valuesIterator.next();
-            insertIntoPersonTable(nextKey, null, nextVal.getName(), nextVal.getId());
+            JDBCUtil.insertIntoPersonTable(connection, nextKey, null, nextVal.getName(), nextVal.getId());
             expectedResult.put(nextKey, nextVal);
         }
         Map<Integer, Object> actual = jdbcDataCapturerLoader.loadAll(Person.PERSON_CACHE, keys);
         assertEquals(actual, expectedResult);
-    }
-
-    private void insertIntoPersonTable(Integer key, Object val, String name, Integer id) throws SQLException {
-        String maskFields = PersonEntries.getPersonFieldDescriptor().entrySet().stream()
-                .map(i -> "?")
-                .collect(Collectors.joining(", "));
-        PreparedStatement preparedStatement = getPrepareStatement(
-                String.format(INSERT_INTO_TEMPLATE, Person.PERSON_TABLE, maskFields)
-        );
-        Map<String, FieldDescriptor> personFieldDescriptor = PersonEntries.getPersonFieldDescriptor();
-        personFieldDescriptor.get(Person.PERSON_KEY).setValueInStatement(key, preparedStatement);
-        personFieldDescriptor.get(Person.PERSON_VAL).setValueInStatement(val, preparedStatement);
-        personFieldDescriptor.get(Person.PERSON_ID).setValueInStatement(id, preparedStatement);
-        personFieldDescriptor.get(Person.PERSON_NAME).setValueInStatement(name, preparedStatement);
-        preparedStatement.execute();
     }
 }

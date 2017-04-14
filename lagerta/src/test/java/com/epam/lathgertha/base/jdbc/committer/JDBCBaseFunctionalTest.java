@@ -50,7 +50,7 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
         };
     }
 
-    private Connection connection;
+    protected Connection connection;
     protected String dbUrl;
 
     @BeforeClass
