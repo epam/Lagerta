@@ -17,8 +17,8 @@ package com.epam.lathgertha.base.jdbc.committer;
 
 import com.epam.lathgertha.base.EntityDescriptor;
 import com.epam.lathgertha.subscriber.Committer;
-import com.zaxxer.hikari.HikariDataSource;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -30,10 +30,10 @@ public class JDBCCommitter implements Committer {
 
     private static final int BATCH_SIZE = 50_000;
 
-    private final HikariDataSource dataSource;
+    private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
 
-    public JDBCCommitter(HikariDataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
+    public JDBCCommitter(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
         this.dataSource = dataSource;
         this.entityDescriptors = entityDescriptors;
     }
