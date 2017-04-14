@@ -1,5 +1,9 @@
 package com.epam.lathgertha.subscriber;
 
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteScheduler;
+import org.apache.ignite.lang.IgniteFuture;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -22,11 +24,11 @@ public class ParallelCommitStrategy implements CommitStrategy {
     private static final int POOL_COUNT = 5;
 
     private final CommitServitor commitServitor;
-    private final ForkJoinPool pool;
+    private final IgniteScheduler scheduler;
 
-    public ParallelCommitStrategy(CommitServitor commitServitor) {
+    public ParallelCommitStrategy(CommitServitor commitServitor, IgniteScheduler scheduler) {
         this.commitServitor = commitServitor;
-        pool = new ForkJoinPool();
+        this.scheduler = scheduler;
     }
 
     @SuppressWarnings("unchecked")
@@ -67,9 +69,9 @@ public class ParallelCommitStrategy implements CommitStrategy {
                     .range(0, Math.min(POOL_COUNT, relationMap.size()))
                     .boxed()
                     .map(i -> (Runnable) this::execute)
-                    .map(pool::submit)
+                    .map(scheduler::runLocal)
                     .collect(Collectors.toList())
-                    .forEach(ForkJoinTask::join);
+                    .forEach(IgniteFuture::get);
 
             return deadHasRisen
                     ? txIdsToCommit.stream()
@@ -120,7 +122,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
                             .peek(TransactionRelation::kill)
                             .forEach(tasks::add);
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | IgniteInterruptedException e) {
                 //do nothing
             }
         }
