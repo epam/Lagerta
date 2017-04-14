@@ -26,7 +26,6 @@ import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.resources.DBResource;
 import com.epam.lathgertha.resources.FullClusterResource;
 import com.epam.lathgertha.subscriber.Committer;
-import com.epam.lathgertha.subscriber.DataProviderUtil;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
