@@ -17,6 +17,7 @@
 package com.epam.lathgertha;
 
 import com.epam.lathgertha.base.EntityDescriptor;
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
@@ -37,7 +38,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 
-import java.sql.Connection;
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -71,6 +72,8 @@ public abstract class BaseIntegrationTest {
 
     private final FullClusterResource allResources = new FullClusterResource(DB_RESOURCE);
 
+    protected DataSource dataSource;
+
     @DataProvider(name = CACHE_NAME_PROVIDER)
     public static Object[][] provideCacheName() {
         return new Object[][] {
@@ -102,8 +105,9 @@ public abstract class BaseIntegrationTest {
     }
 
     @BeforeMethod
-    public void createResources() throws SQLException {
+    public void initializeResources() throws SQLException {
         DB_RESOURCE.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        dataSource = DB_RESOURCE.getDataSource();
     }
 
     @AfterMethod
@@ -111,10 +115,6 @@ public abstract class BaseIntegrationTest {
         TEST_NUMBER++;
         allResources.cleanUpClusters();
         DB_RESOURCE.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
-    }
-
-    public Connection getDBConnection() throws SQLException {
-        return DB_RESOURCE.getDataSource().getConnection();
     }
 
     public Ignite ignite() {
@@ -141,7 +141,7 @@ public abstract class BaseIntegrationTest {
 
     @SafeVarargs
     public final void assertObjectsInDB(boolean asBinary, Map.Entry<Integer, Person>... persons) throws SQLException {
-        try (Connection connection = getDBConnection()) {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
 
@@ -154,7 +154,7 @@ public abstract class BaseIntegrationTest {
                     AssertJUnit.assertEquals(expectedMap, actualMap);
                 }
             }
-        }
+        });
     }
 
     private static Map<String, Object> personEntryToMap(boolean asBinary, Map.Entry<Integer, Person> entry) {
