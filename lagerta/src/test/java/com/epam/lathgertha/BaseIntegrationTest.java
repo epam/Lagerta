@@ -79,10 +79,6 @@ public abstract class BaseIntegrationTest {
         };
     }
 
-    private static String getDBUrl() {
-        return String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);
-    }
-
     private static Committer personJDBCCommitter() {
         return new JDBCCommitter(DB_RESOURCE.getDataSource(), ENTITY_DESCRIPTOR_MAP);
     }
@@ -118,7 +114,7 @@ public abstract class BaseIntegrationTest {
     }
 
     public Connection getDBConnection() throws SQLException {
-        return allResources.getDBResource().getConnection();
+        return DB_RESOURCE.getDataSource().getConnection();
     }
 
     public Ignite ignite() {
@@ -145,7 +141,7 @@ public abstract class BaseIntegrationTest {
 
     @SafeVarargs
     public final void assertObjectsInDB(boolean asBinary, Map.Entry<Integer, Person>... persons) throws SQLException {
-        try (Connection connection = DB_RESOURCE.getDataSource().getConnection()) {
+        try (Connection connection = getDBConnection()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
 

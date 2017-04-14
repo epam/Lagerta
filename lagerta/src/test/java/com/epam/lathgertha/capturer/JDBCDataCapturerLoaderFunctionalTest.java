@@ -21,13 +21,10 @@ import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
-import com.zaxxer.hikari.HikariDataSource;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -97,7 +94,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
-        HikariDataSource dataSource = getJdbcDataSource();
+        DataSource dataSource = getJdbcDataSource();
         JDBCDataCapturerLoader jdbcDataCapturerLoader = new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
         JDBCUtil.insertIntoPersonTable(connection, key, val, personName, personId);
 
@@ -123,7 +120,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
-        HikariDataSource dataSource = getJdbcDataSource();
+        DataSource dataSource = getJdbcDataSource();
         JDBCDataCapturerLoader jdbcDataCapturerLoader = new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);
         Iterator<Integer> keysIterator = keys.iterator();
         Iterator<Object> valuesIterator = values.iterator();

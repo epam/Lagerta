@@ -20,13 +20,13 @@ import com.epam.lathgertha.BaseFunctionalTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.resources.DBResource;
-import com.zaxxer.hikari.HikariDataSource;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
@@ -78,7 +78,7 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
         }
     }
 
-    protected HikariDataSource getJdbcDataSource() {
+    protected DataSource getJdbcDataSource() {
         return dbResource.getDataSource();
     }
 }
