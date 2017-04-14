@@ -125,8 +125,15 @@ public abstract class BaseIntegrationTest {
         createDBTable();
     }
 
+    public Connection getDBConnection() throws SQLException {
+        return allResources.getDBResource().getConnection();
+    }
+
     private void createDBTable() throws SQLException {
         try (Connection connection = allResources.getDBResource().getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP ALL OBJECTS");
+            }
             JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
         }
     }
