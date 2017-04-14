@@ -1,14 +1,5 @@
 package com.epam.lathgertha.subscriber;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
 import com.epam.lathgertha.capturer.TransactionScope;
 import org.apache.kafka.common.TopicPartition;
 import org.testng.Assert;
@@ -24,6 +15,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.LongStream;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class ParallelCommitStrategyUnitTest {
     private static final String TEST = "test";
@@ -84,7 +84,7 @@ public class ParallelCommitStrategyUnitTest {
                 .when(servitor)
                 .commit(anyLong(), anyMap());
 
-        ParallelCommitStrategy strategy = new ParallelCommitStrategy(servitor);
+        ParallelCommitStrategy strategy = new ParallelCommitStrategy(servitor, "localGridName");
         List<Long> actualCommitted = strategy.commit(txIdsToCommit, input);
 
         Assert.assertEquals(actualCommitted, expectedCommitted.stream().map(Integer::longValue).collect(toList()));
