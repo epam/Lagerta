@@ -17,8 +17,6 @@
 package com.epam.lathgertha;
 
 import com.epam.lathgertha.base.EntityDescriptor;
-import com.epam.lathgertha.base.jdbc.H2DataSource;
-import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
@@ -27,7 +25,6 @@ import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.resources.DBResource;
 import com.epam.lathgertha.resources.FullClusterResource;
 import com.epam.lathgertha.subscriber.Committer;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
@@ -36,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
 import java.sql.Connection;
@@ -60,7 +58,7 @@ public abstract class BaseIntegrationTest {
     private static final long TX_WAIT_TIME = 10_000;
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
-    private static final BasicDataSource BASIC_DATA_SOURCE = H2DataSource.create(getDBUrl());
+    private static DBResource DB_RESOURCE = new DBResource(DB_NAME);
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -69,18 +67,14 @@ public abstract class BaseIntegrationTest {
 
     private static int TEST_NUMBER = 0;
 
-    private final FullClusterResource allResources = new FullClusterResource(DB_NAME);
-
-    private static String getDBUrl() {
-        return String.format(DBResource.CONNECTION_STR_PATTERN, DB_NAME);
-    }
+    private final FullClusterResource allResources = new FullClusterResource(DB_RESOURCE);
 
     private static Committer personJDBCCommitter() {
-        return new JDBCCommitter(BASIC_DATA_SOURCE, ENTITY_DESCRIPTOR_MAP);
+        return new JDBCCommitter(DB_RESOURCE.getDataSource(), ENTITY_DESCRIPTOR_MAP);
     }
 
     private static DataCapturerLoader personJDBCDataCapturerLoader() {
-        return new JDBCDataCapturerLoader(BASIC_DATA_SOURCE, ENTITY_DESCRIPTOR_MAP);
+        return new JDBCDataCapturerLoader(DB_RESOURCE.getDataSource(), ENTITY_DESCRIPTOR_MAP);
     }
 
     public static String adjustTopicNameForTest(String topic) {
@@ -90,7 +84,6 @@ public abstract class BaseIntegrationTest {
     @BeforeSuite
     public void setUp() throws Exception {
         allResources.setUp();
-        createDBTable();
     }
 
     @AfterSuite(alwaysRun = true)
@@ -98,17 +91,16 @@ public abstract class BaseIntegrationTest {
         allResources.tearDown();
     }
 
+    @BeforeMethod
+    public void createResources() throws SQLException {
+        DB_RESOURCE.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+    }
+
     @AfterMethod
     public void cleanupResources() throws SQLException {
         TEST_NUMBER++;
         allResources.cleanUpClusters();
-        createDBTable();
-    }
-
-    private void createDBTable() throws SQLException {
-        try (Connection connection = allResources.getDBResource().getConnection()) {
-            JDBCUtil.executeUpdateQueryFromResource(connection, PersonEntries.CREATE_TABLE_SQL_RESOURCE);
-        }
+        DB_RESOURCE.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
     }
 
     public Ignite ignite() {
@@ -135,7 +127,7 @@ public abstract class BaseIntegrationTest {
 
     @SafeVarargs
     public final void assertObjectsInDB(boolean asBinary, Map.Entry<Integer, Person>... persons) throws SQLException {
-        try (Connection connection = allResources.getDBResource().getConnection()) {
+        try (Connection connection = DB_RESOURCE.getDataSource().getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
 

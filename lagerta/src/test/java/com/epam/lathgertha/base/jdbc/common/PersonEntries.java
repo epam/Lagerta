@@ -21,7 +21,7 @@ import com.epam.lathgertha.base.jdbc.committer.JDBCCommitter;
 import com.epam.lathgertha.capturer.JDBCDataCapturerLoader;
 import com.epam.lathgertha.util.Serializer;
 import com.epam.lathgertha.util.SerializerImpl;
-import org.apache.commons.dbcp2.BasicDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.rowset.serial.SerialBlob;
 import java.nio.ByteBuffer;
@@ -40,7 +40,7 @@ public class PersonEntries {
     private static final String SQL_BASE_PATH = "/com/epam/lathgertha/base/jdbc/committer/";
 
     public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
-    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "clear_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOUCE = SQL_BASE_PATH + "drop_tables.sql";
 
     public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
         Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
@@ -57,12 +57,12 @@ public class PersonEntries {
         return actualResults;
     }
 
-    public static JDBCCommitter getPersonOnlyJDBCCommitter(BasicDataSource dataSource) {
+    public static JDBCCommitter getPersonOnlyJDBCCommitter(HikariDataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor = Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
         return new JDBCCommitter(dataSource, personEntityDescriptor);
     }
 
-    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(BasicDataSource dataSource) {
+    public static JDBCDataCapturerLoader getPersonOnlyJDBCDataCapturerLoader(HikariDataSource dataSource) {
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, getPersonEntityDescriptor());
         return new JDBCDataCapturerLoader(dataSource, personEntityDescriptor);

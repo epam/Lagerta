@@ -17,7 +17,7 @@
 package com.epam.lathgertha.capturer;
 
 import com.epam.lathgertha.base.EntityDescriptor;
-import org.apache.commons.dbcp2.BasicDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 
 import javax.cache.integration.CacheLoaderException;
 import java.sql.Connection;
@@ -30,10 +30,10 @@ import java.util.Map;
 
 public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
-    private final BasicDataSource dataSource;
+    private final HikariDataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
 
-    public JDBCDataCapturerLoader(BasicDataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
+    public JDBCDataCapturerLoader(HikariDataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
         this.dataSource = dataSource;
         this.entityDescriptors = entityDescriptors;
     }

@@ -15,16 +15,12 @@
  */
 package com.epam.lathgertha;
 
-import com.epam.lathgertha.base.jdbc.H2DataSource;
 import com.epam.lathgertha.cluster.AppContextOneProcessClusterManager;
 import com.epam.lathgertha.mocks.InputProducer;
 import com.epam.lathgertha.mocks.KafkaMockFactory;
 import com.epam.lathgertha.resources.IgniteClusterResource;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.h2.jdbcx.JdbcConnectionPool;
-import org.h2.jdbcx.JdbcDataSource;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
@@ -32,7 +28,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
 import javax.cache.Cache;
-import javax.sql.DataSource;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -77,10 +72,6 @@ public abstract class BaseFunctionalTest {
         InputProducer.resetOffsets();
         KafkaMockFactory.clearState();
         CLUSTER_RESOURCE.clearCluster();
-    }
-
-    protected BasicDataSource getJdbcDataSource(String url) {
-        return H2DataSource.create(url);
     }
 
     protected int getNextTxId() {
