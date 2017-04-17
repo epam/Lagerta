@@ -38,8 +38,6 @@ import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
 
-    private static final long TIMEOUT = 1000L;
-
     private static final LeadStateAssistant MOCK_STATE_ASSISTANT = new LeadStateAssistantMock();
 
     private static final UUID A = UUID.randomUUID();
@@ -66,7 +64,7 @@ public class LeadImplFatUnitTest {
         lead.stop();
     }
 
-    @Test(timeOut = TIMEOUT * 2)
+    @Test
     public void compressDuplicateTransactions() {
         LeadStateAssistant assistantMock = mock(LeadStateAssistant.class);
         doAnswer(invocation -> {
@@ -97,7 +95,7 @@ public class LeadImplFatUnitTest {
         waitForLastDenseCommitted(5L);
     }
 
-    @Test(timeOut = TIMEOUT)
+    @Test
     public void regressionTestOnBlockedTransactionsLogicInPlanner() {
         startDefaultLead();
         List<TransactionScope> aScope = list(
@@ -113,7 +111,7 @@ public class LeadImplFatUnitTest {
     }
 
     // (0 -> 2) + (1 -> 2)
-    @Test(timeOut = TIMEOUT)
+    @Test
     public void sequenceBlockedFromOutside() {
         startDefaultLead();
         List<TransactionScope> aScope = list(
@@ -136,7 +134,7 @@ public class LeadImplFatUnitTest {
 
     //    (0 -> 1 -> 2) + (1 -> 3) + (4 -> 5 -> 6) + (7 -> 8 -> 9)
     //      + (9 -> 10 -> 11) + (12 -> 14) + (13 -> 14)
-    @Test(timeOut = TIMEOUT)
+    @Test
     public void forksJoinsAndBlockedPaths() {
         startDefaultLead();
         List<TransactionScope> aScope = list(
