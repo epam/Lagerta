@@ -84,16 +84,16 @@ public class EmbeddedKafka implements Resource {
             File logDir = folder.mkSubDir(String.format("kafka-local-%s-%s", kafkaPort, i));
 
             Properties properties = new Properties();
-            properties.setProperty("zookeeper.connect", String.format("%s:%s", LOCALHOST, zookeeperPort));
-            properties.setProperty("broker.id", String.valueOf(i + 1));
-            properties.setProperty("host.name", LOCALHOST);
-            properties.setProperty("port", Integer.toString(port));
-            properties.setProperty("log.dir", logDir.getAbsolutePath());
-            properties.setProperty("log.flush.interval.messages", String.valueOf(1));
-            properties.setProperty("log.retention.ms", String.valueOf(Long.MAX_VALUE));
-            properties.setProperty("controlled.shutdown.enable", String.valueOf(false));
-            properties.setProperty("delete.topic.enable", String.valueOf(true));
-            properties.setProperty("num.partitions", String.valueOf(numberOfKafkaBrokers));
+            properties.setProperty(KafkaConfig.ZkConnectProp(), String.format("%s:%s", LOCALHOST, zookeeperPort));
+            properties.setProperty(KafkaConfig.BrokerIdProp(), String.valueOf(i + 1));
+            properties.setProperty(KafkaConfig.HostNameProp(), LOCALHOST);
+            properties.setProperty(KafkaConfig.PortProp(), Integer.toString(port));
+            properties.setProperty(KafkaConfig.LogDirProp(), logDir.getAbsolutePath());
+            properties.setProperty(KafkaConfig.LogFlushIntervalMessagesProp(), String.valueOf(1));
+            properties.setProperty(KafkaConfig.LogFlushIntervalMsProp(), String.valueOf(Long.MAX_VALUE));
+            properties.setProperty(KafkaConfig.ControlledShutdownEnableProp(), String.valueOf(false));
+            properties.setProperty(KafkaConfig.DeleteTopicEnableProp(), String.valueOf(true));
+            properties.setProperty(KafkaConfig.NumPartitionsProp(), String.valueOf(numberOfKafkaBrokers));
 
             KafkaServerStartable broker = startBroker(properties);
             brokers.add(broker);
