@@ -25,7 +25,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @Configuration
 public class TestReaderConfig {
@@ -38,9 +40,10 @@ public class TestReaderConfig {
     public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
                          Serializer serializer, CommitStrategy commitStrategy,
                          @Qualifier("commitToKafkaCondition") PeriodicIterationCondition commitToKafkaCondition,
-                         @Qualifier("readerId") UUID readerId) {
+                         @Qualifier("readerId") UUID readerId,
+                         @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, commitToKafkaCondition,
-                100, readerId);
+                100, readerId, bufferOverflowCondition);
     }
 
     @Bean
