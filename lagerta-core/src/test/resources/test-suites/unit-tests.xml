@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<!--Per test timeout set to 10 seconds.-->
+<suite name="Unit Tests" time-out="10000">
+    <test name="All">
+        <classes>
+            <class name="com.epam.lagerta.capturer.DataCaptureBusUnitTest"/>
+            <class name="com.epam.lagerta.util.JDBCKeyValueMapperUnitTest"/>
+            <class name="com.epam.lagerta.common.PeriodicRuleUnitTest"/>
+            <class name="com.epam.lagerta.common.SchedulerUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.ParallelCommitStrategyUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.SequentialCommitStrategyUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.lead.CommittedTransactionsUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.lead.ReadTransactionsUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.lead.LeadImplFatUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.util.PlannerUtilUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.util.MergeUtilUnitTest"/>
+            <class name="com.epam.lagerta.subscriber.CommittedOffsetUnitTest"/>
+        </classes>
+    </test>
+</suite>

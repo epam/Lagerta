@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2017 EPAM Systems.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ -->
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <context:annotation-config/>
+
+    <!--Ignite config-->
+    <bean id="discoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses">
+                    <list>
+                        <value>127.0.0.1:47500..47509</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
+          p:configuration-ref="ignite.cfg"/>
+
+    <bean id="leadService" class="com.epam.lagerta.services.LeadServiceImpl"/>
+    <bean id="readerService" class="com.epam.lagerta.services.ReaderServiceImpl"/>
+    <util:list id="services">
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lagerta.services.LeadService).NAME}"
+              p:maxPerNodeCount="1"
+              p:totalCount="1"
+              p:service-ref="leadService"/>
+        <bean class="org.apache.ignite.services.ServiceConfiguration"
+              p:name="#{T(com.epam.lagerta.services.ReaderService).NAME}"
+              p:maxPerNodeCount="1"
+              p:service-ref="readerService"/>
+    </util:list>
+
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
+          p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
+          p:cacheConfiguration-ref="cacheConfig"
+          p:discoverySpi-ref="discoverySpi"
+          p:serviceConfiguration-ref="services"/>
+
+    <!-- Caches configuration -->
+    <util:list id="cacheConfig">
+        <ref bean="someCache"/>
+        <ref bean="txCommitCache"/>
+        <ref bean="committedTransactionsCountCache"/>
+    </util:list>
+
+    <bean id="someCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="someCache"
+          p:readThrough="true"
+          p:writeThrough="true"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"
+          p:cacheStoreFactory-ref="cacheStoreFactory"/>
+    <bean id="txCommitCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="txCommitCache"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"/>
+    <bean id="committedTransactionsCountCache" class="org.apache.ignite.configuration.CacheConfiguration"
+          p:name="committedTransactionsCountCache"
+          p:cacheMode="PARTITIONED"
+          p:atomicityMode="TRANSACTIONAL"
+          p:backups="2"/>
+    <bean id="cacheStoreFactory" class="com.epam.lagerta.capturer.DataCapturerBusFactory"/>
+
+    <!--Internal config-->
+    <bean id="cache-loader" class="com.epam.lagerta.capturer.NopeDataCapturerLoader"/>
+
+    <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
+          c:stateAssistant-ref="stateAssistant"/>
+
+    <bean id="reader-config" class="java.lang.Class" factory-method="forName">
+        <constructor-arg value="com.epam.lagerta.subscriber.TestReaderConfig"/>
+    </bean>
+
+    <bean id="stateAssistant" class="com.epam.lagerta.mocks.LeadStateAssistantMock" scope="prototype"/>
+
+    <bean id="inCacheCommitter" class="com.epam.lagerta.subscriber.InCacheCommitter" scope="prototype"
+          c:ignite-ref="ignite-bean"/>
+
+    <bean id="commitToKafkaCondition" class="com.epam.lagerta.subscriber.PeriodicIterationCondition" scope="prototype"
+          c:iterationPeriod="1"/>
+
+    <bean id="InCacheKafkaLogCommitter" class="com.epam.lagerta.subscriber.InCacheKafkaLogCommitter" scope="prototype"
+          c:kafkaFactory-ref="kafka-factory"
+          c:subscriberConfig-ref="subscriber-config"
+          c:ignite-ref="ignite-bean"/>
+
+    <bean id="id-sequencer" class="com.epam.lagerta.mocks.InMemoryIdSequencer"/>
+    <bean id="key-transformer" class="com.epam.lagerta.capturer.DefaultKeyTransformer"/>
+    <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>
+    <bean id="consumer-props" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="enable.auto.commit">false</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
+           p:remoteTopic="testTopic"
+           p:consumerConfig-ref="consumer-props"
+    />
+    <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
+
+    <bean id="kafka-factory" class="com.epam.lagerta.mocks.KafkaMockFactory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:config-ref="subscriber-config"
+          c:serializer-ref="serializer"/>
+
+    <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
+          c:kafkaFactory-ref="kafka-factory"
+          c:keyTransformer-ref="key-transformer"
+          c:valueTransformer-ref="value-transformer"
+          c:configs-ref="subscriberConfigs"
+          c:serializer-ref="serializer"/>
+
+    <util:list id="subscriberConfigs">
+        <ref bean="subscriber-config"/>
+    </util:list>
+
+    <util:list id="key-value-listeners">
+        <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
+            c:producers-ref="producers-manager"/>
+    </util:list>
+</beans>
