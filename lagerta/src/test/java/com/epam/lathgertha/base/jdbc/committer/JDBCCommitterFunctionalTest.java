@@ -23,6 +23,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,7 +50,8 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            try (ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate)) {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
                 Assert.assertTrue(resultSet.next(), "Return empty result");
                 Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
             }
@@ -76,7 +78,8 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            try (ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate)) {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
                 Assert.assertTrue(resultSet.next(), "Return empty result");
                 Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
             }
@@ -113,7 +116,8 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
             List<Map<String, Object>> resultList = null;
-            try (ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate)) {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
                 resultList = new ArrayList<>(expectedCountRows);
                 while (resultSet.next()) {
                     resultList.add(PersonEntries.getResultMapForPerson(resultSet));
