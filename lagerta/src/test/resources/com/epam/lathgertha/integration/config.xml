@@ -53,6 +53,10 @@
     <bean id="lead" class="com.epam.lathgertha.subscriber.lead.LeadImpl" scope="prototype"
           c:stateAssistant-ref="stateAssistant"/>
 
+    <bean id="reader-config" class="java.lang.Class" factory-method="forName">
+        <constructor-arg value="com.epam.lathgertha.subscriber.ReaderConfig"/>
+    </bean>
+
     <bean id="lead-service" class="com.epam.lathgertha.services.LeadServiceImpl"/>
     <bean id="reader-service" class="com.epam.lathgertha.services.ReaderServiceImpl"/>
     <util:list id="services">
