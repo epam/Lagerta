@@ -18,6 +18,7 @@ package com.epam.lathgertha.subscriber;
 
 import com.epam.lathgertha.capturer.TransactionScope;
 import com.google.common.collect.Lists;
+import org.springframework.util.Assert;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -26,8 +27,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DataProviderUtil {
+    public static Object[][] concat(Object[][] first, Object[][] second){
+        Assert.isTrue(first.length == second.length, "Concatenation of providers of different size.");
+
+        Object[][] concatenatedData = new Object[first.length][];
+
+        for(int i = 0; i < first.length; i++){
+            concatenatedData[i] = concat(first[i], second[i]);
+        }
+        return concatenatedData;
+    }
+
+    private static Object[] concat(Object[] first, Object[] second) {
+        return Stream
+                .concat(Arrays.stream(first), Arrays.stream(second))
+                .toArray();
+    }
 
     @SafeVarargs
     public static TransactionScope txScope(long txId, Map.Entry<String, List>... cacheScopes) {

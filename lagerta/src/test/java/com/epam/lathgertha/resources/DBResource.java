@@ -19,14 +19,11 @@ package com.epam.lathgertha.resources;
 import com.epam.lathgertha.base.jdbc.H2HikariDataSource;
 import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.zaxxer.hikari.HikariDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.SQLException;
 
 public class DBResource implements Resource {
-    private static final Logger LOG = LoggerFactory.getLogger(DBResource.class);
-
     private final String dbName;
 
     private HikariDataSource dataSource;
@@ -35,7 +32,7 @@ public class DBResource implements Resource {
         this.dbName = dbName;
     }
 
-    public HikariDataSource getDataSource() {
+    public DataSource getDataSource() {
         return dataSource;
     }
 

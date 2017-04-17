@@ -20,14 +20,13 @@ import com.epam.lathgertha.BaseFunctionalTest;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import com.epam.lathgertha.resources.DBResource;
-import com.zaxxer.hikari.HikariDataSource;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
-import java.sql.Connection;
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -50,6 +49,8 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
         };
     }
 
+    protected DataSource dataSource;
+
     @BeforeClass
     public void init() throws Exception {
         dbResource.setUp();
@@ -63,22 +64,11 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
     @BeforeMethod()
     public void initState() throws SQLException {
         dbResource.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        dataSource = dbResource.getDataSource();
     }
 
     @AfterMethod
     public void clearBase() throws SQLException {
         dbResource.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
-    }
-
-    protected void applyInConnection(SQLSupplier<Connection> function) {
-        try (Connection connection = dbResource.getDataSource().getConnection()) {
-            function.apply(connection);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected HikariDataSource getJdbcDataSource() {
-        return dbResource.getDataSource();
     }
 }
