@@ -22,23 +22,13 @@ import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.UUID;
 
 @Configuration
-public class ReaderConfig {
-    public static AnnotationConfigApplicationContext create(ApplicationContext parent) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.setParent(parent);
-        context.register(parent.getBean("reader-config", Class.class));
-        context.refresh();
-        return context;
-    }
-
+public class TestReaderConfig {
     @Bean(name = "readerId")
     public UUID readerId() {
         return UUID.randomUUID();
@@ -46,8 +36,11 @@ public class ReaderConfig {
 
     @Bean
     public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
-                         Serializer serializer, CommitStrategy commitStrategy, @Qualifier("readerId") UUID readerId) {
-        return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, readerId);
+                         Serializer serializer, CommitStrategy commitStrategy,
+                         @Qualifier("commitToKafkaCondition") PeriodicIterationCondition commitToKafkaCondition,
+                         @Qualifier("readerId") UUID readerId) {
+        return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, commitToKafkaCondition,
+                100, readerId);
     }
 
     @Bean
