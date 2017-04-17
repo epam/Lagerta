@@ -20,6 +20,7 @@
     <test name="All">
         <classes>
             <class name="com.epam.lathgertha.subscriber.SubscriberIntegrationTest"/>
+            <class name="com.epam.lathgertha.capturer.JDBCDataCapturerLoaderIntegrationTest"/>
         </classes>
     </test>
 </suite>

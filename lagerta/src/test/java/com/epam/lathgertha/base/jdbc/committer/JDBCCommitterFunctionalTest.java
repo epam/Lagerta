@@ -15,6 +15,7 @@
  */
 package com.epam.lathgertha.base.jdbc.committer;
 
+import com.epam.lathgertha.base.jdbc.JDBCUtil;
 import com.epam.lathgertha.base.jdbc.common.Person;
 import com.epam.lathgertha.base.jdbc.common.PersonEntries;
 import org.apache.ignite.binary.BinaryObject;
@@ -35,7 +36,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test(dataProvider = DATA_PROVIDER_VAL_NAME)
     public void valCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
         Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
         expectedResult.put(Person.PERSON_KEY, key);
         expectedResult.put(Person.PERSON_VAL, val);
@@ -47,7 +48,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
                 Collections.<List<?>>singletonList(Collections.singletonList(val)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
-        applyInConnection(connection -> {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
             ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
             Assert.assertTrue(resultSet.next(), "Return empty result");
             Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
@@ -56,7 +57,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test
     public void binaryObjectEntityCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
         int key = 22;
         Person expectedPerson = new Person(2, "Name2");
 
@@ -73,7 +74,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
                 Collections.<List<?>>singletonList(Collections.singletonList(expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
-        applyInConnection(connection -> {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
             ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
             Assert.assertTrue(resultSet.next(), "Return empty result");
             Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
@@ -82,7 +83,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
     @Test
     public void binaryObjectAndValEntriesCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(getJdbcDataSource());
+        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
         int keyVal = 22;
         int val = 10;
         int keyPerson = 23;
@@ -108,7 +109,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
                 Collections.<List<?>>singletonList(Arrays.asList(val, expectedBinary)).iterator());
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
-        applyInConnection(connection -> {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
             ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
             List<Map<String, Object>> resultList = new ArrayList<>(expectedCountRows);
             while (resultSet.next()) {
