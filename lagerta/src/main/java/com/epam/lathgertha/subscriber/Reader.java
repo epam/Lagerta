@@ -45,13 +45,16 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.Comparator.comparingLong;
+
 public class Reader extends Scheduler {
     private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
 
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
     private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
-    private static final Comparator<TransactionScope> SCOPE_COMPARATOR = Comparator.comparingLong(TransactionScope::getTransactionId);
+
+    private static final Comparator<TransactionScope> SCOPE_COMPARATOR = comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
 
     private final KafkaFactory kafkaFactory;
