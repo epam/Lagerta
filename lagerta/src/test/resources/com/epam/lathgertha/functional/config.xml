@@ -111,9 +111,9 @@ limitations under the License.
           c:subscriberConfig-ref="subscriber-config"
           c:ignite-ref="ignite-bean"/>
 
-    <bean name="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
-    <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
-    <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
+    <bean id="id-sequencer" class="com.epam.lathgertha.mocks.InMemoryIdSequencer"/>
+    <bean id="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
+    <bean id="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
     <bean id="consumer-props" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
         <property name="properties">
             <props>
@@ -121,19 +121,19 @@ limitations under the License.
             </props>
         </property>
     </bean>
-    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
+    <bean id="subscriber-config" class="com.epam.lathgertha.kafka.SubscriberConfig"
            p:remoteTopic="testTopic"
            p:consumerConfig-ref="consumer-props"
     />
-    <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
+    <bean id="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"
+    <bean id="kafka-factory" class="com.epam.lathgertha.mocks.KafkaMockFactory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:config-ref="subscriber-config"
           c:serializer-ref="serializer"/>
 
-    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager"
+    <bean id="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager"
           c:kafkaFactory-ref="kafka-factory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"

@@ -73,7 +73,7 @@
         <ref bean="atomicCache"/>
     </util:list>
 
-    <bean name="discovery-spi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+    <bean id="discovery-spi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
         <property name="ipFinder">
             <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                 <property name="addresses">
@@ -88,21 +88,21 @@
     <bean id="cache-loader" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCDataCapturerLoader"/>
 
-    <bean name="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
+    <bean id="subscriber-config" class="com.epam.lathgertha.kafka.PerTestSubscriberConfig"
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
 
-    <bean name="id-sequencer" class="com.epam.lathgertha.kafka.PerTestKafkaIdSequencer" scope="prototype"
+    <bean id="id-sequencer" class="com.epam.lathgertha.kafka.PerTestKafkaIdSequencer" scope="prototype"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
 
-    <bean name="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
-    <bean name="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
-    <bean name="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
+    <bean id="key-transformer" class="com.epam.lathgertha.capturer.DefaultKeyTransformer"/>
+    <bean id="value-transformer" class="com.epam.lathgertha.capturer.DefaultValueTransformer"/>
+    <bean id="serializer" class="com.epam.lathgertha.util.SerializerImpl"/>
 
-    <bean name="committer" class="com.epam.lathgertha.BaseIntegrationTest"
+    <bean id="committer" class="com.epam.lathgertha.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lathgertha.kafka.KafkaLogCommitter" scope="prototype">
@@ -115,13 +115,13 @@
         </constructor-arg>
     </bean>
 
-    <bean name="kafka-factory" class="com.epam.lathgertha.kafka.KafkaFactoryImpl"/>
+    <bean id="kafka-factory" class="com.epam.lathgertha.kafka.KafkaFactoryImpl"/>
 
     <util:list id="subscriber-configs">
         <ref bean="subscriber-config"/>
     </util:list>
 
-    <bean name="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager" scope="prototype"
+    <bean id="producers-manager" class="com.epam.lathgertha.kafka.ProducersManager" scope="prototype"
           c:kafkaFactory-ref="kafka-factory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
@@ -134,7 +134,7 @@
         </bean>
     </util:list>
 
-    <bean name="cache-store-factory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
+    <bean id="cache-store-factory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
 
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
