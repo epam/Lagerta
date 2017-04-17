@@ -22,8 +22,6 @@ import com.epam.lathgertha.kafka.SubscriberConfig;
 import com.epam.lathgertha.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,14 +29,6 @@ import java.util.UUID;
 
 @Configuration
 public class TestReaderConfig {
-    public static AnnotationConfigApplicationContext create(ApplicationContext parent, Class config) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.setParent(parent);
-        context.register(config);
-        context.refresh();
-        return context;
-    }
-
     @Bean(name = "readerId")
     public UUID readerId() {
         return UUID.randomUUID();
