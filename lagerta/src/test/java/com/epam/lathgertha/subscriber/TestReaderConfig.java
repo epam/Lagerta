@@ -27,16 +27,14 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Predicate;
 
 @Configuration
-public class ReaderConfig {
-    public static AnnotationConfigApplicationContext create(ApplicationContext parent) {
+public class TestReaderConfig {
+    public static AnnotationConfigApplicationContext create(ApplicationContext parent, Class config) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
         context.setParent(parent);
-        context.register(parent.getBean("reader-config", Class.class));
+        context.register(config);
         context.refresh();
         return context;
     }
@@ -48,10 +46,11 @@ public class ReaderConfig {
 
     @Bean
     public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
-                         Serializer serializer, CommitStrategy commitStrategy, @Qualifier("readerId") UUID readerId,
-                         @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition
-    ) {
-        return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, readerId, bufferOverflowCondition);
+                         Serializer serializer, CommitStrategy commitStrategy,
+                         @Qualifier("commitToKafkaCondition") PeriodicIterationCondition commitToKafkaCondition,
+                         @Qualifier("readerId") UUID readerId) {
+        return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, commitToKafkaCondition,
+                100, readerId);
     }
 
     @Bean
