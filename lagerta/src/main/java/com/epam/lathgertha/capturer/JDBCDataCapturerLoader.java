@@ -42,8 +42,8 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     @Override
     public <V> V load(String cacheName, Object key) {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
-        try (Connection conn = dataSource.getConnection()) {
-            PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery())) {
             return (V) loadMapResult(Collections.singletonList(key), entityDescriptor, statement).get(key);
         } catch (Exception e) {
             throw new CacheLoaderException(e);
@@ -53,8 +53,8 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     @Override
     public <K, V> Map<K, V> loadAll(String cacheName, Iterable<? extends K> keys) throws CacheLoaderException {
         EntityDescriptor entityDescriptor = getEntityDescriptor(cacheName);
-        try (Connection conn = dataSource.getConnection()) {
-            PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery());
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement statement = conn.prepareStatement(entityDescriptor.getSelectQuery())) {
             return loadMapResult(keys, entityDescriptor, statement);
         } catch (Exception e) {
             throw new CacheLoaderException(e);
@@ -67,8 +67,9 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
         List<K> keysInList = new ArrayList<>();
         keys.iterator().forEachRemaining(keysInList::add);
         statement.setObject(1, keysInList.toArray());
-        ResultSet resultSet = statement.executeQuery();
-        return entityDescriptor.transform(resultSet);
+        try (ResultSet resultSet = statement.executeQuery()) {
+            return entityDescriptor.transform(resultSet);
+        }
     }
 
     private EntityDescriptor getEntityDescriptor(String cacheName) {

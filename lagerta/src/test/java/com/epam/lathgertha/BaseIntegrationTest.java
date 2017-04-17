@@ -142,8 +142,8 @@ public abstract class BaseIntegrationTest {
     @SafeVarargs
     public final void assertObjectsInDB(boolean asBinary, Map.Entry<Integer, Person>... persons) throws SQLException {
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            try (Statement statement = connection.createStatement()) {
-                ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT);
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT)) {
 
                 for (Map.Entry<Integer, Person> entry : persons) {
                     AssertJUnit.assertTrue(resultSet.next());
