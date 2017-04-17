@@ -29,16 +29,16 @@ public class InCacheKafkaLogCommitter extends KafkaLogCommitter {
 
     public static final String COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME = "committedTransactionsCountCache";
 
-    private final IgniteCache<Object, Object> cache;
+    private final Ignite ignite;
 
     public InCacheKafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig, Ignite ignite) {
         super(kafkaFactory, subscriberConfig);
-        cache = ignite.cache(COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME);
+        this.ignite = ignite;
     }
 
     @Override
     public Future<RecordMetadata> commitTransaction(long transactionId) {
-        cache.put(transactionId, 0);
+        ignite.cache(COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME).put(transactionId, 0);
         return null;
     }
 }
