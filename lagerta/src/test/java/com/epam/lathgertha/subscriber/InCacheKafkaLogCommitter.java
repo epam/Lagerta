@@ -20,7 +20,6 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.concurrent.Future;
@@ -29,16 +28,16 @@ public class InCacheKafkaLogCommitter extends KafkaLogCommitter {
 
     public static final String COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME = "committedTransactionsCountCache";
 
-    private final IgniteCache<Object, Object> cache;
+    private final Ignite ignite;
 
     public InCacheKafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig, Ignite ignite) {
         super(kafkaFactory, subscriberConfig);
-        cache = ignite.cache(COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME);
+        this.ignite = ignite;
     }
 
     @Override
     public Future<RecordMetadata> commitTransaction(long transactionId) {
-        cache.put(transactionId, 0);
+        ignite.cache(COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME).put(transactionId, 0);
         return null;
     }
 }

@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 
 public class SubscriberFunctionalTest extends BaseFunctionalTest {
-
+    private static final long TEST_TIMEOUT = 60_000;
     private static final int FIRST_KAFKA_PARTITION = 0;
     private static final int SECOND_KAFKA_PARTITION = 1;
     private static final int TRANSACTIONS_COUNT = 3;
@@ -44,7 +44,7 @@ public class SubscriberFunctionalTest extends BaseFunctionalTest {
         txCountCache = ignite.cache(InCacheKafkaLogCommitter.COMMITTED_TRANSACTIONS_COUNT_CACHE_NAME);
     }
 
-    @Test
+    @Test(timeOut = TEST_TIMEOUT)
     public void committingAllSandTransactions() {
         writeValueToKafka(TOPIC, 0, KEY_ONE, VALUE_ONE, FIRST_KAFKA_PARTITION);
         writeValueToKafka(TOPIC, 1, KEY_TWO, VALUE_TWO, SECOND_KAFKA_PARTITION);
@@ -57,7 +57,7 @@ public class SubscriberFunctionalTest extends BaseFunctionalTest {
         assertEquals(txCache.get(KEY_THREE), VALUE_THREE);
     }
 
-    @Test
+    @Test(timeOut = TEST_TIMEOUT)
     public void committingTransactionsInProperOrder() {
         writeValueToKafka(TOPIC, 0, KEY_ONE, VALUE_ONE, FIRST_KAFKA_PARTITION);
         writeValueToKafka(TOPIC, 1, KEY_ONE, VALUE_TWO, SECOND_KAFKA_PARTITION);
