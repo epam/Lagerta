@@ -136,6 +136,8 @@
 
     <bean name="cache-store-factory" class="com.epam.lathgertha.capturer.DataCapturerBusFactory"/>
 
+    <bean id="buffer-overflow" class="com.epam.lathgertha.subscriber.NopeBufferOverflowCondition"/>
+
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
           p:name="#{T(com.epam.lathgertha.BaseIntegrationTest).CACHE_NAME}"

@@ -148,4 +148,6 @@ limitations under the License.
         <bean class="com.epam.lathgertha.capturer.SynchronousPublisher"
             c:producers-ref="producers-manager"/>
     </util:list>
+
+    <bean id="buffer-overflow" class="com.epam.lathgertha.subscriber.NopeBufferOverflowCondition"/>
 </beans>

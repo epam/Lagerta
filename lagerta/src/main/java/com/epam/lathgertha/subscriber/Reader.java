@@ -43,6 +43,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Reader extends Scheduler {
@@ -62,20 +63,22 @@ public class Reader extends Scheduler {
     private final UUID readerId;
     private final BooleanSupplier commitToKafkaSupplier;
     private final long bufferClearTimeInterval;
+    private final Predicate<Map<Long, TransactionData>> bufferOverflowCondition;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, UUID readerId) {
+                  CommitStrategy commitStrategy, UUID readerId,
+                  Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
                 new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
-                readerId);
+                readerId, bufferOverflowCondition);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
-                  UUID readerId) {
+                  UUID readerId, Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
@@ -84,6 +87,7 @@ public class Reader extends Scheduler {
         this.readerId = readerId;
         this.commitToKafkaSupplier = commitToKafkaSupplier;
         this.bufferClearTimeInterval = bufferClearTimeInterval;
+        this.bufferOverflowCondition = bufferOverflowCondition;
     }
 
     @Override
