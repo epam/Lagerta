@@ -26,14 +26,16 @@ public class InCacheCommitter implements Committer {
 
     public static final String TX_COMMIT_CACHE_NAME = "txCommitCache";
 
-    private final IgniteCache<Object, Object> cache;
+    private final Ignite ignite;
 
     private InCacheCommitter(Ignite ignite) {
-        cache = ignite.cache(TX_COMMIT_CACHE_NAME);
+        this.ignite = ignite;
     }
 
     @Override
     public void commit(Iterator<String> names, Iterator<List> keys, Iterator<List<?>> values) {
+        IgniteCache<Object, Object> cache = ignite.cache(TX_COMMIT_CACHE_NAME);
+
         while (names.hasNext()) {
             names.next();
             List<?> keysList = keys.next();
