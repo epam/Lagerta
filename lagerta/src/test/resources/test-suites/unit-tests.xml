@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-<suite name="Unit Tests">
+<!--Per test timeout set to 10 seconds.-->
+<suite name="Unit Tests" time-out="10000">
     <test name="All">
         <classes>
             <class name="com.epam.lathgertha.capturer.DataCaptureBusUnitTest"/>

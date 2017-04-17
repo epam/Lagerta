@@ -16,7 +16,8 @@
   -->
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-<suite name="Integration Tests">
+<!--Per test timeout set to 5 minutes.-->
+<suite name="Integration Tests" time-out="300000">
     <test name="All">
         <classes>
             <class name="com.epam.lathgertha.subscriber.SubscriberIntegrationTest"/>
