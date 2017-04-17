@@ -20,7 +20,6 @@ import com.epam.lathgertha.kafka.KafkaFactory;
 import com.epam.lathgertha.kafka.KafkaLogCommitter;
 import com.epam.lathgertha.kafka.SubscriberConfig;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.concurrent.Future;
