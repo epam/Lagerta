@@ -97,7 +97,7 @@
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
 
-    <bean id="id-sequencer" class="com.epam.lagerta.kafka.PerTestKafkaIdSequencer" scope="prototype"
+    <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
@@ -109,31 +109,38 @@
     <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter" scope="prototype">
+    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter">
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
-            <bean class="com.epam.lagerta.kafka.PerTestSubscriberConfig"
+            <bean class="com.epam.lagerta.kafka.SubscriberConfig"
                   p:remoteTopic="local-index-topic"
                   p:consumerConfig-ref="consumer-properties"
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>
     </bean>
 
-    <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryImpl"/>
+    <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryForTests">
+        <constructor-arg index="0">
+            <bean class="com.epam.lagerta.kafka.KafkaFactoryImpl"/>
+        </constructor-arg>
+    </bean>
 
     <util:list id="subscriber-configs">
-        <ref bean="subscriber-config"/>
+        <bean class="com.epam.lagerta.kafka.SubscriberConfig"
+              p:remoteTopic="remoteTopic"
+              p:consumerConfig-ref="consumer-properties"
+              p:producerConfig-ref="producer-properties"/>
     </util:list>
 
-    <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager" scope="prototype"
+    <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
           c:kafkaFactory-ref="kafka-factory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
           c:serializer-ref="serializer"/>
 
-    <util:list id="key-value-listeners" scope="prototype">
-        <bean class="com.epam.lagerta.capturer.SynchronousPublisher" scope="prototype">
+    <util:list id="key-value-listeners">
+        <bean class="com.epam.lagerta.capturer.SynchronousPublisher">
             <constructor-arg index="0" ref="producers-manager"/>
         </bean>
     </util:list>
