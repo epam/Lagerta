@@ -33,6 +33,16 @@ public class EntityDescriptor<T> {
     private final String upsertQuery;
     private final String selectQuery;
 
+    public EntityDescriptor(String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
+        this(null, tableName, keyField, fieldDescriptors.stream().collect(Collectors
+                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+    }
+
+    public EntityDescriptor(Class<T> clazz, String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
+        this(clazz, tableName, keyField, fieldDescriptors.stream().collect(Collectors
+                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+    }
+
     public EntityDescriptor(Class<T> clazz, String tableName, String keyField,
                             Map<String, FieldDescriptor> fieldDescriptors) {
         this.clazz = clazz;

@@ -34,8 +34,8 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
 
-    public JDBCDataCapturerLoader(DataSource dataSource, List<EntityDescriptor> entityDescriptors) {
-        this(dataSource, entityDescriptors.stream().collect(Collectors
+    public JDBCDataCapturerLoader(DataSource dataSource, List<EntityDescriptor> descriptors) {
+        this(dataSource, descriptors.stream().collect(Collectors
                 .toMap(EntityDescriptor::getTableName, descriptor -> descriptor)));
     }
 

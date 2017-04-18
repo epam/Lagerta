@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JDBCCommitter implements Committer {
 
@@ -32,6 +33,11 @@ public class JDBCCommitter implements Committer {
 
     private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
+
+    public JDBCCommitter(DataSource dataSource, List<EntityDescriptor> descriptors) {
+        this(dataSource, descriptors.stream().collect(Collectors
+                .toMap(EntityDescriptor::getTableName, descriptor -> descriptor)));
+    }
 
     public JDBCCommitter(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
         this.dataSource = dataSource;
