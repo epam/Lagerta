@@ -18,6 +18,7 @@ package com.epam.lagerta;
 
 import com.epam.lagerta.cluster.DifferentJVMClusterManager;
 import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.Test;
 
 public class DifferentJVMIntegrationTest extends BaseIntegrationTest {
 
@@ -31,5 +32,13 @@ public class DifferentJVMIntegrationTest extends BaseIntegrationTest {
 
     public void stopNodeWithService(String serviceName) {
         JVM_CLUSTER_MANAGER.getIgniteStopper().stopServerNodesWithService(serviceName);
+    }
+
+    // min test
+    @Test
+    public void test() throws InterruptedException {
+        System.out.println(ignite().cluster().localNode().isClient());
+        Thread.sleep(10_000L);
+        System.out.println("END!!");
     }
 }
