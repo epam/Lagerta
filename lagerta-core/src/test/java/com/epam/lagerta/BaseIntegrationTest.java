@@ -61,7 +61,8 @@ public abstract class BaseIntegrationTest {
     private static final long TX_WAIT_TIME = 10_000;
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
-    private static DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final FullClusterResource allResources = new FullClusterResource(DB_RESOURCE);
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -69,8 +70,6 @@ public abstract class BaseIntegrationTest {
     }
 
     private static int TEST_NUMBER = 0;
-
-    private final FullClusterResource allResources = new FullClusterResource(DB_RESOURCE);
 
     protected DataSource dataSource;
 
