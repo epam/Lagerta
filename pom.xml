@@ -24,10 +24,21 @@
     <artifactId>lagerta</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
+    <name>Lagerta</name>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>core</module>
         <module>cassandra</module>
-        <module>lagerta</module>
+        <module>lagerta-core</module>
     </modules>
 
     <repositories>
@@ -38,9 +49,14 @@
     </repositories>
 
     <properties>
+        <java.version>1.8</java.version>
         <ignite.version>1.8.0</ignite.version>
+        <kafka.version>0.10.1.0</kafka.version>
+        <zookeeper.version>3.4.10</zookeeper.version>
         <slf4j.version>1.7.22</slf4j.version>
         <eclipse-collections.version>8.1.0</eclipse-collections.version>
+        <mockito-core.version>2.7.22</mockito-core.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
@@ -81,7 +97,6 @@
                 <version>4.1.0</version>
             </dependency>
 
-
             <!-- Ignite -->
             <dependency>
                 <groupId>org.apache.ignite</groupId>
@@ -94,11 +109,23 @@
                 <version>${ignite.version}</version>
             </dependency>
 
+            <!-- Kafka -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka_2.11</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+
             <!--Test-->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.11</version>
+                <version>4.12</version>
             </dependency>
             <dependency>
                 <groupId>pl.pragmatists</groupId>
@@ -113,7 +140,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>2.3.5</version>
+                <version>${mockito-core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -124,17 +151,17 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.2</version>
+                    <version>3.6.1</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                     </configuration>
                 </plugin>
                 <plugin>
                     <!-- To run, execute mvn apache-rat:check -->
                     <groupId>org.apache.rat</groupId>
                     <artifactId>apache-rat-plugin</artifactId>
-                    <version>0.7</version>
+                    <version>0.12</version>
                     <configuration>
                         <excludes>
                             <exclude>.git/**</exclude>
