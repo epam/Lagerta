@@ -25,6 +25,8 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
 
+    <name>Lagerta</name>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -49,9 +51,12 @@
     <properties>
         <java.version>1.8</java.version>
         <ignite.version>1.8.0</ignite.version>
+        <kafka.version>0.10.1.0</kafka.version>
+        <zookeeper.version>3.4.10</zookeeper.version>
         <slf4j.version>1.7.22</slf4j.version>
         <eclipse-collections.version>8.1.0</eclipse-collections.version>
         <mockito-core.version>2.7.22</mockito-core.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
@@ -102,6 +107,18 @@
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-spring</artifactId>
                 <version>${ignite.version}</version>
+            </dependency>
+
+            <!-- Kafka -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka_2.11</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
             </dependency>
 
             <!--Test-->
