@@ -35,7 +35,7 @@ public enum SimpleValueTransformer implements ValueTransformer {
     BIG_DECIMAL(ResultSet::getBigDecimal, (Setter<BigDecimal>) PreparedStatement::setBigDecimal),
     BYTES(ResultSet::getBytes, (Setter<byte[]>) PreparedStatement::setBytes),
     DATE(SimpleValueTransformer::getDate, SimpleValueTransformer::setDate),
-    TIMESTAMP(SimpleValueTransformer::getTimestamp, SimpleValueTransformer::setTimestamp);
+    TIMESTAMP(ResultSet::getTimestamp, (Setter<Timestamp>) PreparedStatement::setTimestamp);
 
     private final Getter get;
     private final Setter set;
@@ -64,15 +64,6 @@ public enum SimpleValueTransformer implements ValueTransformer {
 
     private static void setDate(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
         preparedStatement.setDate(index, new Date(((java.util.Date) value).getTime()));
-    }
-
-    private static Object getTimestamp(ResultSet resultSet, int index) throws SQLException {
-        Timestamp timestamp = resultSet.getTimestamp(index);
-        return timestamp == null ? null : new java.util.Date(timestamp.getTime());
-    }
-
-    private static void setTimestamp(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
-        preparedStatement.setTimestamp(index, new Timestamp(((java.util.Date) value).getTime()));
     }
 
     //------------------------------------------------------------------------------------------------------------------
