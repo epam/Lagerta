@@ -134,6 +134,7 @@ public class ParallelCommitStrategy implements CommitStrategy {
                             .dependent()
                             .stream()
                             .peek(TransactionRelation::kill)
+                            .filter(TransactionRelation::release)
                             .forEach(tasks::add);
                 }
             } catch (InterruptedException | IgniteInterruptedException e) {
