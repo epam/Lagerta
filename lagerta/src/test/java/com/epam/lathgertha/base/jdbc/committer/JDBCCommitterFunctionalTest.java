@@ -23,6 +23,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,9 +50,11 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-            Assert.assertTrue(resultSet.next(), "Return empty result");
-            Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
+                Assert.assertTrue(resultSet.next(), "Return empty result");
+                Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+            }
         });
     }
 
@@ -75,9 +78,11 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-            Assert.assertTrue(resultSet.next(), "Return empty result");
-            Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
+                Assert.assertTrue(resultSet.next(), "Return empty result");
+                Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
+            }
         });
     }
 
@@ -110,10 +115,13 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
 
         String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
         JDBCUtil.applyInConnection(dataSource, connection -> {
-            ResultSet resultSet = connection.createStatement().executeQuery(queryForCheckRate);
-            List<Map<String, Object>> resultList = new ArrayList<>(expectedCountRows);
-            while (resultSet.next()) {
-                resultList.add(PersonEntries.getResultMapForPerson(resultSet));
+            List<Map<String, Object>> resultList = null;
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
+                resultList = new ArrayList<>(expectedCountRows);
+                while (resultSet.next()) {
+                    resultList.add(PersonEntries.getResultMapForPerson(resultSet));
+                }
             }
             Assert.assertEquals(resultList.size(), expectedCountRows);
             Assert.assertEquals(resultList.get(0), expectedResultForVal, "Return incorrect result");
