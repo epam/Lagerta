@@ -22,27 +22,47 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public enum SimpleValueTransformer implements ValueTransformer {
-    STRING(ResultSet::getString, (Setter<String>) PreparedStatement::setString),
-    BOOLEAN(ResultSet::getBoolean, (Setter<Boolean>) PreparedStatement::setBoolean),
-    BYTE(ResultSet::getByte, (Setter<Byte>) PreparedStatement::setByte),
-    SHORT(ResultSet::getShort, (Setter<Short>) PreparedStatement::setShort),
-    INTEGER(ResultSet::getInt, (Setter<Integer>) PreparedStatement::setInt),
-    LONG(ResultSet::getLong, (Setter<Long>) PreparedStatement::setLong),
-    FLOAT(ResultSet::getFloat, (Setter<Float>) PreparedStatement::setFloat),
-    DOUBLE(ResultSet::getDouble, (Setter<Double>) PreparedStatement::setDouble),
-    BIG_DECIMAL(ResultSet::getBigDecimal, (Setter<BigDecimal>) PreparedStatement::setBigDecimal),
-    BYTES(ResultSet::getBytes, (Setter<byte[]>) PreparedStatement::setBytes),
-    DATE(SimpleValueTransformer::getDate, SimpleValueTransformer::setDate),
-    TIMESTAMP(ResultSet::getTimestamp, (Setter<Timestamp>) PreparedStatement::setTimestamp);
+    DUMMY(null, null),
+
+    STRING(ResultSet::getString, (Setter<String>) PreparedStatement::setString, String.class),
+    BOOLEAN(ResultSet::getBoolean, (Setter<Boolean>) PreparedStatement::setBoolean, Boolean.class, Boolean.TYPE),
+    BYTE(ResultSet::getByte, (Setter<Byte>) PreparedStatement::setByte, Byte.class, Byte.TYPE),
+    SHORT(ResultSet::getShort, (Setter<Short>) PreparedStatement::setShort, Short.class, Short.TYPE),
+    INTEGER(ResultSet::getInt, (Setter<Integer>) PreparedStatement::setInt, Integer.class, Integer.TYPE),
+    LONG(ResultSet::getLong, (Setter<Long>) PreparedStatement::setLong, Long.class, Long.TYPE),
+    FLOAT(ResultSet::getFloat, (Setter<Float>) PreparedStatement::setFloat, Float.class, Float.TYPE),
+    DOUBLE(ResultSet::getDouble, (Setter<Double>) PreparedStatement::setDouble, Double.class, Double.TYPE),
+    BIG_DECIMAL(ResultSet::getBigDecimal, (Setter<BigDecimal>) PreparedStatement::setBigDecimal, BigDecimal.class),
+    BYTES(ResultSet::getBytes, (Setter<byte[]>) PreparedStatement::setBytes, byte[].class),
+    DATE(SimpleValueTransformer::getDate, SimpleValueTransformer::setDate, java.util.Date.class),
+    TIMESTAMP(ResultSet::getTimestamp, (Setter<Timestamp>) PreparedStatement::setTimestamp, Timestamp.class);
+
+    private static Map<Class<?>, ValueTransformer> MATCH = Arrays.stream(values())
+            .flatMap(transformer -> Arrays.stream(transformer.matchedTo)
+                    .map(clazz -> new AbstractMap.SimpleImmutableEntry<Class<?>, ValueTransformer>(clazz, transformer)))
+            .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    private static final Function<Class, ValueTransformer> FIND = key -> MATCH.entrySet().stream()
+            .filter(entry -> entry.getKey().isAssignableFrom(key))
+            .findFirst()
+            .map(Map.Entry::getValue)
+            .orElse(DUMMY);
 
     private final Getter get;
     private final Setter set;
+    private final Class<?>[] matchedTo;
 
-    SimpleValueTransformer(Getter get, Setter set) {
+    SimpleValueTransformer(Getter get, Setter set, Class<?>... matchedTo) {
         this.get = get;
         this.set = set;
+        this.matchedTo = matchedTo;
     }
 
     @Override
@@ -53,6 +73,10 @@ public enum SimpleValueTransformer implements ValueTransformer {
     @Override
     public void set(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
         set.set(preparedStatement, index, value);
+    }
+
+    public static ValueTransformer get(Class<?> clazz) {
+        return MATCH.computeIfAbsent(clazz, FIND);
     }
 
     //------------------------------------------------------------------------------------------------------------------
