@@ -23,6 +23,7 @@ import com.epam.lagerta.base.jdbc.common.Person;
 import com.epam.lagerta.base.jdbc.common.PersonEntries;
 import com.epam.lagerta.capturer.DataCapturerLoader;
 import com.epam.lagerta.capturer.JDBCDataCapturerLoader;
+import com.epam.lagerta.cluster.IgniteClusterManager;
 import com.epam.lagerta.resources.DBResource;
 import com.epam.lagerta.resources.FullClusterResource;
 import com.epam.lagerta.subscriber.Committer;
@@ -79,6 +80,10 @@ public abstract class BaseIntegrationTest {
                 {CACHE_NAME},
                 {BINARY_KEEPING_CACHE_NAME}
         };
+    }
+
+    protected void setClusterManager(IgniteClusterManager clusterManager) {
+        ALL_RESOURCES.setClusterManager(clusterManager);
     }
 
     private static Committer personJDBCCommitter() {
