@@ -27,11 +27,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
+
+    public JDBCDataCapturerLoader(DataSource dataSource, List<EntityDescriptor> entityDescriptors) {
+        this(dataSource, entityDescriptors.stream().collect(Collectors
+                .toMap(EntityDescriptor::getTableName, descriptor -> descriptor)));
+    }
 
     public JDBCDataCapturerLoader(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
         this.dataSource = dataSource;

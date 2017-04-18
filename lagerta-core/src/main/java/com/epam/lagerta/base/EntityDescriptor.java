@@ -28,14 +28,17 @@ import java.util.stream.Collectors;
 
 public class EntityDescriptor<T> {
     private final Class<T> clazz;
+    private final String tableName;
     private final Map<String, FieldDescriptor> fieldDescriptors;
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(Class<T> clazz, Map<String, FieldDescriptor> fieldDescriptors,
-                            String tableName, String keyField) {
+    public EntityDescriptor(Class<T> clazz, String tableName, String keyField,
+                            Map<String, FieldDescriptor> fieldDescriptors) {
         this.clazz = clazz;
+        this.tableName = tableName;
         this.fieldDescriptors = fieldDescriptors;
+
         List<String> sortedColumns = fieldDescriptors.entrySet()
                 .stream()
                 .sorted((e1, e2) -> Integer.valueOf(e1.getValue().getIndex()).compareTo(e2.getValue().getIndex()))
@@ -50,6 +53,10 @@ public class EntityDescriptor<T> {
                 " VALUES (" + maskFields + ")";
         // specific IN semantic for h2
         selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE array_contains(?, " + keyField + ")";
+    }
+
+    public String getTableName() {
+        return tableName;
     }
 
     public String getUpsertQuery() {

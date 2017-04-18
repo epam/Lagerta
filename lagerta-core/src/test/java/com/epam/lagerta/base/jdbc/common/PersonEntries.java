@@ -84,7 +84,7 @@ public class PersonEntries {
     }
 
     public static EntityDescriptor getPersonEntityDescriptor() {
-        return new EntityDescriptor<>(Person.class, getPersonFieldDescriptor(), Person.PERSON_TABLE, Person.PERSON_KEY);
+        return new EntityDescriptor<>(Person.class, Person.PERSON_TABLE, Person.PERSON_KEY, getPersonFieldDescriptor());
     }
 
     private static FieldDescriptor PERSON_ID_DESCRIPTOR = new FieldDescriptor() {
