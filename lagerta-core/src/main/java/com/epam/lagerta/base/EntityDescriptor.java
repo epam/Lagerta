@@ -71,7 +71,12 @@ public class EntityDescriptor<T> {
         Map<String, Object> parametersValue = JDBCKeyValueMapper.keyValueMap(key, value);
         for (Map.Entry<String, FieldDescriptor> fieldNameAndDescriptor : fieldDescriptors.entrySet()) {
             Object valueForField = parametersValue.get(fieldNameAndDescriptor.getKey());
-            fieldNameAndDescriptor.getValue().setValueInStatement(valueForField, statement);
+            FieldDescriptor descriptor = fieldNameAndDescriptor.getValue();
+            if (valueForField == null) {
+                statement.setObject(descriptor.getIndex(), null);
+            } else {
+                descriptor.getTransformer().set(statement, descriptor.getIndex(), valueForField);
+            }
         }
         statement.addBatch();
     }
@@ -81,8 +86,9 @@ public class EntityDescriptor<T> {
         Map<K, T> result = new HashMap<>();
         while (resultSet.next()) {
             Map<String, Object> objectParameters = new HashMap<>(fieldDescriptors.size());
-            for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
-                objectParameters.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
+            for (Map.Entry<String, FieldDescriptor> entry : fieldDescriptors.entrySet()) {
+                FieldDescriptor descriptor = entry.getValue();
+                objectParameters.put(entry.getKey(), descriptor.getTransformer().get(resultSet, descriptor.getIndex()));
             }
             JDBCKeyValueMapper.KeyAndValue<T> keyAndValue = JDBCKeyValueMapper.getObject(objectParameters, clazz);
             result.put((K) keyAndValue.getKey(), keyAndValue.getValue());
