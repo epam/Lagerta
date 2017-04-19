@@ -70,11 +70,13 @@
               p:name="#{T(com.epam.lagerta.services.LeadService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="1"
-              p:service-ref="lead-service"/>
+              p:service-ref="lead-service"
+              p:nodeFilter-ref="serviceFilter"/>
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lagerta.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
-              p:service-ref="reader-service"/>
+              p:service-ref="reader-service"
+              p:nodeFilter-ref="serviceFilter"/>
     </util:list>
 
     <util:list id="caches">
@@ -94,6 +96,8 @@
             </bean>
         </property>
     </bean>
+
+    <bean id="serviceFilter" class="com.epam.lagerta.ServiceFilterPredicate"/>
 
     <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="personJDBCDataCapturerLoader"/>

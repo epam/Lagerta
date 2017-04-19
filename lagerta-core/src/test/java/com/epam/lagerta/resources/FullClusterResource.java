@@ -17,6 +17,7 @@
 package com.epam.lagerta.resources;
 
 import com.epam.lagerta.cluster.AppContextOneProcessClusterManager;
+import com.epam.lagerta.cluster.IgniteClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,18 +25,21 @@ import java.sql.SQLException;
 
 public class FullClusterResource implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(FullClusterResource.class);
-    private static final String CONFIG_XML = "com/epam/lagerta/integration/config.xml";
+    public static final String CONFIG_XML = "com/epam/lagerta/integration/config.xml";
     private static final int CLUSTER_SIZE = 2;
 
     private final DBResource dbResource;
 
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
     private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
-    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE,
-            new AppContextOneProcessClusterManager(CONFIG_XML));
+    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE);
 
     public FullClusterResource(DBResource dbResource) {
         this.dbResource = dbResource;
+    }
+
+    public void setClusterManager(IgniteClusterManager clusterManager) {
+        this.cluster.setClusterManager(clusterManager);
     }
 
     public IgniteClusterResource igniteCluster() {
