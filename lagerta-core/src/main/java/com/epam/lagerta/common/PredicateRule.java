@@ -33,4 +33,18 @@ public class PredicateRule implements Runnable {
             innerRule.run();
         }
     }
+
+    public static class Builder {
+        private final Scheduler scheduler;
+        private final BooleanSupplier predicate;
+
+        public Builder(Scheduler scheduler, BooleanSupplier predicate) {
+            this.scheduler = scheduler;
+            this.predicate = predicate;
+        }
+
+        public void execute(Runnable runnable) {
+            scheduler.registerRule(new PredicateRule(runnable, predicate));
+        }
+    }
 }

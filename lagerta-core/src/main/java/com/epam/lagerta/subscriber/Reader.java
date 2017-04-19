@@ -16,8 +16,6 @@
 package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.common.PeriodicRule;
-import com.epam.lagerta.common.PredicateRule;
 import com.epam.lagerta.common.Scheduler;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.SubscriberConfig;
@@ -95,10 +93,10 @@ public class Reader extends Scheduler {
 
     @Override
     public void execute() {
-        registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
+        per(bufferClearTimeInterval).execute(this::clearBuffer);
         try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
             registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
+            when(commitToKafkaSupplier).execute(() -> commitOffsets(consumer, committedOffsetMap));
             super.execute();
         }
     }

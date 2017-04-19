@@ -41,4 +41,18 @@ public class PeriodicRule extends PredicateRule {
             }
         };
     }
+
+    public static class Builder {
+        private final Scheduler scheduler;
+        private final long timeInterval;
+
+        public Builder(Scheduler scheduler, long timeInterval) {
+            this.scheduler = scheduler;
+            this.timeInterval = timeInterval;
+        }
+
+        public void execute(Runnable runnable) {
+            scheduler.registerRule(new PeriodicRule(runnable, timeInterval));
+        }
+    }
 }

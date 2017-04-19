@@ -18,7 +18,6 @@ package com.epam.lagerta.subscriber.lead;
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.common.CallableKeyListTask;
 import com.epam.lagerta.common.CallableKeyTask;
-import com.epam.lagerta.common.PeriodicRule;
 import com.epam.lagerta.common.Scheduler;
 import com.epam.lagerta.subscriber.ConsumerTxScope;
 import com.epam.lagerta.subscriber.util.PlannerUtil;
@@ -59,12 +58,12 @@ public class LeadImpl extends Scheduler implements Lead {
         this.heartbeats = heartbeats;
         pushTask(() -> stateAssistant.load(this));
         registerRule(this.committed::compress);
-        registerRule(new PeriodicRule(this::markLostAndFound, timeouts.getHearbeatExpirationThreshold()));
+        per(timeouts.getHearbeatExpirationThreshold()).execute(this::markLostAndFound);
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed, heartbeats, lostReaders, inProgress));
         registerRule(this::plan);
-        registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), timeouts.getSaveStatePeriod()));
-        registerRule(new PeriodicRule(() ->
-                reconcileOnGaps(readTransactions, committed, gapDetectionStrategy), timeouts.getGapCheckPeriod()));
+        per(timeouts.getSaveStatePeriod()).execute(() -> stateAssistant.saveState(this));
+        per(timeouts.getGapCheckPeriod()).execute(() ->
+                reconcileOnGaps(readTransactions, committed, gapDetectionStrategy));
     }
 
     @SuppressWarnings("unused") // used in Spring config
