@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Benchmark)
 @Fork(value = 1, jvmArgs = {"-server", "-Xms256M", "-Xmx256M"})
 @Threads(1)

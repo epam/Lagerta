@@ -13,7 +13,7 @@
     <artifactId>lagerta-jmh</artifactId>
 
     <name>lagerta-jmh</name>
-    <description>Code for running JMH benchmarks that assess the performance of the lagerta.</description>
+    <description>Code for running JMH benchmarks that assesses the performance of the lagerta.</description>
 
     <properties>
         <jmh.version>1.13</jmh.version>

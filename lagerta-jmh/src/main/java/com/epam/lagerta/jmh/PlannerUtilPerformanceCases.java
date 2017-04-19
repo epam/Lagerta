@@ -61,8 +61,8 @@ public class PlannerUtilPerformanceCases {
         public void setup() {
             read.addAllOnNode(A, get1000Transactions(CACHE1, 0L, 1L));
             read.addAllOnNode(B, get1000Transactions(CACHE1, 1000L, 2L));
-            read.addAllOnNode(A, get1000Transactions(CACHE2, 1000L, 3L));
-            read.addAllOnNode(B, get1000Transactions(CACHE2, 1000L, 4L));
+            read.addAllOnNode(A, get1000Transactions(CACHE2, 2000L, 3L));
+            read.addAllOnNode(B, get1000Transactions(CACHE2, 3000L, 4L));
             List<Long> commits = getCommitRange(0L, 4000L);
             committed.addAll(commits);
             committed.compress();
