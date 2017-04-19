@@ -61,7 +61,8 @@ public abstract class BaseIntegrationTest {
     private static final long TX_WAIT_TIME = 10_000;
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
-    private static DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -69,8 +70,6 @@ public abstract class BaseIntegrationTest {
     }
 
     private static int TEST_NUMBER = 0;
-
-    private final FullClusterResource allResources = new FullClusterResource(DB_RESOURCE);
 
     protected DataSource dataSource;
 
@@ -96,12 +95,12 @@ public abstract class BaseIntegrationTest {
 
     @BeforeSuite
     public void setUp() throws Exception {
-        allResources.setUp();
+        ALL_RESOURCES.setUp();
     }
 
     @AfterSuite(alwaysRun = true)
     public void tearDown() {
-        allResources.tearDown();
+        ALL_RESOURCES.tearDown();
     }
 
     @BeforeMethod
@@ -113,12 +112,12 @@ public abstract class BaseIntegrationTest {
     @AfterMethod
     public void cleanupResources() throws SQLException {
         TEST_NUMBER++;
-        allResources.cleanUpClusters();
+        ALL_RESOURCES.cleanUpClusters();
         DB_RESOURCE.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
     }
 
     public Ignite ignite() {
-        return allResources.igniteCluster().ignite();
+        return ALL_RESOURCES.igniteCluster().ignite();
     }
 
     public void writePersonToCache(String cacheName, int key, Person person) {
