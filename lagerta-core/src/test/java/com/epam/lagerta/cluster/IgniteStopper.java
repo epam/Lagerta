@@ -22,6 +22,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.UUID;
+
 public class IgniteStopper {
     private static final Logger LOG = LoggerFactory.getLogger(IgniteStopper.class);
     private final Ignite localIgnite;
@@ -31,16 +34,23 @@ public class IgniteStopper {
     }
 
     public void stopAllServerNodes() {
-        localIgnite.compute(localIgnite.cluster().forServers()).withAsync().
-                broadcast(new StopServerNode());
+        localIgnite.compute(localIgnite.cluster().forServers()).withAsync()
+                .broadcast(new ServerNodeStopper());
     }
 
     public void stopServerNodesWithService(String serviceName) {
-        localIgnite.compute(localIgnite.cluster().forServers()).
-                broadcast(new StopServerNodeWithService(serviceName));
+        Map<UUID, Integer> uuidIntegerMap = localIgnite.services().serviceDescriptors().stream()
+                .filter(serviceDescriptor -> serviceDescriptor.name().equalsIgnoreCase(serviceName))
+                .findFirst().orElseGet(null).topologySnapshot();
+        if (uuidIntegerMap == null || uuidIntegerMap.isEmpty()) {
+            throw new RuntimeException("Service do not deploy");
+        }
+        UUID nodeWithService = uuidIntegerMap.keySet().iterator().next();
+        localIgnite.compute(localIgnite.cluster().forNodeId(nodeWithService)).withAsync()
+                .broadcast(new ServerNodeStopper());
     }
 
-    private static class StopServerNode implements IgniteRunnable {
+    private static class ServerNodeStopper implements IgniteRunnable {
         @IgniteInstanceResource
         private transient Ignite ignite;
 
@@ -48,25 +58,6 @@ public class IgniteStopper {
         public void run() {
             LOG.debug("Stop node: {}", ignite.cluster().localNode());
             System.exit(1);
-        }
-    }
-
-    private static class StopServerNodeWithService implements IgniteRunnable {
-        @IgniteInstanceResource
-        private transient Ignite ignite;
-        private final String serviceName;
-
-        public StopServerNodeWithService(String serviceName) {
-            this.serviceName = serviceName;
-        }
-
-        @Override
-        public void run() {
-            Object service = ignite.services().service(serviceName);
-            if (service != null) {
-                LOG.debug("Stop node: {} \nWith service: {}", ignite.cluster().localNode(), serviceName);
-                System.exit(1);
-            }
         }
     }
 }

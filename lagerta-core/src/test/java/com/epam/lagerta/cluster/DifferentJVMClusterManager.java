@@ -32,9 +32,8 @@ import java.util.List;
 public class DifferentJVMClusterManager implements IgniteClusterManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(DifferentJVMClusterManager.class);
-
     private static final String CLIENT_GRID_NAME = "clientNode";
-    private List<Process> processes = new ArrayList<>();
+
     private Ignite clientNode;
     private IgniteStopper igniteStopper;
 
@@ -42,7 +41,7 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
     public Ignite startCluster(int clusterSize) {
         try {
             for (int gridNumber = 0; gridNumber < clusterSize; gridNumber++) {
-                processes.add(startJVM("node-" + gridNumber, IgniteStarter.class));
+                startJVM("node-" + gridNumber, IgniteStarter.class);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -82,7 +81,7 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
 
     private void printOutputProcess(String processName, InputStream... inputStreams) {
         for (InputStream stream : inputStreams) {
-            new Thread(() -> {
+            Thread logThread = new Thread(() -> {
                 String out = null;
                 try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream))) {
                     while ((out = bufferedReader.readLine()) != null) {
@@ -91,7 +90,9 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
                 } catch (IOException e) {
                     LOG.error("Error output: ", e);
                 }
-            }).start();
+            });
+            logThread.setDaemon(true);
+            logThread.start();
         }
     }
 }
