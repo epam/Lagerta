@@ -32,8 +32,7 @@ public class FullClusterResource implements Resource {
 
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
     private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
-    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE,
-            new AppContextOneProcessClusterManager(CONFIG_XML));
+    private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE);
 
     public FullClusterResource(DBResource dbResource) {
         this.dbResource = dbResource;

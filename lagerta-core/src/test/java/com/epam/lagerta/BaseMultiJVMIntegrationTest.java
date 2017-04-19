@@ -19,7 +19,7 @@ package com.epam.lagerta;
 import com.epam.lagerta.cluster.DifferentJVMClusterManager;
 import org.testng.annotations.BeforeSuite;
 
-public abstract class MultiJVMIntegrationTestSuite extends BaseIntegrationTest {
+public abstract class BaseMultiJVMIntegrationTest extends BaseIntegrationTest {
 
     private static final DifferentJVMClusterManager JVM_CLUSTER_MANAGER = new DifferentJVMClusterManager();
 

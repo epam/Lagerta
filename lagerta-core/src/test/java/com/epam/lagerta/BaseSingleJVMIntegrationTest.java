@@ -16,12 +16,16 @@
 
 package com.epam.lagerta;
 
+import com.epam.lagerta.cluster.AppContextOneProcessClusterManager;
 import org.testng.annotations.BeforeSuite;
 
-public abstract class SingleJVMIntegrationTestSuite extends BaseIntegrationTest {
+import static com.epam.lagerta.resources.FullClusterResource.CONFIG_XML;
+
+public abstract class BaseSingleJVMIntegrationTest extends BaseIntegrationTest {
 
     @BeforeSuite
     public void setUp() throws Exception {
+        ALL_RESOURCES.setClusterManager(new AppContextOneProcessClusterManager(CONFIG_XML));
         ALL_RESOURCES.setUp();
     }
 }

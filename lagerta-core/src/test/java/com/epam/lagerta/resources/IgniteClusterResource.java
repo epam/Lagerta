@@ -53,6 +53,10 @@ public class IgniteClusterResource implements Resource {
         this.clusterManager = clusterManager;
     }
 
+    public IgniteClusterResource(int numberOfNodes) {
+        this.numberOfNodes = numberOfNodes;
+    }
+
     public void setClusterManager(IgniteClusterManager clusterManager) {
         this.clusterManager = clusterManager;
     }

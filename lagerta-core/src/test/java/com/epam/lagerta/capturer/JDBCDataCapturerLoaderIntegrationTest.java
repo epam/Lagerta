@@ -16,7 +16,7 @@
 
 package com.epam.lagerta.capturer;
 
-import com.epam.lagerta.SingleJVMIntegrationTestSuite;
+import com.epam.lagerta.BaseSingleJVMIntegrationTest;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.common.Person;
 import com.epam.lagerta.subscriber.DataProviderUtil;
@@ -37,7 +37,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-public class JDBCDataCapturerLoaderIntegrationTest extends SingleJVMIntegrationTestSuite {
+public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrationTest {
     private static final String LOAD_PERSON_PROVIDER = "loadPersonProvider";
     private static final String LOAD_ALL_PERSONS_PROVIDER = "loadAllPersonsProvider";
     private static final int FIRST_KEY = 1;
