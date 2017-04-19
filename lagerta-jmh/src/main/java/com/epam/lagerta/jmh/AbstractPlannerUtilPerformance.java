@@ -34,6 +34,7 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -48,8 +49,8 @@ public abstract class AbstractPlannerUtilPerformance {
 
     protected ReadTransactions read = new ReadTransactions();
     protected CommittedTransactions committed = new CommittedTransactions();
-    protected HashSet<Long> inProgress = new HashSet<>();
-    protected HashSet<UUID> lostReaders = new HashSet<>();
+    protected Set<Long> inProgress = new HashSet<>();
+    protected Set<UUID> lostReaders = new HashSet<>();
 
     @Setup
     public abstract void setup();

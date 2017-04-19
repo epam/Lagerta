@@ -1,69 +1,51 @@
+/*
+ *  Copyright 2017 EPAM Systems.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package com.epam.lagerta.jmh;
 
 import com.epam.lagerta.subscriber.lead.Heartbeats;
+import com.epam.lagerta.subscriber.lead.ReadTransactions;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static com.epam.lagerta.jmh.DataUtil.get1000Transactions;
-import static com.epam.lagerta.jmh.DataUtil.get10Transactions;
-import static com.epam.lagerta.jmh.DataUtil.getCommitRange;
-import static com.epam.lagerta.jmh.DataUtil.list;
+import static com.epam.lagerta.jmh.d.DataUtil.getCommitRange;
+import static com.epam.lagerta.jmh.d.DataUtil.getDependentTransactions;
+import static com.epam.lagerta.jmh.d.DataUtil.getIndependentTransactions;
+import static com.epam.lagerta.jmh.d.DataUtil.getTotalDependentTransactions;
+import static com.epam.lagerta.jmh.d.DataUtil.list;
 
 @State(Scope.Benchmark)
 public class PlannerUtilPerformanceCases {
+
+    private static final int COUNT_TX_PER_NODE = 10_000;
 
     private static final Heartbeats HEARTBEATS = new Heartbeats(0);
     private static final UUID A = UUID.randomUUID();
     private static final UUID B = UUID.randomUUID();
 
-    private static final String CACHE1 = "cache1";
-    private static final String CACHE2 = "cache2";
-
-    public static class SimpleNonIntersectedPlan extends AbstractPlannerUtilPerformance {
+    public static class IndependentTransactionsPlan extends AbstractPlannerUtilPerformance {
         @Override
         public void setup() {
-            read.addAllOnNode(A, get10Transactions(CACHE1, 0L, 1L));
-            read.addAllOnNode(B, get10Transactions(CACHE1, 10L, 2L));
-            read.addAllOnNode(A, get10Transactions(CACHE2, 20L, 3L));
-            read.addAllOnNode(B, get10Transactions(CACHE2, 30L, 4L));
-            List<Long> commits = getCommitRange(0L, 40L);
-            committed.addAll(commits);
-            committed.compress();
-            commits.addAll(list(22L, 33L));
-            inProgress.addAll(commits);
-            read.makeReady();
-            read.pruneCommitted(committed, HEARTBEATS, lostReaders, inProgress);
-        }
-    }
-
-    public static class SimpleIntersectedPlan extends AbstractPlannerUtilPerformance {
-        @Override
-        public void setup() {
-            read.addAllOnNode(A, get10Transactions(CACHE1, 0L, 1L));
-            read.addAllOnNode(B, get10Transactions(CACHE1, 10L, 1L, 2L));
-            read.addAllOnNode(B, get10Transactions(CACHE2, 20L, 2L));
-            read.addAllOnNode(A, get10Transactions(CACHE2, 30L, 2L, 3L));
-            List<Long> commits = getCommitRange(0L, 40L);
-            committed.addAll(commits);
-            committed.compress();
-            commits.addAll(list(22L, 33L));
-            inProgress.addAll(commits);
-            read.makeReady();
-            read.pruneCommitted(committed, HEARTBEATS, lostReaders, inProgress);
-        }
-    }
-
-    public static class ManyTransactionsNonIntersectedPlan extends AbstractPlannerUtilPerformance {
-        @Override
-        public void setup() {
-            read.addAllOnNode(A, get1000Transactions(CACHE1, 0L, 1L));
-            read.addAllOnNode(B, get1000Transactions(CACHE1, 1000L, 2L));
-            read.addAllOnNode(A, get1000Transactions(CACHE2, 2000L, 3L));
-            read.addAllOnNode(B, get1000Transactions(CACHE2, 3000L, 4L));
-            List<Long> commits = getCommitRange(0L, 4000L);
+            independentRead(read, 1000);
+            List<Long> commits = getCommitRange(0L, 4000L, l -> l % 7 == 0)
+                    .collect(Collectors.toList());
             committed.addAll(commits);
             committed.compress();
             commits.addAll(list(111L, 222L, 333L, 444L, 555L, 666L, 777L, 888L, 999L));
@@ -73,14 +55,12 @@ public class PlannerUtilPerformanceCases {
         }
     }
 
-    public static class ManyTransactionsIntersectedPlan extends AbstractPlannerUtilPerformance {
+    public static class DependentTransactionsPlan extends AbstractPlannerUtilPerformance {
         @Override
         public void setup() {
-            read.addAllOnNode(A, get1000Transactions(CACHE1, 0L, 1L));
-            read.addAllOnNode(B, get1000Transactions(CACHE1, 1000L, 1L, 2L));
-            read.addAllOnNode(B, get1000Transactions(CACHE2, 2000L, 2L));
-            read.addAllOnNode(A, get1000Transactions(CACHE2, 3000L, 2L, 3L));
-            List<Long> commits = getCommitRange(0L, 4000L);
+            dependentRead(read, COUNT_TX_PER_NODE);
+            List<Long> commits = getCommitRange(0L, 4000L, l -> l % 7 == 0)
+                    .collect(Collectors.toList());
             committed.addAll(commits);
             committed.compress();
             commits.addAll(list(111L, 222L, 333L, 444L, 555L, 666L, 777L, 888L, 999L));
@@ -88,5 +68,41 @@ public class PlannerUtilPerformanceCases {
             read.makeReady();
             read.pruneCommitted(committed, HEARTBEATS, lostReaders, inProgress);
         }
+    }
+
+    public static class TotalDependentTransactionsPlan extends AbstractPlannerUtilPerformance {
+        @Override
+        public void setup() {
+            totalDependentRead(read, COUNT_TX_PER_NODE);
+            List<Long> commits = getCommitRange(0L, 4000L, l -> l % 7 == 0)
+                    .collect(Collectors.toList());
+            committed.addAll(commits);
+            committed.compress();
+            commits.addAll(list(111L, 222L, 333L, 444L, 555L, 666L, 777L, 888L, 999L));
+            inProgress.addAll(commits);
+            read.makeReady();
+            read.pruneCommitted(committed, HEARTBEATS, lostReaders, inProgress);
+        }
+    }
+
+    private static void dependentRead(ReadTransactions read, int idCountByNode) {
+        read.addAllOnNode(A, getDependentTransactions(idCountByNode, list(0L, 1L, 5L, 6L, 15L, 18L)));
+        read.addAllOnNode(B, getDependentTransactions(idCountByNode, list(2L, 4L, 7L, 13L, 17L)));
+        read.addAllOnNode(A, getDependentTransactions(idCountByNode, list(3L, 8L, 9L, 10L, 16L)));
+        read.addAllOnNode(B, getDependentTransactions(idCountByNode, list(11L, 12L, 14L, 19L)));
+    }
+
+    private static void independentRead(ReadTransactions read, int idCountByNode) {
+        read.addAllOnNode(A, getIndependentTransactions(idCountByNode, list(0L, 1L, 5L, 6L, 15L, 18L)));
+        read.addAllOnNode(B, getIndependentTransactions(idCountByNode, list(2L, 4L, 7L, 13L, 17L)));
+        read.addAllOnNode(A, getIndependentTransactions(idCountByNode, list(3L, 8L, 9L, 10L, 16L)));
+        read.addAllOnNode(B, getIndependentTransactions(idCountByNode, list(11L, 12L, 14L, 19L)));
+    }
+
+    private static void totalDependentRead(ReadTransactions read, int idCountByNode) {
+        read.addAllOnNode(A, getTotalDependentTransactions(idCountByNode, list(0L, 1L, 5L, 6L, 15L, 18L)));
+        read.addAllOnNode(B, getTotalDependentTransactions(idCountByNode, list(2L, 4L, 7L, 13L, 17L)));
+        read.addAllOnNode(A, getTotalDependentTransactions(idCountByNode, list(3L, 8L, 9L, 10L, 16L)));
+        read.addAllOnNode(B, getTotalDependentTransactions(idCountByNode, list(11L, 12L, 14L, 19L)));
     }
 }
