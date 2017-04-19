@@ -92,7 +92,7 @@
     <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="personJDBCDataCapturerLoader"/>
 
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.PerTestSubscriberConfig"
+    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
@@ -123,13 +123,11 @@
         <constructor-arg index="0">
             <bean class="com.epam.lagerta.kafka.KafkaFactoryImpl"/>
         </constructor-arg>
+        <constructor-arg index="1" ref="producer-properties"/>
     </bean>
 
     <util:list id="subscriber-configs">
-        <bean class="com.epam.lagerta.kafka.SubscriberConfig"
-              p:remoteTopic="remoteTopic"
-              p:consumerConfig-ref="consumer-properties"
-              p:producerConfig-ref="producer-properties"/>
+        <ref bean="subscriber-config"/>
     </util:list>
 
     <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
