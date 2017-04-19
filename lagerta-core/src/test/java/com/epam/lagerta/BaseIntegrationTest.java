@@ -63,7 +63,7 @@ public abstract class BaseIntegrationTest {
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
     private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
-    private static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
+    protected static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -82,10 +82,6 @@ public abstract class BaseIntegrationTest {
         };
     }
 
-    protected void setClusterManager(IgniteClusterManager clusterManager) {
-        ALL_RESOURCES.setClusterManager(clusterManager);
-    }
-
     private static Committer personJDBCCommitter() {
         return new JDBCCommitter(DB_RESOURCE.getDataSource(), ENTITY_DESCRIPTOR_MAP);
     }
@@ -98,10 +94,6 @@ public abstract class BaseIntegrationTest {
         return topic + "_" + TEST_NUMBER;
     }
 
-    @BeforeSuite
-    public void setUp() throws Exception {
-        ALL_RESOURCES.setUp();
-    }
 
     @AfterSuite(alwaysRun = true)
     public void tearDown() {

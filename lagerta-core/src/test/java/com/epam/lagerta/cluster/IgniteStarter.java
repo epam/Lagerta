@@ -19,7 +19,6 @@ package com.epam.lagerta.cluster;
 import com.epam.lagerta.resources.FullClusterResource;
 import org.apache.ignite.Ignition;
 
-
 public class IgniteStarter {
 
     public static void main(String[] args) {

@@ -30,7 +30,7 @@ public class IgniteStopper {
     }
 
     public void stopAllServerNodes() {
-        ignite.compute(ignite.cluster().forServers()).
+        ignite.compute(ignite.cluster().forServers()).withAsync().
                 broadcast(
                         (IgniteRunnable) () -> {
                             LOG.debug("Stop node: {}", ignite.cluster().localNode());
@@ -40,7 +40,7 @@ public class IgniteStopper {
     }
 
     public void stopServerNodesWithService(String serviceName) {
-        ignite.compute(ignite.cluster().forServers()).
+        ignite.compute(ignite.cluster().forServers()).withAsync().
                 broadcast(
                         (IgniteRunnable) () -> {
                             Object service = ignite.services().service(serviceName);

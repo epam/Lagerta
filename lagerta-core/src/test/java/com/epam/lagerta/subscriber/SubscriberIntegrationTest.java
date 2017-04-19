@@ -16,14 +16,14 @@
 
 package com.epam.lagerta.subscriber;
 
-import com.epam.lagerta.BaseIntegrationTest;
+import com.epam.lagerta.SingleJVMIntegrationTestSuite;
 import com.epam.lagerta.base.jdbc.common.Person;
 import org.apache.ignite.IgniteCache;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class SubscriberIntegrationTest extends BaseIntegrationTest {
+public class SubscriberIntegrationTest extends SingleJVMIntegrationTestSuite {
     private static final String CACHE_INFO_PROVIDER = "cacheInfoProvider";
 
     @DataProvider(name = CACHE_INFO_PROVIDER)

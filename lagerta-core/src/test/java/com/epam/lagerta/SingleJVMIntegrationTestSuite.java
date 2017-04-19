@@ -16,29 +16,12 @@
 
 package com.epam.lagerta;
 
-import com.epam.lagerta.cluster.DifferentJVMClusterManager;
 import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
 
-public class DifferentJVMIntegrationTest extends BaseIntegrationTest {
-
-    private static final DifferentJVMClusterManager JVM_CLUSTER_MANAGER = new DifferentJVMClusterManager();
+public abstract class SingleJVMIntegrationTestSuite extends BaseIntegrationTest {
 
     @BeforeSuite
     public void setUp() throws Exception {
-        setClusterManager(JVM_CLUSTER_MANAGER);
-        super.setUp();
-    }
-
-    public void stopNodeWithService(String serviceName) {
-        JVM_CLUSTER_MANAGER.getIgniteStopper().stopServerNodesWithService(serviceName);
-    }
-
-    // min test
-    @Test
-    public void test() throws InterruptedException {
-        System.out.println(ignite().cluster().localNode().isClient());
-        Thread.sleep(10_000L);
-        System.out.println("END!!");
+        ALL_RESOURCES.setUp();
     }
 }

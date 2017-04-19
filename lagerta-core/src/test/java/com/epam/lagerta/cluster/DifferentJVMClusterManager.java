@@ -33,7 +33,7 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(DifferentJVMClusterManager.class);
 
-    private static final String CLIENT_GRID_NAME = "testNode";
+    private static final String CLIENT_GRID_NAME = "clientNode";
     private List<Process> processes = new ArrayList<>();
     private Ignite clientNode;
     private IgniteStopper igniteStopper;
@@ -56,15 +56,12 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
     @Override
     public void stopCluster() {
         igniteStopper.stopAllServerNodes();
-        while (processes.stream().filter(Process::isAlive).count() > 0) ;
-        clientNode.services().cancelAll();
         clientNode.close();
     }
 
     public IgniteStopper getIgniteStopper() {
         return igniteStopper;
     }
-
 
     private Process startJVM(String gridName, Class classForRun) throws IOException, InterruptedException {
         List<String> params = new ArrayList<String>();
@@ -83,19 +80,18 @@ public class DifferentJVMClusterManager implements IgniteClusterManager {
         return process;
     }
 
-    private void printOutputProcess(String processName, InputStream stdout, InputStream stderr) {
-        new Thread(() -> {
-            String out = null;
-            String err = null;
-            try (BufferedReader inStdout = new BufferedReader(new InputStreamReader(stdout));
-                 BufferedReader inStderr = new BufferedReader(new InputStreamReader(stderr))) {
-                while ((out = inStdout.readLine()) != null || (err = inStderr.readLine()) != null) {
-                    String msg = (out != null ? out : "") + (err != null ? err : "");
-                    LOG.info("[ {} ] {}", processName, msg);
+    private void printOutputProcess(String processName, InputStream... inputStreams) {
+        for (InputStream stream : inputStreams) {
+            new Thread(() -> {
+                String out = null;
+                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream))) {
+                    while ((out = bufferedReader.readLine()) != null) {
+                        LOG.info("[ {} ] {}", processName, out);
+                    }
+                } catch (IOException e) {
+                    LOG.error("Error output: ", e);
                 }
-            } catch (IOException e) {
-                LOG.error("Error output: ", e);
-            }
-        }).start();
+            }).start();
+        }
     }
 }
