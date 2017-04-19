@@ -51,7 +51,13 @@
           c:ignite-ref="ignite-bean"/>
 
     <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
-          c:stateAssistant-ref="stateAssistant"/>
+          c:stateAssistant-ref="stateAssistant"
+          c:gapDetectionStrategy-ref="gapDetector"
+          c:ruleTimeouts-ref="leadTimeouts"/>
+
+    <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
+
+    <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.ReaderConfig"/>
