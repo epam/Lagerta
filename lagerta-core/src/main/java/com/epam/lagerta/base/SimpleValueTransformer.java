@@ -44,7 +44,7 @@ public enum SimpleValueTransformer implements ValueTransformer {
     DATE(SimpleValueTransformer::getDate, SimpleValueTransformer::setDate, java.util.Date.class),
     TIMESTAMP(ResultSet::getTimestamp, (Setter<Timestamp>) PreparedStatement::setTimestamp, Timestamp.class);
 
-    private static Map<Class<?>, ValueTransformer> MATCH = Arrays.stream(values())
+    private static final Map<Class<?>, ValueTransformer> MATCH = Arrays.stream(values())
             .flatMap(transformer -> Arrays.stream(transformer.matchedTo)
                     .map(clazz -> new AbstractMap.SimpleImmutableEntry<Class<?>, ValueTransformer>(clazz, transformer)))
             .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
