@@ -105,4 +105,9 @@ public class EntityDescriptor<T> {
         }
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Entity {" +  ", table '" + tableName + "'\', fields " + fieldDescriptors.values() + '}';
+    }
 }

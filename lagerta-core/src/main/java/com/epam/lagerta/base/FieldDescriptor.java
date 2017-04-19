@@ -37,4 +37,9 @@ public class FieldDescriptor {
     public ValueTransformer getTransformer() {
         return transformer;
     }
+
+    @Override
+    public String toString() {
+        return "Field {#" + index + " \'" + name + "\' of " + transformer + '}';
+    }
 }

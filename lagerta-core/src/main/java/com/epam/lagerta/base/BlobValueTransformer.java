@@ -46,4 +46,9 @@ public class BlobValueTransformer implements ValueTransformer {
     public void set(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
         preparedStatement.setBlob(index, new SerialBlob(serializer.serialize(value).array()));
     }
+
+    @Override
+    public String toString() {
+        return "BLOB";
+    }
 }
