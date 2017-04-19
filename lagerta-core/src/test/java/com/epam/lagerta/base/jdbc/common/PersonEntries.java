@@ -15,6 +15,7 @@
  */
 package com.epam.lagerta.base.jdbc.common;
 
+import com.epam.lagerta.base.BlobValueTransformer;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.committer.JDBCCommitter;
@@ -23,10 +24,8 @@ import com.epam.lagerta.util.Serializer;
 import com.epam.lagerta.util.SerializerImpl;
 
 import javax.sql.DataSource;
-import javax.sql.rowset.serial.SerialBlob;
 import java.nio.ByteBuffer;
 import java.sql.Blob;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -34,6 +33,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.epam.lagerta.base.SimpleValueTransformer.INTEGER;
+import static com.epam.lagerta.base.SimpleValueTransformer.STRING;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_ID;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_ID_INDEX;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_KEY;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_KEY_INDEX;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_NAME;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_NAME_INDEX;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_VAL;
+import static com.epam.lagerta.base.jdbc.common.Person.PERSON_VAL_INDEX;
 
 public class PersonEntries {
     private static final Serializer SERIALIZER = new SerializerImpl();
@@ -44,16 +55,16 @@ public class PersonEntries {
 
     public static Map<String, Object> getResultMapForPerson(ResultSet resultSet) throws SQLException {
         Map<String, Object> actualResults = new HashMap<>(PersonEntries.getPersonColumns().size());
-        actualResults.put(Person.PERSON_ID, resultSet.getInt(Person.PERSON_ID));
-        actualResults.put(Person.PERSON_KEY, resultSet.getInt(Person.PERSON_KEY));
-        Blob blob = resultSet.getBlob(Person.PERSON_VAL);
+        actualResults.put(PERSON_ID, resultSet.getInt(PERSON_ID));
+        actualResults.put(PERSON_KEY, resultSet.getInt(PERSON_KEY));
+        Blob blob = resultSet.getBlob(PERSON_VAL);
         Object deserializeVal = null;
         if (blob != null) {
             int length = (int) blob.length();
             deserializeVal = SERIALIZER.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
         }
-        actualResults.put(Person.PERSON_VAL, deserializeVal);
-        actualResults.put(Person.PERSON_NAME, resultSet.getString(Person.PERSON_NAME));
+        actualResults.put(PERSON_VAL, deserializeVal);
+        actualResults.put(PERSON_NAME, resultSet.getString(PERSON_NAME));
         return actualResults;
     }
 
@@ -75,124 +86,15 @@ public class PersonEntries {
     }
 
     public static Map<String, FieldDescriptor> getPersonFieldDescriptor() {
-        Map<String, FieldDescriptor> personFieldsDescriptor = new HashMap<>(4);
-        personFieldsDescriptor.put(Person.PERSON_ID, PERSON_ID_DESCRIPTOR);
-        personFieldsDescriptor.put(Person.PERSON_NAME, PERSON_NAME_DESCRIPTOR);
-        personFieldsDescriptor.put(Person.PERSON_VAL, PERSON_VAL_DESCRIPTOR);
-        personFieldsDescriptor.put(Person.PERSON_KEY, PERSON_KEY_DESCRIPTOR);
-        return personFieldsDescriptor;
+        return Stream.of(
+                new FieldDescriptor(PERSON_ID_INDEX, PERSON_ID, INTEGER),
+                new FieldDescriptor(PERSON_NAME_INDEX, PERSON_NAME, STRING),
+                new FieldDescriptor(PERSON_VAL_INDEX, PERSON_VAL, new BlobValueTransformer(SERIALIZER)),
+                new FieldDescriptor(PERSON_KEY_INDEX, PERSON_KEY, INTEGER)
+        ).collect(Collectors.toMap(FieldDescriptor::getName, f -> f));
     }
 
     public static EntityDescriptor getPersonEntityDescriptor() {
-        return new EntityDescriptor<>(Person.class, getPersonFieldDescriptor(), Person.PERSON_TABLE, Person.PERSON_KEY);
+        return new EntityDescriptor<>(Person.class, Person.PERSON_TABLE, PERSON_KEY, getPersonFieldDescriptor());
     }
-
-    private static FieldDescriptor PERSON_ID_DESCRIPTOR = new FieldDescriptor() {
-
-        @Override
-        public int getIndex() {
-            return Person.PERSON_ID_INDEX;
-        }
-
-        @Override
-        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            if (object == null) {
-                preparedStatement.setObject(getIndex(), null);
-            } else {
-                preparedStatement.setInt(getIndex(), (Integer) object);
-            }
-        }
-
-        @Override
-        public Object getFieldValue(ResultSet resultSet) {
-            try {
-                return resultSet.getInt(getIndex());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
-
-    private static FieldDescriptor PERSON_NAME_DESCRIPTOR = new FieldDescriptor() {
-
-        @Override
-        public int getIndex() {
-            return Person.PERSON_NAME_INDEX;
-        }
-
-        @Override
-        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            if (object == null) {
-                preparedStatement.setObject(getIndex(), null);
-            } else {
-                preparedStatement.setString(getIndex(), (String) object);
-            }
-        }
-
-        @Override
-        public Object getFieldValue(ResultSet resultSet) {
-            try {
-                return resultSet.getString(getIndex());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
-
-    private static FieldDescriptor PERSON_VAL_DESCRIPTOR = new FieldDescriptor() {
-
-        @Override
-        public int getIndex() {
-            return Person.PERSON_VAL_INDEX;
-        }
-
-        @Override
-        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            if (object == null) {
-                preparedStatement.setObject(getIndex(), null);
-            } else {
-                preparedStatement.setBlob(getIndex(), new SerialBlob(SERIALIZER.serialize(object).array()));
-            }
-        }
-
-        @Override
-        public Object getFieldValue(ResultSet resultSet) {
-            try {
-                Blob blob = resultSet.getBlob(getIndex());
-                if (blob != null) {
-                    ByteBuffer wrap = ByteBuffer.wrap(blob.getBytes(0, (int) blob.length()));
-                    return SERIALIZER.deserialize(wrap);
-                }
-                return null;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
-
-    private static FieldDescriptor PERSON_KEY_DESCRIPTOR = new FieldDescriptor() {
-
-        @Override
-        public int getIndex() {
-            return Person.PERSON_KEY_INDEX;
-        }
-
-        @Override
-        public void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException {
-            if (object == null) {
-                preparedStatement.setObject(getIndex(), null);
-            } else {
-                preparedStatement.setInt(getIndex(), (Integer) object);
-            }
-        }
-
-        @Override
-        public Object getFieldValue(ResultSet resultSet) {
-            try {
-                return resultSet.getInt(getIndex());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
 }

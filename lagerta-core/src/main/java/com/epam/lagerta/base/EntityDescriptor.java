@@ -28,14 +28,27 @@ import java.util.stream.Collectors;
 
 public class EntityDescriptor<T> {
     private final Class<T> clazz;
+    private final String tableName;
     private final Map<String, FieldDescriptor> fieldDescriptors;
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(Class<T> clazz, Map<String, FieldDescriptor> fieldDescriptors,
-                            String tableName, String keyField) {
+    public EntityDescriptor(String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
+        this(null, tableName, keyField, fieldDescriptors.stream().collect(Collectors
+                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+    }
+
+    public EntityDescriptor(Class<T> clazz, String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
+        this(clazz, tableName, keyField, fieldDescriptors.stream().collect(Collectors
+                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+    }
+
+    public EntityDescriptor(Class<T> clazz, String tableName, String keyField,
+                            Map<String, FieldDescriptor> fieldDescriptors) {
         this.clazz = clazz;
+        this.tableName = tableName;
         this.fieldDescriptors = fieldDescriptors;
+
         List<String> sortedColumns = fieldDescriptors.entrySet()
                 .stream()
                 .sorted((e1, e2) -> Integer.valueOf(e1.getValue().getIndex()).compareTo(e2.getValue().getIndex()))
@@ -52,6 +65,10 @@ public class EntityDescriptor<T> {
         selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE array_contains(?, " + keyField + ")";
     }
 
+    public String getTableName() {
+        return tableName;
+    }
+
     public String getUpsertQuery() {
         return upsertQuery;
     }
@@ -64,7 +81,12 @@ public class EntityDescriptor<T> {
         Map<String, Object> parametersValue = JDBCKeyValueMapper.keyValueMap(key, value);
         for (Map.Entry<String, FieldDescriptor> fieldNameAndDescriptor : fieldDescriptors.entrySet()) {
             Object valueForField = parametersValue.get(fieldNameAndDescriptor.getKey());
-            fieldNameAndDescriptor.getValue().setValueInStatement(valueForField, statement);
+            FieldDescriptor descriptor = fieldNameAndDescriptor.getValue();
+            if (valueForField == null) {
+                statement.setObject(descriptor.getIndex(), null);
+            } else {
+                descriptor.getTransformer().set(statement, descriptor.getIndex(), valueForField);
+            }
         }
         statement.addBatch();
     }
@@ -74,12 +96,18 @@ public class EntityDescriptor<T> {
         Map<K, T> result = new HashMap<>();
         while (resultSet.next()) {
             Map<String, Object> objectParameters = new HashMap<>(fieldDescriptors.size());
-            for (Map.Entry<String, FieldDescriptor> descriptorEntry : fieldDescriptors.entrySet()) {
-                objectParameters.put(descriptorEntry.getKey(), descriptorEntry.getValue().getFieldValue(resultSet));
+            for (Map.Entry<String, FieldDescriptor> entry : fieldDescriptors.entrySet()) {
+                FieldDescriptor descriptor = entry.getValue();
+                objectParameters.put(entry.getKey(), descriptor.getTransformer().get(resultSet, descriptor.getIndex()));
             }
             JDBCKeyValueMapper.KeyAndValue<T> keyAndValue = JDBCKeyValueMapper.getObject(objectParameters, clazz);
             result.put((K) keyAndValue.getKey(), keyAndValue.getValue());
         }
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Entity {" +  ", table '" + tableName + "'\', fields " + fieldDescriptors.values() + '}';
     }
 }

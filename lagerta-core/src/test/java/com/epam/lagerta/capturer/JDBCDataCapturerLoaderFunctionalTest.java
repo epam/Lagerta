@@ -89,7 +89,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test(dataProvider = DATA_PROVIDER_VAL_NAME)
     public void loadValForKey(Integer key, Object val, String personName, Integer personId) throws Exception {
         EntityDescriptor<Object> entityDescriptor = new EntityDescriptor<>(Object.class,
-                PersonEntries.getPersonFieldDescriptor(), Person.PERSON_TABLE, Person.PERSON_KEY);
+                Person.PERSON_TABLE, Person.PERSON_KEY, PersonEntries.getPersonFieldDescriptor());
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
@@ -114,7 +114,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     @Test(dataProvider = DATA_PROVIDER_LIST_VAL_NAME)
     public void loadAllVal(Iterable<Integer> keys, Iterable<Object> values, Class<?> clazz) throws Exception {
         EntityDescriptor<?> entityDescriptor = new EntityDescriptor<>(clazz,
-                PersonEntries.getPersonFieldDescriptor(), Person.PERSON_TABLE, Person.PERSON_KEY);
+                Person.PERSON_TABLE, Person.PERSON_KEY, PersonEntries.getPersonFieldDescriptor());
         Map<String, EntityDescriptor> personEntityDescriptor =
                 Collections.singletonMap(Person.PERSON_CACHE, entityDescriptor);
 
