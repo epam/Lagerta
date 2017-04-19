@@ -16,6 +16,8 @@
 
 package com.epam.lagerta.subscriber.lead;
 
+import static com.epam.lagerta.subscriber.util.MergeUtil.getNext;
+
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.subscriber.ConsumerTxScope;
 import com.epam.lagerta.subscriber.util.MergeUtil;
@@ -34,8 +36,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import static com.epam.lagerta.subscriber.util.MergeUtil.getNext;
 
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
@@ -116,6 +116,10 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
                 break;
             }
         }
+    }
+
+    public boolean hasTransactions() {
+        return !scopes.isEmpty();
     }
 
     private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {

@@ -15,6 +15,9 @@
  */
 package com.epam.lagerta.subscriber.lead;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.common.CallableKeyListTask;
 import com.epam.lagerta.common.CallableKeyTask;
@@ -31,14 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-
 public class LeadImpl extends Scheduler implements Lead {
     private static final Logger LOGGER = LoggerFactory.getLogger(LeadImpl.class);
-
-    private static final long SAVE_STATE_PERIOD = 1000L;
-    static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
 
     private final Set<Long> inProgress = new HashSet<>();
     private final Set<UUID> lostReaders = new HashSet<>();
@@ -47,27 +44,38 @@ public class LeadImpl extends Scheduler implements Lead {
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
     private final Heartbeats heartbeats;
+    boolean reconciliationGoing;
 
     LeadImpl(
             LeadStateAssistant stateAssistant,
             ReadTransactions readTransactions,
             CommittedTransactions committed,
-            Heartbeats heartbeats
+            Heartbeats heartbeats,
+            GapDetectionStrategy gapDetectionStrategy,
+            RuleTimeouts timeouts
     ) {
         this.readTransactions = readTransactions;
         this.committed = committed;
         this.heartbeats = heartbeats;
         pushTask(() -> stateAssistant.load(this));
         registerRule(this.committed::compress);
-        registerRule(new PeriodicRule(this::markLostAndFound, DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
+        registerRule(new PeriodicRule(this::markLostAndFound, timeouts.getHearbeatExpirationThreshold()));
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed, heartbeats, lostReaders, inProgress));
         registerRule(this::plan);
-        registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), SAVE_STATE_PERIOD));
+        registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), timeouts.getSaveStatePeriod()));
+        registerRule(new PeriodicRule(() -> {
+            boolean gapExists = gapDetectionStrategy.gapDetected(committed, readTransactions);
+            if (gapExists && !reconciliationGoing) {
+                startReconciliation();
+            }
+        }, timeouts.getGapCheckPeriod()));
     }
 
-    public LeadImpl(LeadStateAssistant stateAssistant) {
+    @SuppressWarnings("unused") // used in Spring config
+    public LeadImpl(LeadStateAssistant stateAssistant, GapDetectionStrategy gapDetectionStrategy,
+                    RuleTimeouts ruleTimeouts) {
         this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady(),
-                new Heartbeats(DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD));
+                new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold()), gapDetectionStrategy, ruleTimeouts);
     }
 
     /**
@@ -145,6 +153,11 @@ public class LeadImpl extends Scheduler implements Lead {
                 .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
                 .forEach((key, value) -> toCommit.append(key,
                         value.stream().map(TransactionScope::getTransactionId).collect(toList())));
+    }
+
+    private void startReconciliation() {
+        reconciliationGoing = true;
+        //todo implement mechanism of reconciliation
     }
 
     @Override

@@ -26,7 +26,7 @@ import java.util.List;
 public class CommittedTransactions implements Serializable {
 
     static final long INITIAL_READY_COMMIT_ID = -1L;
-    private static final long INITIAL_COMMIT_ID = -2L;
+    static final long INITIAL_COMMIT_ID = -2L;
     private static final int INITIAL_CAPACITY = 100;
 
     private final List<Long> sparseCommitted = new LinkedList<>();

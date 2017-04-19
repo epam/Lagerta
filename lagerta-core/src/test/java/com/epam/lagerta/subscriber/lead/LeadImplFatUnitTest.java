@@ -16,6 +16,14 @@
 
 package com.epam.lagerta.subscriber.lead;
 
+import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.subscriber.DataProviderUtil.list;
+import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.mocks.LeadStateAssistantMock;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -29,13 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
 public class LeadImplFatUnitTest {
 
     private static final LeadStateAssistant MOCK_STATE_ASSISTANT = new LeadStateAssistantMock();
@@ -46,16 +47,21 @@ public class LeadImplFatUnitTest {
     private static final String CACHE1 = "cache1";
     private static final String CACHE2 = "cache2";
 
-    private Lead lead;
+    private LeadImpl lead;
+    private GapDetectionStrategy gapDetectionStrategy;
 
     private void startDefaultLead() {
         startConfiguredLead(MOCK_STATE_ASSISTANT);
     }
 
     private void startConfiguredLead(LeadStateAssistant assistant) {
-        Heartbeats heartbeats = new Heartbeats(LeadImpl.DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD);
+        RuleTimeouts ruleTimeouts = new RuleTimeouts();
+        Heartbeats heartbeats = new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold());
 
-        lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats);
+        gapDetectionStrategy = mock(GapDetectionStrategy.class);
+        doReturn(false).when(gapDetectionStrategy).gapDetected(any(), any());
+        lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats,
+                gapDetectionStrategy, ruleTimeouts);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
@@ -175,6 +181,14 @@ public class LeadImplFatUnitTest {
         waitForLastDenseCommitted(13L);
     }
 
+    @Test
+    public void reconciliationStartsOnFoundGap() {
+        startDefaultLead();
+        doReturn(true).when(gapDetectionStrategy).gapDetected(any(), any());
+
+        waitForReconciliationStart();
+    }
+
     private void assertPlanned(UUID uuid, List<Long> nonEmptyExpected) {
         List<Long> buffer = new ArrayList<>(nonEmptyExpected.size());
         do {
@@ -198,6 +212,12 @@ public class LeadImplFatUnitTest {
             Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
             actual = lead.getLastDenseCommitted();
         } while (actual != expected);
+    }
+
+    private void waitForReconciliationStart() {
+        do {
+            Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
+        } while (!lead.reconciliationGoing);
     }
 
     private static void assertEquals(List<Long> actual, List<Long> expected) {
