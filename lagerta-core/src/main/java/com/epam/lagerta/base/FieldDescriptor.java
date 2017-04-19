@@ -15,15 +15,31 @@
  */
 package com.epam.lagerta.base;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+public class FieldDescriptor {
+    private final int index;
+    private final String name;
+    private final ValueTransformer transformer;
 
-public interface FieldDescriptor {
+    public FieldDescriptor(int index, String name, ValueTransformer transformer) {
+        this.index = index;
+        this.name = name;
+        this.transformer = transformer;
+    }
 
-    int getIndex();
+    public int getIndex() {
+        return index;
+    }
 
-    void setValueInStatement(Object object, PreparedStatement preparedStatement) throws SQLException;
+    public String getName() {
+        return name;
+    }
 
-    Object getFieldValue(ResultSet resultSet);
+    public ValueTransformer getTransformer() {
+        return transformer;
+    }
+
+    @Override
+    public String toString() {
+        return "Field {#" + index + " \'" + name + "\' of " + transformer + '}';
+    }
 }

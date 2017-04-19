@@ -21,6 +21,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.services.ServiceContext;
 import org.springframework.context.ApplicationContext;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,7 +53,7 @@ public class LeadServiceImpl implements LeadService {
 
     @Override
     public List<Long> notifyRead(UUID readerId, List<TransactionScope> txScopes) {
-        return lead == null ? null : lead.notifyRead(readerId, txScopes);
+        return lead == null ? Collections.emptyList() : lead.notifyRead(readerId, txScopes);
     }
 
     @Override

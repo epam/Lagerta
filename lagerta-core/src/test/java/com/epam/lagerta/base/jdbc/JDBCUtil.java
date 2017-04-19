@@ -83,14 +83,22 @@ public final class JDBCUtil {
                 String.format(INSERT_INTO_TEMPLATE, Person.PERSON_TABLE, maskFields))) {
             Map<String, FieldDescriptor> personFieldDescriptor = PersonEntries.getPersonFieldDescriptor();
 
-            personFieldDescriptor.get(Person.PERSON_KEY).setValueInStatement(key, preparedStatement);
-            personFieldDescriptor.get(Person.PERSON_VAL).setValueInStatement(val, preparedStatement);
-            personFieldDescriptor.get(Person.PERSON_ID).setValueInStatement(id, preparedStatement);
-            personFieldDescriptor.get(Person.PERSON_NAME).setValueInStatement(name, preparedStatement);
+            set(personFieldDescriptor.get(Person.PERSON_KEY), preparedStatement, key);
+            set(personFieldDescriptor.get(Person.PERSON_VAL), preparedStatement, val);
+            set(personFieldDescriptor.get(Person.PERSON_ID), preparedStatement, id);
+            set(personFieldDescriptor.get(Person.PERSON_NAME), preparedStatement, name);
             preparedStatement.execute();
             if (!connection.getAutoCommit()) {
                 connection.commit();
             }
+        }
+    }
+
+    private static void set(FieldDescriptor descriptor, PreparedStatement preparedStatement, Object value) throws SQLException {
+        if (value == null) {
+            preparedStatement.setObject(descriptor.getIndex(), null);
+        } else {
+            descriptor.getTransformer().set(preparedStatement, descriptor.getIndex(), value);
         }
     }
 }
