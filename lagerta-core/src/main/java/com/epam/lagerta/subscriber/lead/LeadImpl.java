@@ -15,9 +15,6 @@
  */
 package com.epam.lagerta.subscriber.lead;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.common.CallableKeyListTask;
 import com.epam.lagerta.common.CallableKeyTask;
@@ -33,6 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 public class LeadImpl extends Scheduler implements Lead {
     private static final Logger LOGGER = LoggerFactory.getLogger(LeadImpl.class);

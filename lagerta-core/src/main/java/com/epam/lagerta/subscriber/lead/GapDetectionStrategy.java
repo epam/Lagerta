@@ -16,13 +16,6 @@
 
 package com.epam.lagerta.subscriber.lead;
 
-import com.epam.lagerta.subscriber.lead.CommittedTransactions;
-import com.epam.lagerta.subscriber.lead.ReadTransactions;
-
-/**
- * @author Aleksandr_Meterko
- * @since 4/19/2017
- */
 public interface GapDetectionStrategy {
     boolean gapDetected(CommittedTransactions commited, ReadTransactions read);
 }

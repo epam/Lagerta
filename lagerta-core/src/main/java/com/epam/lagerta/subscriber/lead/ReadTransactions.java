@@ -16,8 +16,6 @@
 
 package com.epam.lagerta.subscriber.lead;
 
-import static com.epam.lagerta.subscriber.util.MergeUtil.getNext;
-
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.subscriber.ConsumerTxScope;
 import com.epam.lagerta.subscriber.util.MergeUtil;
@@ -36,6 +34,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static com.epam.lagerta.subscriber.util.MergeUtil.getNext;
 
 public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static final Comparator<ConsumerTxScope> SCOPE_COMPARATOR =
@@ -238,7 +238,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static int getLevel(ConsumerTxScope scope, Set<UUID> lostReaders) {
         return scope.isOrphan()
                 ? DEAD : lostReaders.contains(scope.getConsumerId())
-                            ? LOST
-                            : ALIVE;
+                ? LOST
+                : ALIVE;
     }
 }

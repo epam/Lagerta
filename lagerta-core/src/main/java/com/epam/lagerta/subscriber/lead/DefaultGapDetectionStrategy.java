@@ -16,10 +16,6 @@
 
 package com.epam.lagerta.subscriber.lead;
 
-/**
- * @author Aleksandr_Meterko
- * @since 4/19/2017
- */
 public class DefaultGapDetectionStrategy implements GapDetectionStrategy {
 
     private long lastCheckedDenseCommitted = CommittedTransactions.INITIAL_COMMIT_ID;

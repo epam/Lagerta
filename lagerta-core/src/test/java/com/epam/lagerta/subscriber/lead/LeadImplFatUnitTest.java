@@ -16,14 +16,6 @@
 
 package com.epam.lagerta.subscriber.lead;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.mocks.LeadStateAssistantMock;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -36,6 +28,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+
+import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.subscriber.DataProviderUtil.list;
+import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class LeadImplFatUnitTest {
 

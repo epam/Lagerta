@@ -16,10 +16,6 @@
 
 package com.epam.lagerta.subscriber.lead;
 
-/**
- * @author Aleksandr_Meterko
- * @since 4/19/2017
- */
 public class RuleTimeouts {
 
     private static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
