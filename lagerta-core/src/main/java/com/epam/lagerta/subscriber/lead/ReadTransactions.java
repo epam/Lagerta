@@ -118,6 +118,10 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
+    public boolean isProbableGap(long txId) {
+        return !scopes.isEmpty() && txId == getLastDenseRead();
+    }
+
     private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
         mergeCollections(heartbeats, lostReaders, inProgress);
         for (ConsumerTxScope next : scopes) {

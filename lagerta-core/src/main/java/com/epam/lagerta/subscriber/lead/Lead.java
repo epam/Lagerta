@@ -51,4 +51,6 @@ public interface Lead {
      * updates state of Lead after re-init
      */
     void updateState(CommittedTransactions newCommitted);
+
+    boolean isReconciliationGoing();
 }

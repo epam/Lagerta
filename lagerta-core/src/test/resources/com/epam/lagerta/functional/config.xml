@@ -96,7 +96,13 @@ limitations under the License.
     <bean id="cache-loader" class="com.epam.lagerta.capturer.NopeDataCapturerLoader"/>
 
     <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
-          c:stateAssistant-ref="stateAssistant"/>
+          c:stateAssistant-ref="stateAssistant"
+          c:gapDetectionStrategy-ref="gapDetector"
+          c:ruleTimeouts-ref="leadTimeouts"/>
+
+    <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
+
+    <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.TestReaderConfig"/>
@@ -126,8 +132,8 @@ limitations under the License.
         </property>
     </bean>
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-           p:remoteTopic="testTopic"
-           p:consumerConfig-ref="consumer-props"
+          p:remoteTopic="testTopic"
+          p:consumerConfig-ref="consumer-props"
     />
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
@@ -150,6 +156,6 @@ limitations under the License.
 
     <util:list id="key-value-listeners">
         <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
-            c:producers-ref="producers-manager"/>
+              c:producers-ref="producers-manager"/>
     </util:list>
 </beans>
