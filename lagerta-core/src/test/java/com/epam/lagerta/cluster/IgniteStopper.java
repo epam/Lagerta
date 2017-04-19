@@ -18,37 +18,55 @@ package com.epam.lagerta.cluster;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IgniteStopper {
     private static final Logger LOG = LoggerFactory.getLogger(IgniteStopper.class);
-    private final Ignite ignite;
+    private final Ignite localIgnite;
 
     public IgniteStopper(Ignite ignite) {
-        this.ignite = ignite;
+        this.localIgnite = ignite;
     }
 
     public void stopAllServerNodes() {
-        ignite.compute(ignite.cluster().forServers()).withAsync().
-                broadcast(
-                        (IgniteRunnable) () -> {
-                            LOG.debug("Stop node: {}", ignite.cluster().localNode());
-                            System.exit(1);
-                        }
-                );
+        localIgnite.compute(localIgnite.cluster().forServers()).withAsync().
+                broadcast(new StopServerNode());
     }
 
     public void stopServerNodesWithService(String serviceName) {
-        ignite.compute(ignite.cluster().forServers()).withAsync().
-                broadcast(
-                        (IgniteRunnable) () -> {
-                            Object service = ignite.services().service(serviceName);
-                            if (service != null) {
-                                LOG.debug("Stop node: {} \nWith service: {}", ignite.cluster().localNode(), serviceName);
-                                System.exit(1);
-                            }
-                        }
-                );
+        localIgnite.compute(localIgnite.cluster().forServers()).
+                broadcast(new StopServerNodeWithService(serviceName));
+    }
+
+    private static class StopServerNode implements IgniteRunnable {
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        @Override
+        public void run() {
+            LOG.debug("Stop node: {}", ignite.cluster().localNode());
+            System.exit(1);
+        }
+    }
+
+    private static class StopServerNodeWithService implements IgniteRunnable {
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+        private final String serviceName;
+
+        public StopServerNodeWithService(String serviceName) {
+            this.serviceName = serviceName;
+        }
+
+        @Override
+        public void run() {
+            Object service = ignite.services().service(serviceName);
+            if (service != null) {
+                LOG.debug("Stop node: {} \nWith service: {}", ignite.cluster().localNode(), serviceName);
+                System.exit(1);
+            }
+        }
     }
 }
