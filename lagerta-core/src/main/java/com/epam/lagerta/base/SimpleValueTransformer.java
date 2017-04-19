@@ -55,24 +55,24 @@ public enum SimpleValueTransformer implements ValueTransformer {
             .map(Map.Entry::getValue)
             .orElse(DUMMY);
 
-    private final Getter get;
-    private final Setter set;
+    private final Getter getter;
+    private final Setter setter;
     private final Class<?>[] matchedTo;
 
-    SimpleValueTransformer(Getter get, Setter set, Class<?>... matchedTo) {
-        this.get = get;
-        this.set = set;
+    SimpleValueTransformer(Getter getter, Setter setter, Class<?>... matchedTo) {
+        this.getter = getter;
+        this.setter = setter;
         this.matchedTo = matchedTo;
     }
 
     @Override
     public Object get(ResultSet resultSet, int index) throws SQLException {
-        return get.get(resultSet, index);
+        return getter.get(resultSet, index);
     }
 
     @Override
     public void set(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
-        set.set(preparedStatement, index, value);
+        setter.set(preparedStatement, index, value);
     }
 
     public static ValueTransformer get(Class<?> clazz) {
