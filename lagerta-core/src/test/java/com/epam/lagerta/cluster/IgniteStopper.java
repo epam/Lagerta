@@ -19,6 +19,7 @@ package com.epam.lagerta.cluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.ServiceDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +40,16 @@ public class IgniteStopper {
     }
 
     public void stopServerNodesWithService(String serviceName) {
-        Map<UUID, Integer> uuidIntegerMap = localIgnite.services().serviceDescriptors().stream()
+        ServiceDescriptor descriptor = localIgnite.services().serviceDescriptors().stream()
                 .filter(serviceDescriptor -> serviceDescriptor.name().equalsIgnoreCase(serviceName))
-                .findFirst().orElseGet(null).topologySnapshot();
-        if (uuidIntegerMap == null || uuidIntegerMap.isEmpty()) {
-            throw new RuntimeException("Service do not deploy");
+                .findFirst().orElseThrow(() -> new RuntimeException("Service was not deployed"));
+        Map<UUID, Integer> uuidIntegerMap = descriptor.topologySnapshot();
+        if (uuidIntegerMap.isEmpty()) {
+            throw new RuntimeException("Service was not deployed");
         }
         UUID nodeWithService = uuidIntegerMap.keySet().iterator().next();
-        localIgnite.compute(localIgnite.cluster().forNodeId(nodeWithService)).withAsync()
-                .broadcast(new ServerNodeStopper());
+        localIgnite.compute(localIgnite.cluster().forNodeId(nodeWithService))
+                .run(new ServerNodeStopper());
     }
 
     private static class ServerNodeStopper implements IgniteRunnable {
