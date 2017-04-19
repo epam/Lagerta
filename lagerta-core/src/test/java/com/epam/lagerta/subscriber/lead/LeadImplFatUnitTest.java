@@ -47,7 +47,7 @@ public class LeadImplFatUnitTest {
     private static final String CACHE1 = "cache1";
     private static final String CACHE2 = "cache2";
 
-    private LeadImpl lead;
+    private Lead lead;
     private GapDetectionStrategy gapDetectionStrategy;
 
     private void startDefaultLead() {
@@ -217,7 +217,7 @@ public class LeadImplFatUnitTest {
     private void waitForReconciliationStart() {
         do {
             Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-        } while (!lead.reconciliationGoing);
+        } while (!lead.isReconciliationGoing());
     }
 
     private static void assertEquals(List<Long> actual, List<Long> expected) {

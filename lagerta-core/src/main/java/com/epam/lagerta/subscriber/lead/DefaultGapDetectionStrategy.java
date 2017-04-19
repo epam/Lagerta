@@ -26,8 +26,7 @@ public class DefaultGapDetectionStrategy implements GapDetectionStrategy {
             lastCheckedDenseCommitted = commited.getLastDenseCommit();
             return false;
         }
-        boolean gapMayExist = lastCheckedDenseCommitted >= CommittedTransactions.INITIAL_READY_COMMIT_ID
-                && read.hasTransactions() && read.getLastDenseRead() == lastCheckedDenseCommitted;
+        boolean gapMayExist = commited.isReady() && read.isProbableGap(lastCheckedDenseCommitted);
         boolean noProgressMade = lastCheckedDenseCommitted == commited.getLastDenseCommit();
 
         return gapMayExist && noProgressMade;

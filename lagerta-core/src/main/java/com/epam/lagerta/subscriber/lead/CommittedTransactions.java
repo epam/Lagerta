@@ -48,6 +48,10 @@ public class CommittedTransactions implements Serializable {
         return new CommittedTransactions(INITIAL_COMMIT_ID);
     }
 
+    public boolean isReady() {
+        return lastDenseCommit >= INITIAL_READY_COMMIT_ID;
+    }
+
     private CommittedTransactions(long initialCommitId) {
         lastDenseCommit = initialCommitId;
         toMerge = new ArrayList<>(INITIAL_CAPACITY);

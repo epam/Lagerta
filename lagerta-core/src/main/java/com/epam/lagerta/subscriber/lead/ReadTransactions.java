@@ -118,8 +118,8 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
         }
     }
 
-    public boolean hasTransactions() {
-        return !scopes.isEmpty();
+    public boolean isProbableGap(long txId) {
+        return !scopes.isEmpty() && txId == getLastDenseRead();
     }
 
     private void compress(Heartbeats heartbeats, Set<UUID> lostReaders, Set<Long> inProgress) {
@@ -238,7 +238,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     private static int getLevel(ConsumerTxScope scope, Set<UUID> lostReaders) {
         return scope.isOrphan()
                 ? DEAD : lostReaders.contains(scope.getConsumerId())
-                ? LOST
-                : ALIVE;
+                            ? LOST
+                            : ALIVE;
     }
 }

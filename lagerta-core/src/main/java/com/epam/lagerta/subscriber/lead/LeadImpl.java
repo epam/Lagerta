@@ -44,7 +44,7 @@ public class LeadImpl extends Scheduler implements Lead {
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
     private final Heartbeats heartbeats;
-    boolean reconciliationGoing;
+    private boolean reconciliationGoing;
 
     LeadImpl(
             LeadStateAssistant stateAssistant,
@@ -63,12 +63,8 @@ public class LeadImpl extends Scheduler implements Lead {
         registerRule(() -> this.readTransactions.pruneCommitted(this.committed, heartbeats, lostReaders, inProgress));
         registerRule(this::plan);
         registerRule(new PeriodicRule(() -> stateAssistant.saveState(this), timeouts.getSaveStatePeriod()));
-        registerRule(new PeriodicRule(() -> {
-            boolean gapExists = gapDetectionStrategy.gapDetected(committed, readTransactions);
-            if (gapExists && !reconciliationGoing) {
-                startReconciliation();
-            }
-        }, timeouts.getGapCheckPeriod()));
+        registerRule(new PeriodicRule(() ->
+                reconcileOnGaps(readTransactions, committed, gapDetectionStrategy), timeouts.getGapCheckPeriod()));
     }
 
     @SuppressWarnings("unused") // used in Spring config
@@ -131,6 +127,11 @@ public class LeadImpl extends Scheduler implements Lead {
         });
     }
 
+    @Override
+    public boolean isReconciliationGoing() {
+        return reconciliationGoing;
+    }
+
     private void markLostAndFound() {
         for (UUID readerId : heartbeats.knownReaders()) {
             boolean knownAsLost = lostReaders.contains(readerId);
@@ -153,6 +154,13 @@ public class LeadImpl extends Scheduler implements Lead {
                 .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
                 .forEach((key, value) -> toCommit.append(key,
                         value.stream().map(TransactionScope::getTransactionId).collect(toList())));
+    }
+
+    private void reconcileOnGaps(ReadTransactions readTransactions, CommittedTransactions committed, GapDetectionStrategy gapDetectionStrategy) {
+        boolean gapExists = gapDetectionStrategy.gapDetected(committed, readTransactions);
+        if (gapExists && !reconciliationGoing) {
+            startReconciliation();
+        }
     }
 
     private void startReconciliation() {
