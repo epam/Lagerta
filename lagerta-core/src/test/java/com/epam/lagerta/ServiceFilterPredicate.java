@@ -19,7 +19,7 @@ package com.epam.lagerta;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
 
-public class NotLocalNodeFilterPredicate implements IgnitePredicate<ClusterNode> {
+public class ServiceFilterPredicate implements IgnitePredicate<ClusterNode> {
 
     @Override
     public boolean apply(ClusterNode clusterNode) {

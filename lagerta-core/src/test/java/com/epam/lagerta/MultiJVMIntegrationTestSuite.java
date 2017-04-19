@@ -21,7 +21,7 @@ import org.testng.annotations.BeforeSuite;
 
 public abstract class MultiJVMIntegrationTestSuite extends BaseIntegrationTest {
 
-    protected static final DifferentJVMClusterManager JVM_CLUSTER_MANAGER = new DifferentJVMClusterManager();
+    private static final DifferentJVMClusterManager JVM_CLUSTER_MANAGER = new DifferentJVMClusterManager();
 
     @BeforeSuite
     public void setUp() throws Exception {
