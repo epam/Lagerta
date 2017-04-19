@@ -44,7 +44,7 @@ public class LeadImpl extends Scheduler implements Lead {
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
     private final Heartbeats heartbeats;
-    private boolean reconciliationGoing;
+    private volatile boolean reconciliationGoing;
 
     LeadImpl(
             LeadStateAssistant stateAssistant,
