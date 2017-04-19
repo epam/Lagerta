@@ -1,85 +1,111 @@
 package com.epam.lagerta.kafka;
 
 import com.epam.lagerta.BaseIntegrationTest;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.Metric;
-import org.apache.kafka.common.MetricName;
-import org.apache.kafka.common.PartitionInfo;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Collection;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class KafkaFactoryForTests implements KafkaFactory {
     private final KafkaFactory kafkaFactory;
+    private final Properties producerConfig;
 
-    public KafkaFactoryForTests(KafkaFactory kafkaFactory) {
+    public KafkaFactoryForTests(KafkaFactory kafkaFactory, Properties producerConfig) {
         this.kafkaFactory = kafkaFactory;
+        this.producerConfig = producerConfig;
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public <K, V> Producer<K, V> producer(Properties properties) {
-        return new ProducerProxy<>(kafkaFactory.producer(properties));
+        return (Producer<K, V>) Proxy.newProxyInstance(
+                Producer.class.getClassLoader(),
+                new Class[] {Producer.class},
+                new ProducerProxy(kafkaFactory.producer(properties))
+        );
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
     public <K, V> Consumer<K, V> consumer(Properties properties) {
-        return kafkaFactory.consumer(properties);
+        return (Consumer<K, V>) Proxy.newProxyInstance(
+                Consumer.class.getClassLoader(),
+                new Class[] {Consumer.class},
+                new ConsumerProxy(this, kafkaFactory.consumer(properties))
+        );
     }
 
+    void ensureTopicsCreated(Collection<String> topics) {
+        try (Producer producer = kafkaFactory.producer(producerConfig)) {
+            for (String topic : topics) {
+                producer.partitionsFor(topic);
+            }
+        }
+    }
 
-    private static class ProducerProxy<K, V> implements Producer<K, V> {
-        private final Producer<K, V> producer;
+    private static class ConsumerProxy implements InvocationHandler {
+        private static final String SUBSCRIBE_METHOD_NAME = "subscribe";
 
-        ProducerProxy(Producer<K, V> producer) {
+        private final KafkaFactoryForTests kafkaFactory;
+        private final Consumer consumer;
+
+        ConsumerProxy(KafkaFactoryForTests kafkaFactory, Consumer consumer) {
+            this.kafkaFactory = kafkaFactory;
+            this.consumer = consumer;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (SUBSCRIBE_METHOD_NAME.equals(method.getName())) {
+                Collection<String> topics = ((Collection<String>) args[0])
+                        .stream()
+                        .map(BaseIntegrationTest::adjustTopicNameForTest)
+                        .collect(Collectors.toList());
+                args[0] = topics;
+                kafkaFactory.ensureTopicsCreated(topics);
+            }
+            return method.invoke(consumer, args);
+        }
+    }
+
+    private static class ProducerProxy implements InvocationHandler {
+        private static final String SEND_METHOD_NAME = "send";
+        private static final String PARTITIONS_FOR_METHOD_NAME = "partitionsFor";
+
+        private final Producer producer;
+
+        ProducerProxy(Producer producer) {
             this.producer = producer;
         }
 
         @Override
-        public Future<RecordMetadata> send(ProducerRecord<K, V> record) {
-            return send(record, null);
-        }
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            switch (method.getName()) {
+                case SEND_METHOD_NAME: {
+                    ProducerRecord record = (ProducerRecord) args[0];
 
-        @Override
-        public Future<RecordMetadata> send(ProducerRecord<K, V> record, Callback callback) {
-            ProducerRecord<K, V> adjustedRecord = new ProducerRecord<K, V>(
-                BaseIntegrationTest.adjustTopicNameForTest(record.topic()),
-                record.partition(),
-                record.timestamp(),
-                record.key(),
-                record.value()
-            );
-            return producer.send(adjustedRecord, callback);
-        }
-
-        @Override
-        public void flush() {
-            producer.flush();
-        }
-
-
-        @Override
-        public List<PartitionInfo> partitionsFor(String topic) {
-            return producer.partitionsFor(BaseIntegrationTest.adjustTopicNameForTest(topic));
-        }
-
-        @Override
-        public Map<MetricName, ? extends Metric> metrics() {
-            return producer.metrics();
-        }
-
-        @Override
-        public void close() {
-            producer.close();
-        }
-
-        @Override
-        public void close(long timeout, TimeUnit unit) {
-            producer.close(timeout, unit);
+                    args[0] = new ProducerRecord<>(
+                            BaseIntegrationTest.adjustTopicNameForTest(record.topic()),
+                            record.partition(),
+                            record.timestamp(),
+                            record.key(),
+                            record.value()
+                    );
+                    break;
+                }
+                case PARTITIONS_FOR_METHOD_NAME: {
+                    args[0] = BaseIntegrationTest.adjustTopicNameForTest((String) args[0]);
+                    break;
+                }
+            }
+            return method.invoke(producer, args);
         }
     }
 }
