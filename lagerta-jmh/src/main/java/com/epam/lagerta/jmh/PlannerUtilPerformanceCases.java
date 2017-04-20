@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.epam.lagerta.jmh.d.DataUtil.getCommitRange;
-import static com.epam.lagerta.jmh.d.DataUtil.getDependentTransactions;
-import static com.epam.lagerta.jmh.d.DataUtil.getIndependentTransactions;
-import static com.epam.lagerta.jmh.d.DataUtil.getTotalDependentTransactions;
-import static com.epam.lagerta.jmh.d.DataUtil.list;
+import static com.epam.lagerta.jmh.utils.DataUtil.getCommitRange;
+import static com.epam.lagerta.jmh.utils.DataUtil.getDependentTransactions;
+import static com.epam.lagerta.jmh.utils.DataUtil.getIndependentTransactions;
+import static com.epam.lagerta.jmh.utils.DataUtil.getTotalDependentTransactions;
+import static com.epam.lagerta.jmh.utils.DataUtil.list;
 
 @State(Scope.Benchmark)
 public class PlannerUtilPerformanceCases {

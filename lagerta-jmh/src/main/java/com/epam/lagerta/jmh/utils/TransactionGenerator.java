@@ -14,14 +14,14 @@
  *  limitations under the License.
  */
 
-package com.epam.lagerta.jmh.d;
+package com.epam.lagerta.jmh.utils;
 
 import com.epam.lagerta.capturer.TransactionScope;
 
 import java.util.List;
 
-import static com.epam.lagerta.jmh.d.DataUtil.cacheScope;
-import static com.epam.lagerta.jmh.d.DataUtil.txScope;
+import static com.epam.lagerta.jmh.utils.DataUtil.cacheScope;
+import static com.epam.lagerta.jmh.utils.DataUtil.txScope;
 
 public interface TransactionGenerator {
 

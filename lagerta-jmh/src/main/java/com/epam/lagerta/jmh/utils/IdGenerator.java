@@ -14,12 +14,14 @@
  *  limitations under the License.
  */
 
-package com.epam.lagerta.jmh.d;
+package com.epam.lagerta.jmh.utils;
+
+import com.epam.lagerta.capturer.IdSequencer;
 
 import java.util.Iterator;
 import java.util.List;
 
-public class IdGenerator {
+public class IdGenerator implements IdSequencer {
     private static final int ID_PATTERN_PERIOD = 20;
     private final List<Long> pattern;
 
@@ -31,7 +33,8 @@ public class IdGenerator {
         iterator = pattern.iterator();
     }
 
-    public long nextId() {
+    @Override
+    public long getNextId() {
         if (!iterator.hasNext()) {
             iterator = pattern.iterator();
             shift += ID_PATTERN_PERIOD;

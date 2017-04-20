@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.lagerta.jmh.d;
+package com.epam.lagerta.jmh.utils;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.google.common.collect.Lists;
@@ -51,7 +51,7 @@ public final class DataUtil {
         IdGenerator idGenerator = new IdGenerator(pattern);
         return IntStream
                 .range(0, count)
-                .mapToObj(i -> txGenerator.generate(idGenerator.nextId()))
+                .mapToObj(i -> txGenerator.generate(idGenerator.getNextId()))
                 .collect(Collectors.toList());
     }
 
