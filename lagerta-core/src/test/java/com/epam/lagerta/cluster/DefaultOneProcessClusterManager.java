@@ -50,11 +50,6 @@ public abstract class DefaultOneProcessClusterManager implements IgniteClusterMa
     */
     protected abstract Ignite startGrid(int gridNumber, int clusterSize);
 
-    @Override
-    public List<Ignite> nodes() {
-        return servers;
-    }
-
     /** {@inheritDoc} */
     @Override
     public void stopCluster() {
