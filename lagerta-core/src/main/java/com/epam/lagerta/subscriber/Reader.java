@@ -61,8 +61,8 @@ public class Reader extends Scheduler {
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID readerId;
-    private final BooleanSupplier commitToKafkaSupplier;
-    private final long bufferClearTimeInterval;
+    private final BooleanSupplier needTocommitToKafka;
+    private final long bufferClearPeriod;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
@@ -75,7 +75,7 @@ public class Reader extends Scheduler {
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
+                  CommitStrategy commitStrategy, BooleanSupplier needTocommitToKafka, long bufferClearPeriod,
                   UUID readerId) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
@@ -83,16 +83,16 @@ public class Reader extends Scheduler {
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         this.readerId = readerId;
-        this.commitToKafkaSupplier = commitToKafkaSupplier;
-        this.bufferClearTimeInterval = bufferClearTimeInterval;
+        this.needTocommitToKafka = needTocommitToKafka;
+        this.bufferClearPeriod = bufferClearPeriod;
     }
 
     @Override
     public void execute() {
-        per(bufferClearTimeInterval).execute(this::clearBuffer);
+        per(bufferClearPeriod).execute(this::clearBuffer);
         try (ConsumerReader consumer = new ConsumerReader()) {
             registerRule(consumer::pollAndCommitTransactionsBatch);
-            when(commitToKafkaSupplier).execute(consumer::commitOffsets);
+            when(needTocommitToKafka).execute(consumer::commitOffsets);
             super.execute();
         }
     }
