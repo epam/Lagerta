@@ -154,7 +154,8 @@
 
     <bean id="cache-store-factory" class="com.epam.lagerta.capturer.DataCapturerBusFactory"/>
 
-    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"/>
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"
+          c:limit="10000"/>
 
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
@@ -176,6 +177,5 @@
           p:storeKeepBinary="true"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"
-          c:limit="10000"/>
+    <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>
