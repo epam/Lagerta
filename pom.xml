@@ -159,6 +159,60 @@
     </dependencyManagement>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.12</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludeSubProjects>false</excludeSubProjects>
+                    <numUnapprovedLicenses>0</numUnapprovedLicenses>
+                    <licenses>
+                        <license implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
+                            <licenseFamilyCategory>AL2</licenseFamilyCategory>
+                            <licenseFamilyName>Apache License 2.0</licenseFamilyName>
+                            <notes/>
+                            <patterns>
+                                <pattern>Copyright (c) 2017. EPAM Systems</pattern>
+                            </patterns>
+                        </license>
+                    </licenses>
+                    <licenseFamilies>
+                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                            <familyName>Apache License 2.0</familyName>
+                        </licenseFamily>
+                    </licenseFamilies>
+                    <excludes>
+                        <!-- Generated content -->
+                        <exclude>.idea/**</exclude>
+                        <exclude>**/*.iml</exclude>
+                        <exclude>**/target/**</exclude>
+
+                        <!-- Additional files -->
+                        <exclude>**/README.md</exclude>
+                        <exclude>**/*.log</exclude>
+                        <exclude>doc/**</exclude>
+
+                        <!-- Git files-->
+                        <exclude>.git/**</exclude>
+                        <exclude>**/.gitignore</exclude>
+                        <exclude>**/.gitkeep</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <!-- Plugin configurations for plugins activated in sub-projects -->
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -169,32 +223,6 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <!-- To run, execute mvn apache-rat:check -->
-                    <groupId>org.apache.rat</groupId>
-                    <artifactId>apache-rat-plugin</artifactId>
-                    <version>0.12</version>
-                    <configuration>
-                        <excludes>
-                            <exclude>.git/**</exclude>
-                            <exclude>.idea/**</exclude>
-                            <exclude>**/.gitignore</exclude>
-                            <exclude>**/*.py</exclude>
-                            <exclude>**/*.txt</exclude>
-                            <exclude>**/*.ini</exclude>
-                            <exclude>**/*.conf</exclude>
-                            <exclude>**/.gitkeep</exclude>
-                        </excludes>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
