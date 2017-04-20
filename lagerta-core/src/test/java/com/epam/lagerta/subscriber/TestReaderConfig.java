@@ -43,7 +43,7 @@ public class TestReaderConfig {
                          @Qualifier("readerId") UUID readerId,
                          @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, commitToKafkaCondition,
-                100, readerId, bufferOverflowCondition);
+                100, readerId, bufferOverflowCondition, 100);
     }
 
     @Bean
