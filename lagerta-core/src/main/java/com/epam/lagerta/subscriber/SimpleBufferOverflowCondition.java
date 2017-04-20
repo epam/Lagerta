@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.lathgertha.subscriber;
+package com.epam.lagerta.subscriber;
 
 import java.util.Map;
 import java.util.function.Predicate;
 
-public class NopeBufferOverflowCondition implements Predicate<Map<Long, TransactionData>> {
+public class SimpleBufferOverflowCondition implements Predicate<Map<Long, TransactionData>> {
+    private final int limit;
+
+    public SimpleBufferOverflowCondition(int limit) {
+        this.limit = limit;
+    }
+
     @Override
-    public boolean test(Map<Long, TransactionData> longTransactionDataMap) {
-        return false;
+    public boolean test(Map<Long, TransactionData> buffer) {
+        return limit > 0 && buffer.size() >= limit;
     }
 }

@@ -154,7 +154,7 @@
 
     <bean id="cache-store-factory" class="com.epam.lagerta.capturer.DataCapturerBusFactory"/>
 
-    <bean id="buffer-overflow" class="com.epam.lathgertha.subscriber.NopeBufferOverflowCondition"/>
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"/>
 
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"

@@ -159,5 +159,5 @@ limitations under the License.
               c:producers-ref="producers-manager"/>
     </util:list>
 
-    <bean id="buffer-overflow" class="com.epam.lathgertha.subscriber.NopeBufferOverflowCondition"/>
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"/>
 </beans>
