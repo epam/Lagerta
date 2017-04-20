@@ -164,7 +164,6 @@
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
                 <version>0.12</version>
-                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -180,15 +179,21 @@
                         <license implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
                             <licenseFamilyCategory>AL2</licenseFamilyCategory>
                             <licenseFamilyName>Apache License 2.0</licenseFamilyName>
-                            <notes/>
+                        </license>
+                        <license implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
+                            <licenseFamilyCategory>EPAM</licenseFamilyCategory>
+                            <licenseFamilyName>EPAM Systems</licenseFamilyName>
                             <patterns>
-                                <pattern>Copyright (c) 2017. EPAM Systems</pattern>
+                                <pattern>Copyright (c) 2017. EPAM Systems.</pattern>
                             </patterns>
                         </license>
                     </licenses>
                     <licenseFamilies>
                         <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
                             <familyName>Apache License 2.0</familyName>
+                        </licenseFamily>
+                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                            <familyName>EPAM Systems</familyName>
                         </licenseFamily>
                     </licenseFamilies>
                     <excludes>
