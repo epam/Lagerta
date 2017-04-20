@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparingLong;
@@ -51,6 +53,7 @@ public class Reader extends Scheduler {
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
     private static final long DEFAULT_BUFFER_CLEAR_PERIOD = TimeUnit.SECONDS.toMillis(10L);
+    private static final long DEFAULT_BUFFER_CHECK_PERIOD = TimeUnit.SECONDS.toMillis(10L);
 
     private static final Comparator<TransactionScope> SCOPE_COMPARATOR = comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
@@ -63,20 +66,24 @@ public class Reader extends Scheduler {
     private final UUID readerId;
     private final BooleanSupplier needToCommitToKafka;
     private final long bufferClearPeriod;
+    private final Predicate<Map<Long, TransactionData>> bufferOverflowCondition;
+    private final long bufferCheckPeriod;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
+    private final AtomicBoolean suspended = new AtomicBoolean(false);
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, UUID readerId) {
+                  CommitStrategy commitStrategy, UUID readerId,
+                  Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
                 new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_PERIOD,
-                readerId);
+                readerId, bufferOverflowCondition, DEFAULT_BUFFER_CHECK_PERIOD);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, BooleanSupplier needToCommitToKafka, long bufferClearPeriod,
-                  UUID readerId) {
+                  UUID readerId, Predicate<Map<Long, TransactionData>> bufferOverflowCondition, long bufferCheckPeriod) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
@@ -85,14 +92,17 @@ public class Reader extends Scheduler {
         this.readerId = readerId;
         this.needToCommitToKafka = needToCommitToKafka;
         this.bufferClearPeriod = bufferClearPeriod;
+        this.bufferOverflowCondition = bufferOverflowCondition;
+        this.bufferCheckPeriod = bufferCheckPeriod;
     }
 
     @Override
     public void execute() {
-        per(bufferClearPeriod).execute(this::clearBuffer);
         try (ConsumerReader consumer = new ConsumerReader()) {
             registerRule(consumer::pollAndCommitTransactionsBatch);
             when(needToCommitToKafka).execute(consumer::commitOffsets);
+            per(bufferClearPeriod).execute(this::clearBuffer);
+            per(bufferCheckPeriod).execute(consumer::checkBufferCondition);
             super.execute();
         }
     }
@@ -104,6 +114,10 @@ public class Reader extends Scheduler {
                     .collect(Collectors.toList());
             approveAndCommitTransactionsBatch(collect);
         });
+    }
+
+    public boolean isSuspended() {
+        return suspended.get();
     }
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
@@ -175,6 +189,25 @@ public class Reader extends Scheduler {
                             entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
                     );
             consumer.commitSync(offsets);
+        }
+
+        private void checkBufferCondition() {
+            if (bufferOverflowCondition.test(buffer)) {
+                if (suspended.compareAndSet(false, true)) {
+                    consumer.pause(getMainTopicPartitions());
+                }
+            } else {
+                if (suspended.compareAndSet(true, false)) {
+                    consumer.resume(getMainTopicPartitions());
+                }
+            }
+        }
+
+        private List<TopicPartition> getMainTopicPartitions() {
+            String remoteTopic = config.getRemoteTopic();
+            return consumer.assignment().stream()
+                    .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
+                    .collect(Collectors.toList());
         }
 
         @Override
