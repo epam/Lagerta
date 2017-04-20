@@ -61,7 +61,7 @@ public class Reader extends Scheduler {
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID readerId;
-    private final BooleanSupplier needTocommitToKafka;
+    private final BooleanSupplier needToCommitToKafka;
     private final long bufferClearPeriod;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
@@ -75,7 +75,7 @@ public class Reader extends Scheduler {
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier needTocommitToKafka, long bufferClearPeriod,
+                  CommitStrategy commitStrategy, BooleanSupplier needToCommitToKafka, long bufferClearPeriod,
                   UUID readerId) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
@@ -83,7 +83,7 @@ public class Reader extends Scheduler {
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         this.readerId = readerId;
-        this.needTocommitToKafka = needTocommitToKafka;
+        this.needToCommitToKafka = needToCommitToKafka;
         this.bufferClearPeriod = bufferClearPeriod;
     }
 
@@ -92,7 +92,7 @@ public class Reader extends Scheduler {
         per(bufferClearPeriod).execute(this::clearBuffer);
         try (ConsumerReader consumer = new ConsumerReader()) {
             registerRule(consumer::pollAndCommitTransactionsBatch);
-            when(needTocommitToKafka).execute(consumer::commitOffsets);
+            when(needToCommitToKafka).execute(consumer::commitOffsets);
             super.execute();
         }
     }
