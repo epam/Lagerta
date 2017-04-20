@@ -50,7 +50,7 @@ public class Reader extends Scheduler {
 
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
-    private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
+    private static final long DEFAULT_BUFFER_CLEAR_PERIOD = TimeUnit.SECONDS.toMillis(10L);
 
     private static final Comparator<TransactionScope> SCOPE_COMPARATOR = comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
@@ -70,7 +70,7 @@ public class Reader extends Scheduler {
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
                   CommitStrategy commitStrategy, UUID readerId) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_PERIOD,
                 readerId);
     }
 
