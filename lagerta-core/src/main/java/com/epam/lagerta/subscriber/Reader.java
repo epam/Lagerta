@@ -90,9 +90,9 @@ public class Reader extends Scheduler {
     @Override
     public void execute() {
         per(bufferClearTimeInterval).execute(this::clearBuffer);
-        try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
-            registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            when(commitToKafkaSupplier).execute(() -> commitOffsets(consumer, committedOffsetMap));
+        try (ConsumerReader consumer = new ConsumerReader()) {
+            registerRule(consumer::pollAndCommitTransactionsBatch);
+            when(commitToKafkaSupplier).execute(consumer::commitOffsets);
             super.execute();
         }
     }
@@ -106,32 +106,6 @@ public class Reader extends Scheduler {
         });
     }
 
-    private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
-        Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
-        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
-                new ReaderRebalanceListener(consumer, committedOffsetMap));
-        return consumer;
-    }
-
-    private void pollAndCommitTransactionsBatch(Consumer<ByteBuffer, ByteBuffer> consumer) {
-        ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
-        List<TransactionScope> scopes = new ArrayList<>(records.count());
-        for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
-            TransactionScope transactionScope = serializer.deserialize(record.key());
-            TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
-            buffer.put(transactionScope.getTransactionId(),
-                    new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
-            scopes.add(transactionScope);
-            committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
-        }
-        if (!scopes.isEmpty()) {
-            scopes.sort(SCOPE_COMPARATOR);
-            LOGGER.trace("[R] {} polled {}", readerId, scopes);
-        }
-        approveAndCommitTransactionsBatch(scopes);
-    }
-
-
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
 
@@ -143,17 +117,6 @@ public class Reader extends Scheduler {
             lead.notifyCommitted(readerId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
-    }
-
-    static void commitOffsets(Consumer consumer, Map<TopicPartition, CommittedOffset> committedOffsetMap) {
-        Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
-                .peek(entry -> entry.getValue().compress())
-                .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
-                );
-        consumer.commitSync(offsets);
     }
 
     private void clearBuffer() {
@@ -174,5 +137,49 @@ public class Reader extends Scheduler {
                         offset.notifyCommit(transactionData.getOffset());
                     }
                 });
+    }
+
+    private class ConsumerReader implements AutoCloseable {
+        private final Consumer<ByteBuffer, ByteBuffer> consumer;
+
+        ConsumerReader() {
+            consumer = kafkaFactory.consumer(config.getConsumerConfig());
+            consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
+                    new ReaderRebalanceListener(consumer, committedOffsetMap));
+        }
+
+        private void pollAndCommitTransactionsBatch() {
+            ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
+            List<TransactionScope> scopes = new ArrayList<>(records.count());
+            for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
+                TransactionScope transactionScope = serializer.deserialize(record.key());
+                TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
+                buffer.put(transactionScope.getTransactionId(),
+                        new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
+                scopes.add(transactionScope);
+                committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
+            }
+            if (!scopes.isEmpty()) {
+                scopes.sort(SCOPE_COMPARATOR);
+                LOGGER.trace("[R] {} polled {}", readerId, scopes);
+            }
+            approveAndCommitTransactionsBatch(scopes);
+        }
+
+        void commitOffsets() {
+            Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
+                    .peek(entry -> entry.getValue().compress())
+                    .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
+                    );
+            consumer.commitSync(offsets);
+        }
+
+        @Override
+        public void close() {
+            consumer.close();
+        }
     }
 }
