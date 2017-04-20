@@ -46,7 +46,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparingLong;
-import static java.util.stream.Collectors.toList;
 
 public class Reader extends Scheduler {
     private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
@@ -112,7 +111,7 @@ public class Reader extends Scheduler {
         pushTask(() -> {
             List<TransactionScope> collect = buffer.values().stream()
                     .map(TransactionData::getTransactionScope)
-                    .collect(toList());
+                    .collect(Collectors.toList());
             approveAndCommitTransactionsBatch(collect);
         });
     }
@@ -139,7 +138,7 @@ public class Reader extends Scheduler {
         List<Long> committed = buffer.keySet()
                 .stream()
                 .filter(txID -> txID <= lastDenseCommittedTxId)
-                .collect(toList());
+                .collect(Collectors.toList());
         removeFromBufferAndCallNotifyCommit(committed);
     }
 
@@ -208,7 +207,7 @@ public class Reader extends Scheduler {
             String remoteTopic = config.getRemoteTopic();
             return consumer.assignment().stream()
                     .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
-                    .collect(toList());
+                    .collect(Collectors.toList());
         }
 
         @Override
