@@ -176,5 +176,6 @@
           p:storeKeepBinary="true"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
+    <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"
+          c:limit="10000"/>
 </beans>

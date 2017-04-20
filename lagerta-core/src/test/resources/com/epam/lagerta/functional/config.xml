@@ -159,5 +159,6 @@ limitations under the License.
               c:producers-ref="producers-manager"/>
     </util:list>
 
-    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"/>
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"
+          c:limit="10000"/>
 </beans>
