@@ -35,6 +35,4 @@ public interface IgniteClusterManager {
      * Stops all previously created nodes.
      */
     void stopCluster();
-
-    List<Ignite> nodes();
 }

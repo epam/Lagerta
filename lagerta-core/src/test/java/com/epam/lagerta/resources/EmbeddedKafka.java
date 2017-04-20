@@ -86,8 +86,7 @@ public class EmbeddedKafka implements Resource {
             Properties properties = new Properties();
             properties.setProperty(KafkaConfig.ZkConnectProp(), String.format("%s:%s", LOCALHOST, zookeeperPort));
             properties.setProperty(KafkaConfig.BrokerIdProp(), String.valueOf(i + 1));
-            properties.setProperty(KafkaConfig.HostNameProp(), LOCALHOST);
-            properties.setProperty(KafkaConfig.PortProp(), Integer.toString(port));
+            properties.setProperty(KafkaConfig.ListenersProp(), String.format("PLAINTEXT://%s:%s", LOCALHOST, port));
             properties.setProperty(KafkaConfig.LogDirProp(), logDir.getAbsolutePath());
             properties.setProperty(KafkaConfig.LogFlushIntervalMessagesProp(), String.valueOf(1));
             properties.setProperty(KafkaConfig.LogFlushIntervalMsProp(), String.valueOf(Long.MAX_VALUE));

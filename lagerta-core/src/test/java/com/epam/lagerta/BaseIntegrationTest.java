@@ -23,6 +23,7 @@ import com.epam.lagerta.base.jdbc.common.Person;
 import com.epam.lagerta.base.jdbc.common.PersonEntries;
 import com.epam.lagerta.capturer.DataCapturerLoader;
 import com.epam.lagerta.capturer.JDBCDataCapturerLoader;
+import com.epam.lagerta.cluster.IgniteClusterManager;
 import com.epam.lagerta.resources.DBResource;
 import com.epam.lagerta.resources.FullClusterResource;
 import com.epam.lagerta.subscriber.Committer;
@@ -62,7 +63,7 @@ public abstract class BaseIntegrationTest {
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
     private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
-    private static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
+    protected static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
 
     static {
         ENTITY_DESCRIPTOR_MAP.put(BaseIntegrationTest.CACHE_NAME, PersonEntries.getPersonEntityDescriptor());
@@ -93,10 +94,6 @@ public abstract class BaseIntegrationTest {
         return topic + "_" + TEST_NUMBER;
     }
 
-    @BeforeSuite
-    public void setUp() throws Exception {
-        ALL_RESOURCES.setUp();
-    }
 
     @AfterSuite(alwaysRun = true)
     public void tearDown() {

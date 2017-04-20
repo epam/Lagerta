@@ -53,6 +53,14 @@ public class IgniteClusterResource implements Resource {
         this.clusterManager = clusterManager;
     }
 
+    public IgniteClusterResource(int numberOfNodes) {
+        this.numberOfNodes = numberOfNodes;
+    }
+
+    public void setClusterManager(IgniteClusterManager clusterManager) {
+        this.clusterManager = clusterManager;
+    }
+
     /**
      * Returns root grid node.
      */
@@ -60,9 +68,6 @@ public class IgniteClusterResource implements Resource {
         return root;
     }
 
-    public List<Ignite> nodes() {
-        return clusterManager.nodes();
-    }
 
     @Override
     public void setUp() {
