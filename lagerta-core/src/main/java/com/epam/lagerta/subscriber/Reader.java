@@ -139,7 +139,7 @@ public class Reader extends Scheduler {
                 });
     }
 
-    private class ConsumerReader implements AutoCloseable {
+    class ConsumerReader implements AutoCloseable {
         private final Consumer<ByteBuffer, ByteBuffer> consumer;
 
         ConsumerReader() {

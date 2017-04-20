@@ -16,20 +16,18 @@
 
 package com.epam.lagerta.subscriber;
 
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 
 public class ReaderRebalanceListener implements ConsumerRebalanceListener {
 
-    private final Consumer<ByteBuffer, ByteBuffer> consumer;
+    private final Reader.ConsumerReader consumer;
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap;
 
-    public ReaderRebalanceListener(Consumer<ByteBuffer, ByteBuffer> consumer,
+    public ReaderRebalanceListener(Reader.ConsumerReader consumer,
                                    Map<TopicPartition, CommittedOffset> committedOffsetMap) {
         this.consumer = consumer;
         this.committedOffsetMap = committedOffsetMap;
@@ -37,7 +35,7 @@ public class ReaderRebalanceListener implements ConsumerRebalanceListener {
 
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> collection) {
-        Reader.commitOffsets(consumer, committedOffsetMap);
+        consumer.commitOffsets();
     }
 
     @Override
