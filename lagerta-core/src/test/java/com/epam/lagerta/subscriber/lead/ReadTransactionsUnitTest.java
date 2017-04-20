@@ -306,6 +306,18 @@ public class ReadTransactionsUnitTest {
         assertEquals(actual, expected);
     }
 
+    @Test
+    public void gapsInSparseReadAreCalculated() {
+        List<TransactionScope> transactions = list(txScope(0), txScope(1), txScope(3), txScope(5), txScope(6));
+        transactions.forEach(scope -> read.addAllOnNode(A, list(scope)));
+
+        read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
+
+        List<Long> actualGaps = read.gapsInSparseTransactions();
+        List<Long> expectedGaps = list(2L, 4L);
+        assertEquals(actualGaps, expectedGaps);
+    }
+
     private void markInProgress(Long... txIds) {
         Set<Long> ids = set(txIds);
 

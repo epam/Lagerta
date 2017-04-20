@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.lagerta.subscriber.lead;
+package com.epam.lagerta.util;
 
-import java.util.List;
+public class TransactionPartitionUtil {
 
-public interface GapDetectionStrategy {
-    List<Long> gapDetected(CommittedTransactions commited, ReadTransactions read);
+    public static int partition(long txId, int partitions) {
+        return Long.hashCode(txId) % partitions;
+    }
+
 }
