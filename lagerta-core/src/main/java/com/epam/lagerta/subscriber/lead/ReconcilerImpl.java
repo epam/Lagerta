@@ -27,7 +27,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -67,16 +66,15 @@ public class ReconcilerImpl implements Reconciler {
         Map<Integer, List<Long>> txByPartition = gaps.stream()
                 .collect(Collectors.groupingBy(txId -> partition(txId, reconPartitions), toCollection(ArrayList::new)));
         seekToMissingTransactions(txByPartition);
-        txByPartition.entrySet().forEach(entry -> resendMissingTransactions(entry.getKey(), entry.getValue()));
+        txByPartition.forEach(this::resendMissingTransactions);
         reconciliationGoing = false;
     }
 
     private void seekToMissingTransactions(Map<Integer, List<Long>> txByPartition) {
         Map<TopicPartition, OffsetAndMetadata> toCommit = txByPartition.entrySet().stream()
-                .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), Collections.min(entry.getValue())))
                 .collect(Collectors.toMap(
                         entry -> new TopicPartition(remoteTopic, entry.getKey()),
-                        entry -> new OffsetAndMetadata(entry.getValue())
+                        entry -> new OffsetAndMetadata(Collections.min(entry.getValue()))
                 ));
         consumer.commitSync(toCommit);
     }

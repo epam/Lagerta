@@ -127,7 +127,7 @@ public class ReadTransactions implements Iterable<ConsumerTxScope> {
     public List<Long> gapsInSparseTransactions() {
         List<LongStream> result = new ArrayList<>();
         Stream.concat(Stream.of(getLastDenseRead()), scopes.stream().map(TransactionScope::getTransactionId))
-                .sorted()
+                .filter(txId -> txId >= getLastDenseRead())
                 .reduce((left, right) -> {
                     if (right - left > 1) {
                         result.add(LongStream.range(left + 1, right));
