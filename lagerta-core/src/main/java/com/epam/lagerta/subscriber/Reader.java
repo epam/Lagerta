@@ -145,7 +145,7 @@ public class Reader extends Scheduler {
         ConsumerReader() {
             consumer = kafkaFactory.consumer(config.getConsumerConfig());
             consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
-                    new ReaderRebalanceListener(consumer, committedOffsetMap));
+                    new ReaderRebalanceListener(this, committedOffsetMap));
         }
 
         private void pollAndCommitTransactionsBatch() {
