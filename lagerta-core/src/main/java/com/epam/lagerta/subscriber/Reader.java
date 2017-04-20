@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparingLong;
+import static java.util.stream.Collectors.toList;
 
 public class Reader extends Scheduler {
     private static final Logger LOGGER = LoggerFactory.getLogger(Reader.class);
@@ -111,7 +112,7 @@ public class Reader extends Scheduler {
         pushTask(() -> {
             List<TransactionScope> collect = buffer.values().stream()
                     .map(TransactionData::getTransactionScope)
-                    .collect(Collectors.toList());
+                    .collect(toList());
             approveAndCommitTransactionsBatch(collect);
         });
     }
@@ -138,7 +139,7 @@ public class Reader extends Scheduler {
         List<Long> committed = buffer.keySet()
                 .stream()
                 .filter(txID -> txID <= lastDenseCommittedTxId)
-                .collect(Collectors.toList());
+                .collect(toList());
         removeFromBufferAndCallNotifyCommit(committed);
     }
 
@@ -194,13 +195,20 @@ public class Reader extends Scheduler {
         private void checkBufferCondition() {
             if (bufferOverflowCondition.test(buffer)) {
                 if (suspended.compareAndSet(false, true)) {
-                    //suspend
+                    consumer.pause(getMainTopicPartitions());
                 }
             } else {
                 if (suspended.compareAndSet(true, false)) {
-                    //resume
+                    consumer.resume(getMainTopicPartitions());
                 }
             }
+        }
+
+        private List<TopicPartition> getMainTopicPartitions() {
+            String remoteTopic = config.getRemoteTopic();
+            return consumer.assignment().stream()
+                    .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
+                    .collect(toList());
         }
 
         @Override
