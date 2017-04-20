@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BooleanSupplier;
 
 public class Scheduler {
 
@@ -47,6 +48,22 @@ public class Scheduler {
      */
     public void registerRule(Runnable rule) {
         rules.add(rule);
+    }
+
+    /**
+     * non thread-safe operation per timeInterval
+     * @param timeInterval time interval to run rule
+     */
+    public PeriodicRule.Builder per(long timeInterval) {
+        return new PeriodicRule.Builder(this, timeInterval);
+    }
+
+    /**
+     * non thread-safe operation when predicate return true
+     * @param predicate condition
+     */
+    public PredicateRule.Builder when(BooleanSupplier predicate) {
+        return new PredicateRule.Builder(this, predicate);
     }
 
     public void stop() {
