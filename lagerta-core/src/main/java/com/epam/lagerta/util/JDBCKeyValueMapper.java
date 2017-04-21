@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public final class JDBCKeyValueMapper {
 
@@ -95,8 +94,11 @@ public final class JDBCKeyValueMapper {
     private static Map<String, Object> mapBinaryObject(BinaryObject binaryObject) {
         BinaryType type = binaryObject.type();
         Collection<String> fields = type.fieldNames();
-        return fields.stream()
-                .collect(Collectors.toMap(field -> field, binaryObject::field));
+        Map<String, Object> result = new HashMap<>(fields.size());
+        for (String field : fields) {
+            result.put(field, binaryObject.field(field));
+        }
+        return result;
     }
 
     /**
