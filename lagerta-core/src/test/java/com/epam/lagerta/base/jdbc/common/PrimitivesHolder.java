@@ -18,7 +18,6 @@ package com.epam.lagerta.base.jdbc.common;
 
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -45,7 +44,6 @@ public class PrimitivesHolder implements Serializable {
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitivesHolder.class,
             TABLE,
-            JDBCKeyValueMapper.KEY_FIELD_NAME,
             FIELD_DESCRIPTORS
     );
 
@@ -112,7 +110,7 @@ public class PrimitivesHolder implements Serializable {
     public static Map<String, Object> toMap(int key, PrimitivesHolder holder, boolean asBinary) {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
-        keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, key);
+        keyValueMap.put(EntityDescriptor.KEY_FIELD_NAME, key);
         if (asBinary) {
             keyValueMap.put(BOOLEAN_VALUE, holder.booleanValue);
             keyValueMap.put(BYTE_VALUE, holder.byteValue);
@@ -121,7 +119,7 @@ public class PrimitivesHolder implements Serializable {
             keyValueMap.put(LONG_VALUE, holder.longValue);
             keyValueMap.put(FLOAT_VALUE, holder.floatValue);
             keyValueMap.put(DOUBLE_VALUE, holder.doubleValue);
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, null);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, null);
         } else {
             // Primitives cannot be loaded as nulls.
             keyValueMap.put(BOOLEAN_VALUE, false);
@@ -131,7 +129,7 @@ public class PrimitivesHolder implements Serializable {
             keyValueMap.put(LONG_VALUE, 0L);
             keyValueMap.put(FLOAT_VALUE, 0F);
             keyValueMap.put(DOUBLE_VALUE, 0D);
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
     }

@@ -17,8 +17,8 @@
 package com.epam.lagerta.base.jdbc.common;
 
 import com.epam.lagerta.base.EntityDescriptor;
+import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -45,15 +45,14 @@ public class PrimitiveWrappersHolder implements Serializable {
     public static final String TABLE = "primitiveWrappersTable";
 
     private static final List<String> ORDINARY_COLUMNS = FIELD_DESCRIPTORS
-            .keySet()
             .stream()
+            .map(FieldDescriptor::getName)
             .filter(JDBCUtil::isOrdinaryColumn)
             .collect(Collectors.toList());
 
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitiveWrappersHolder.class,
             TABLE,
-            JDBCKeyValueMapper.KEY_FIELD_NAME,
             FIELD_DESCRIPTORS
     );
 
@@ -117,7 +116,7 @@ public class PrimitiveWrappersHolder implements Serializable {
     public static Map<String, Object> toMap(int key, PrimitiveWrappersHolder holder, boolean asBinary) {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
-        keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, key);
+        keyValueMap.put(EntityDescriptor.KEY_FIELD_NAME, key);
         if (asBinary) {
             keyValueMap.put(BOOLEAN_VALUE, holder.booleanValue);
             keyValueMap.put(BYTE_VALUE, holder.byteValue);
@@ -126,10 +125,10 @@ public class PrimitiveWrappersHolder implements Serializable {
             keyValueMap.put(LONG_VALUE, holder.longValue);
             keyValueMap.put(FLOAT_VALUE, holder.floatValue);
             keyValueMap.put(DOUBLE_VALUE, holder.doubleValue);
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, null);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, null);
         } else {
             ORDINARY_COLUMNS.forEach(column -> keyValueMap.put(column, null));
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
     }

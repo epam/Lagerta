@@ -16,17 +16,18 @@
 
 package com.epam.lagerta.capturer;
 
+import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.jdbc.DataProviders;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest {
+
     @DataProvider(name = DataProviders.KV_META_PROVIDER)
     public static Object[][] provideKVMeta() {
         return DataProviders.provideKVMeta(ignite);
@@ -57,15 +59,38 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     public void notLoadIncorrectValTypeForKey() throws SQLException {
         KeyValueAndMetadata incorrect = PrimitivesHolder.withMetaData(1, DataProviders.PH_1);
 
-        incorrect.getKeyValueMap().put(JDBCKeyValueMapper.VAL_FIELD_NAME, new Object());
+        incorrect.getKeyValueMap().put(EntityDescriptor.VAL_FIELD_NAME, new Object());
         JDBCUtil.insertIntoDB(dataSource, incorrect);
-        jdbcDataCapturerLoader.load(incorrect.getCache(), incorrect.getKey());
+        jdbcDataCapturerLoader.load(incorrect.getCacheName(), incorrect.getKey());
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
     public void load(KeyValueAndMetadata kvMeta) throws SQLException {
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
-        Object actual = jdbcDataCapturerLoader.load(kvMeta.getCache(), kvMeta.getKey());
+        Object actual = jdbcDataCapturerLoader.load(kvMeta.getCacheName(), kvMeta.getKey());
+        assertEquals(actual, kvMeta.getUnwrappedValue());
+    }
+
+    @Test(dataProvider = DataProviders.KV_META_PROVIDER)
+    public void loadWithDefaultEntityDescriptor(KeyValueAndMetadata kvMeta) {
+        JDBCUtil.insertIntoDB(dataSource, kvMeta);
+        String cacheName = kvMeta.getCacheName();
+        EntityDescriptor<?> descriptor = new EntityDescriptor<>(Object.class, kvMeta.getTableName());
+        jdbcDataCapturerLoader = new JDBCDataCapturerLoader(
+                dataSource, Collections.singletonMap(cacheName, descriptor));
+        Object actual = jdbcDataCapturerLoader.load(cacheName, kvMeta.getKey());
+        assertEquals(actual, kvMeta.getUnwrappedValue());
+    }
+
+    @Test(dataProvider = DataProviders.KV_META_PROVIDER)
+    public void loadWithParsedEntityDescriptor(KeyValueAndMetadata kvMeta) {
+        JDBCUtil.insertIntoDB(dataSource, kvMeta);
+        String cacheName = kvMeta.getCacheName();
+        Class<?> clazz = kvMeta.getUnwrappedValue().getClass();
+        EntityDescriptor<?> descriptor = new EntityDescriptor<>(clazz, kvMeta.getTableName());
+        jdbcDataCapturerLoader = new JDBCDataCapturerLoader(
+                dataSource, Collections.singletonMap(cacheName, descriptor));
+        Object actual = jdbcDataCapturerLoader.load(cacheName, kvMeta.getKey());
         assertEquals(actual, kvMeta.getUnwrappedValue());
     }
 
@@ -80,7 +105,7 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
                 JDBCUtil.insertIntoDB(connection, kvMeta);
             }
         });
-        String cache = kvMetas.get(0).getCache();
+        String cache = kvMetas.get(0).getCacheName();
         Map<Integer, Object> actual = jdbcDataCapturerLoader.loadAll(cache, expectedResult.keySet());
         assertEquals(actual, expectedResult);
     }

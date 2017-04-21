@@ -36,6 +36,11 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
     private final DataSource dataSource;
     private final Map<String, EntityDescriptor> entityDescriptors;
 
+    /**
+     * @param dataSource
+     * @param descriptors which have the same table name with cache name.
+     *                    Otherwise they must be identified explicitly
+     */
     public JDBCDataCapturerLoader(DataSource dataSource, List<EntityDescriptor> descriptors) {
         this(dataSource, descriptors.stream().collect(Collectors
                 .toMap(EntityDescriptor::getTableName, identity())));

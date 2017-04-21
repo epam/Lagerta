@@ -16,6 +16,7 @@
 package com.epam.lagerta.util;
 
 import com.epam.lagerta.common.ToMapCollector;
+import com.epam.lagerta.base.EntityDescriptor;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
@@ -32,8 +33,9 @@ import static java.util.function.Function.identity;
 
 public final class JDBCKeyValueMapper {
 
-    public static final String KEY_FIELD_NAME = "key";
-    public static final String VAL_FIELD_NAME = "val";
+    static final String KEY_FIELD_NAME = EntityDescriptor.KEY_FIELD_NAME;
+    static final String VAL_FIELD_NAME = EntityDescriptor.VAL_FIELD_NAME;
+
 
     private static final Map<Class<?>, Class<?>> objectToPrimitiveMap = new HashMap<>();
 

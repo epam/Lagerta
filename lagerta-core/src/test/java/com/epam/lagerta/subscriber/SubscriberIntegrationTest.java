@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import com.epam.lagerta.util.DataProviderUtil;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.SpringResource;

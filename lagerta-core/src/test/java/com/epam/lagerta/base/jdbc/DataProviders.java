@@ -56,7 +56,7 @@ public class DataProviders {
                 {PrimitivesHolder.withMetaData(1, PH_1)},
                 {PrimitivesHolder.withMetaData(1, PH_2)},
                 {PrimitivesHolder.withMetaData(1, binary(ignite, PH_1))},
-                {PrimitivesHolder.withMetaData(1, binary(ignite, PH_1))},
+                {PrimitivesHolder.withMetaData(1, binary(ignite, PH_2))},
                 {PrimitiveWrappersHolder.withMetaData(1, PWH_1)},
                 {PrimitiveWrappersHolder.withMetaData(2, PWH_2)},
                 {PrimitiveWrappersHolder.withMetaData(3, PWH_3)},
