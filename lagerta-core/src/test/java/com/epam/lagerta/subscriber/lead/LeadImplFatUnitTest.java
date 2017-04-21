@@ -50,18 +50,21 @@ public class LeadImplFatUnitTest {
     private static final String CACHE2 = "cache2";
 
     private Lead lead;
-    private GapDetectionStrategy gapDetectionStrategy;
 
     private void startDefaultLead() {
         startConfiguredLead(MOCK_STATE_ASSISTANT);
     }
 
     private void startConfiguredLead(LeadStateAssistant assistant) {
+        GapDetectionStrategy gapDetectionStrategy = mock(GapDetectionStrategy.class);
+        doReturn(Collections.emptyList()).when(gapDetectionStrategy).gapDetected(any(), any());
+        startConfiguredLead(assistant, gapDetectionStrategy);
+    }
+
+    private void startConfiguredLead(LeadStateAssistant assistant, GapDetectionStrategy gapDetectionStrategy) {
         RuleTimeouts ruleTimeouts = new RuleTimeouts();
         Heartbeats heartbeats = new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold());
 
-        gapDetectionStrategy = mock(GapDetectionStrategy.class);
-        doReturn(Collections.emptyList()).when(gapDetectionStrategy).gapDetected(any(), any());
         lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats,
                 gapDetectionStrategy, new ReconcilerStub(), ruleTimeouts);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
@@ -185,8 +188,9 @@ public class LeadImplFatUnitTest {
 
     @Test
     public void reconciliationStartsOnFoundGap() {
+        GapDetectionStrategy gapDetectionStrategy = mock(GapDetectionStrategy.class);
         doReturn(Collections.singletonList(1)).when(gapDetectionStrategy).gapDetected(any(), any());
-        startDefaultLead();
+        startConfiguredLead(MOCK_STATE_ASSISTANT, gapDetectionStrategy);
 
         waitForReconciliationStart();
     }
