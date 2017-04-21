@@ -138,6 +138,8 @@ limitations under the License.
           p:remoteTopic="testTopic"
           p:consumerConfig-ref="consumer-props"
     />
+    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
+          p:reconciliationTopic="reconciliation"/>
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
     <bean id="kafka-factory" class="com.epam.lagerta.mocks.KafkaMockFactory"

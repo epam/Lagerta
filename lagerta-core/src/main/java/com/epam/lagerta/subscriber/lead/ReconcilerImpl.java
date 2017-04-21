@@ -16,9 +16,11 @@
 
 package com.epam.lagerta.subscriber.lead;
 
+import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.kafka.DataRecoveryConfig;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -44,14 +46,18 @@ public class ReconcilerImpl implements Reconciler {
     private final String reconciliationTopic;
     private final Producer<ByteBuffer, ByteBuffer> producer;
     private final Consumer<ByteBuffer, ByteBuffer> consumer;
+    private final Serializer serializer;
+    private final ByteBuffer transactionValueTemplate;
     private volatile boolean reconciliationGoing;
 
     public ReconcilerImpl(KafkaFactory kafkaFactory, DataRecoveryConfig dataRecoveryConfig,
-                          SubscriberConfig subscriberConfig) {
+                          SubscriberConfig subscriberConfig, Serializer serializer) {
         this.remoteTopic = subscriberConfig.getRemoteTopic();
         this.reconciliationTopic = dataRecoveryConfig.getReconciliationTopic();
         this.producer = kafkaFactory.producer(dataRecoveryConfig.getProducerConfig());
         this.consumer = kafkaFactory.consumer(dataRecoveryConfig.getConsumerConfig());
+        this.serializer = serializer;
+        this.transactionValueTemplate = serializer.serialize(Collections.emptyList());
     }
 
     @Override
@@ -91,7 +97,7 @@ public class ReconcilerImpl implements Reconciler {
                 processSingleRecord(txIds, record);
             }
         }
-        sendEmptyTransactions(txIds);
+        txIds.forEach(this::sendEmptyTransaction);;
     }
 
     private void processSingleRecord(List<Long> txIds, ConsumerRecord<ByteBuffer, ByteBuffer> record) {
@@ -104,8 +110,12 @@ public class ReconcilerImpl implements Reconciler {
         }
     }
 
-    // todo implement in later ticket along with its processing in Reader class
-    private void sendEmptyTransactions(List<Long> txIds) {
+    private void sendEmptyTransaction(Long txId) {
+        TransactionScope scope = new TransactionScope(txId, Collections.emptyList());
+        ByteBuffer key = serializer.serialize(scope);
+        ProducerRecord<ByteBuffer, ByteBuffer> producerRecord =
+                new ProducerRecord<>(reconciliationTopic, key, transactionValueTemplate);
+        producer.send(producerRecord);
     }
 
 }

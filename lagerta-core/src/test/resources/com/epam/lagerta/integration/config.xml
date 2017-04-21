@@ -65,7 +65,8 @@
     <bean id="reconciler" class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
           c:kafkaFactory-ref="kafka-factory"
           c:dataRecoveryConfig-ref="data-recovery-config"
-          c:subscriberConfig-ref="subscriber-config"/>
+          c:subscriberConfig-ref="subscriber-config"
+          c:serializer-ref="serializer"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.ReaderConfig"/>
