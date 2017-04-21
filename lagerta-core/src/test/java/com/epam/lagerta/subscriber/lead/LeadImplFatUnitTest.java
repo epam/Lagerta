@@ -51,7 +51,6 @@ public class LeadImplFatUnitTest {
 
     private Lead lead;
     private GapDetectionStrategy gapDetectionStrategy;
-    private Reconciler reconciler;
 
     private void startDefaultLead() {
         startConfiguredLead(MOCK_STATE_ASSISTANT);
@@ -63,9 +62,8 @@ public class LeadImplFatUnitTest {
 
         gapDetectionStrategy = mock(GapDetectionStrategy.class);
         doReturn(Collections.emptyList()).when(gapDetectionStrategy).gapDetected(any(), any());
-        reconciler = new ReconcilerStub();
         lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats,
-                gapDetectionStrategy, reconciler, ruleTimeouts);
+                gapDetectionStrategy, new ReconcilerStub(), ruleTimeouts);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
@@ -187,8 +185,8 @@ public class LeadImplFatUnitTest {
 
     @Test
     public void reconciliationStartsOnFoundGap() {
-        startDefaultLead();
         doReturn(Collections.singletonList(1)).when(gapDetectionStrategy).gapDetected(any(), any());
+        startDefaultLead();
 
         waitForReconciliationStart();
     }
