@@ -67,7 +67,8 @@ public enum SimpleValueTransformer implements ValueTransformer {
 
     @Override
     public Object get(ResultSet resultSet, int index) throws SQLException {
-        return getter.get(resultSet, index);
+        Object value = getter.get(resultSet, index);
+        return resultSet.wasNull() ? null : value;
     }
 
     @Override
