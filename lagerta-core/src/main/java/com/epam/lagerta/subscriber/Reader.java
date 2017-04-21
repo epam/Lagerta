@@ -16,8 +16,6 @@
 package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.common.PeriodicRule;
-import com.epam.lagerta.common.PredicateRule;
 import com.epam.lagerta.common.Scheduler;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.SubscriberConfig;
@@ -41,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparingLong;
@@ -52,7 +52,8 @@ public class Reader extends Scheduler {
 
     private static final int POLL_TIMEOUT = 200;
     private static final int DEFAULT_COMMIT_ITERATION_PERIOD = 5;
-    private static final long DEFAULT_BUFFER_CLEAR_TIME_INTERVAL = TimeUnit.SECONDS.toMillis(10L);
+    private static final long DEFAULT_BUFFER_CLEAR_PERIOD = TimeUnit.SECONDS.toMillis(10L);
+    private static final long DEFAULT_BUFFER_CHECK_PERIOD = TimeUnit.SECONDS.toMillis(10L);
 
     private static final Comparator<TransactionScope> SCOPE_COMPARATOR = comparingLong(TransactionScope::getTransactionId);
     private static final Function<TopicPartition, CommittedOffset> COMMITTED_OFFSET = key -> new CommittedOffset();
@@ -63,38 +64,45 @@ public class Reader extends Scheduler {
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID readerId;
-    private final BooleanSupplier commitToKafkaSupplier;
-    private final long bufferClearTimeInterval;
+    private final BooleanSupplier needToCommitToKafka;
+    private final long bufferClearPeriod;
+    private final Predicate<Map<Long, TransactionData>> bufferOverflowCondition;
+    private final long bufferCheckPeriod;
 
     private final Map<Long, TransactionData> buffer = new HashMap<>();
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
+    private final AtomicBoolean suspended = new AtomicBoolean(false);
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, UUID readerId) {
+                  CommitStrategy commitStrategy, UUID readerId,
+                  Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
         this(ignite, kafkaFactory, config, serializer, commitStrategy,
-                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_TIME_INTERVAL,
-                readerId);
+                new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_PERIOD,
+                readerId, bufferOverflowCondition, DEFAULT_BUFFER_CHECK_PERIOD);
     }
 
     public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config, Serializer serializer,
-                  CommitStrategy commitStrategy, BooleanSupplier commitToKafkaSupplier, long bufferClearTimeInterval,
-                  UUID readerId) {
+                  CommitStrategy commitStrategy, BooleanSupplier needToCommitToKafka, long bufferClearPeriod,
+                  UUID readerId, Predicate<Map<Long, TransactionData>> bufferOverflowCondition, long bufferCheckPeriod) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         this.readerId = readerId;
-        this.commitToKafkaSupplier = commitToKafkaSupplier;
-        this.bufferClearTimeInterval = bufferClearTimeInterval;
+        this.needToCommitToKafka = needToCommitToKafka;
+        this.bufferClearPeriod = bufferClearPeriod;
+        this.bufferOverflowCondition = bufferOverflowCondition;
+        this.bufferCheckPeriod = bufferCheckPeriod;
     }
 
     @Override
     public void execute() {
-        registerRule(new PeriodicRule(this::clearBuffer, bufferClearTimeInterval));
-        try (Consumer<ByteBuffer, ByteBuffer> consumer = createConsumer()) {
-            registerRule(() -> pollAndCommitTransactionsBatch(consumer));
-            registerRule(new PredicateRule(() -> commitOffsets(consumer, committedOffsetMap), commitToKafkaSupplier));
+        try (ConsumerReader consumer = new ConsumerReader()) {
+            registerRule(consumer::pollAndCommitTransactionsBatch);
+            when(needToCommitToKafka).execute(consumer::commitOffsets);
+            per(bufferClearPeriod).execute(this::clearBuffer);
+            per(bufferCheckPeriod).execute(consumer::checkBufferCondition);
             super.execute();
         }
     }
@@ -108,31 +116,9 @@ public class Reader extends Scheduler {
         });
     }
 
-    private Consumer<ByteBuffer, ByteBuffer> createConsumer() {
-        Consumer<ByteBuffer, ByteBuffer> consumer = kafkaFactory.consumer(config.getConsumerConfig());
-        consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
-                new ReaderRebalanceListener(consumer, committedOffsetMap));
-        return consumer;
+    public boolean isSuspended() {
+        return suspended.get();
     }
-
-    private void pollAndCommitTransactionsBatch(Consumer<ByteBuffer, ByteBuffer> consumer) {
-        ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
-        List<TransactionScope> scopes = new ArrayList<>(records.count());
-        for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
-            TransactionScope transactionScope = serializer.deserialize(record.key());
-            TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
-            buffer.put(transactionScope.getTransactionId(),
-                    new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
-            scopes.add(transactionScope);
-            committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
-        }
-        if (!scopes.isEmpty()) {
-            scopes.sort(SCOPE_COMPARATOR);
-            LOGGER.trace("[R] {} polled {}", readerId, scopes);
-        }
-        approveAndCommitTransactionsBatch(scopes);
-    }
-
 
     private void approveAndCommitTransactionsBatch(List<TransactionScope> scopes) {
         List<Long> txIdsToCommit = lead.notifyRead(readerId, scopes);
@@ -145,17 +131,6 @@ public class Reader extends Scheduler {
             lead.notifyCommitted(readerId, committed);
             removeFromBufferAndCallNotifyCommit(committed);
         }
-    }
-
-    static void commitOffsets(Consumer consumer, Map<TopicPartition, CommittedOffset> committedOffsetMap) {
-        Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
-                .peek(entry -> entry.getValue().compress())
-                .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
-                );
-        consumer.commitSync(offsets);
     }
 
     private void clearBuffer() {
@@ -176,5 +151,68 @@ public class Reader extends Scheduler {
                         offset.notifyCommit(transactionData.getOffset());
                     }
                 });
+    }
+
+    class ConsumerReader implements AutoCloseable {
+        private final Consumer<ByteBuffer, ByteBuffer> consumer;
+
+        ConsumerReader() {
+            consumer = kafkaFactory.consumer(config.getConsumerConfig());
+            consumer.subscribe(Collections.singletonList(config.getRemoteTopic()),
+                    new ReaderRebalanceListener(this, committedOffsetMap));
+        }
+
+        private void pollAndCommitTransactionsBatch() {
+            ConsumerRecords<ByteBuffer, ByteBuffer> records = consumer.poll(POLL_TIMEOUT);
+            List<TransactionScope> scopes = new ArrayList<>(records.count());
+            for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
+                TransactionScope transactionScope = serializer.deserialize(record.key());
+                TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
+                buffer.put(transactionScope.getTransactionId(),
+                        new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
+                scopes.add(transactionScope);
+                committedOffsetMap.computeIfAbsent(topicPartition, COMMITTED_OFFSET).notifyRead(record.offset());
+            }
+            if (!scopes.isEmpty()) {
+                scopes.sort(SCOPE_COMPARATOR);
+                LOGGER.trace("[R] {} polled {}", readerId, scopes);
+            }
+            approveAndCommitTransactionsBatch(scopes);
+        }
+
+        void commitOffsets() {
+            Map<TopicPartition, OffsetAndMetadata> offsets = committedOffsetMap.entrySet().stream()
+                    .peek(entry -> entry.getValue().compress())
+                    .filter(entry -> entry.getValue().getLastDenseCommit() >= 0)
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> new OffsetAndMetadata(entry.getValue().getLastDenseCommit()))
+                    );
+            consumer.commitSync(offsets);
+        }
+
+        private void checkBufferCondition() {
+            if (bufferOverflowCondition.test(buffer)) {
+                if (suspended.compareAndSet(false, true)) {
+                    consumer.pause(getMainTopicPartitions());
+                }
+            } else {
+                if (suspended.compareAndSet(true, false)) {
+                    consumer.resume(getMainTopicPartitions());
+                }
+            }
+        }
+
+        private List<TopicPartition> getMainTopicPartitions() {
+            String remoteTopic = config.getRemoteTopic();
+            return consumer.assignment().stream()
+                    .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        public void close() {
+            consumer.close();
+        }
     }
 }

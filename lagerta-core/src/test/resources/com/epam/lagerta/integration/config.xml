@@ -166,6 +166,9 @@
 
     <bean id="cache-store-factory" class="com.epam.lagerta.capturer.DataCapturerBusFactory"/>
 
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"
+          c:limit="10000"/>
+
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
           p:name="#{T(com.epam.lagerta.BaseIntegrationTest).CACHE_NAME}"
