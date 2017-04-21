@@ -98,11 +98,14 @@ limitations under the License.
     <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
           c:stateAssistant-ref="stateAssistant"
           c:gapDetectionStrategy-ref="gapDetector"
+          c:reconciler-ref="reconciler"
           c:ruleTimeouts-ref="leadTimeouts"/>
 
     <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
 
     <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
+
+    <bean id="reconciler" class="com.epam.lagerta.mocks.ReconcilerStub"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.TestReaderConfig"/>

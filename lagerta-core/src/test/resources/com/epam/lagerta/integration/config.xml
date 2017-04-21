@@ -36,7 +36,9 @@
     </util:properties>
 
     <util:properties id="consumer-properties" location="${configBasePath}consumer.properties"/>
+    <util:properties id="recon-consumer-properties" location="${configBasePath}reconciliation_consumer.properties"/>
     <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
+    <util:properties id="recon-producer-properties" location="${configBasePath}reconciliation_producer.properties"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
@@ -53,11 +55,17 @@
     <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
           c:stateAssistant-ref="stateAssistant"
           c:gapDetectionStrategy-ref="gapDetector"
+          c:reconciler-ref="reconciler"
           c:ruleTimeouts-ref="leadTimeouts"/>
 
     <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
 
     <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
+
+    <bean id="reconciler" class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
+          c:kafkaFactory-ref="kafka-factory"
+          c:dataRecoveryConfig-ref="data-recovery-config"
+          c:subscriberConfig-ref="subscriber-config"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.ReaderConfig"/>
@@ -106,6 +114,10 @@
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
+    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
+          p:reconciliationTopic="reconciliation"
+          p:consumerConfig-ref="recon-consumer-properties"
+          p:producerConfig-ref="recon-producer-properties"/>
 
     <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
           c:topic="txIdTopic"

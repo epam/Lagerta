@@ -43,7 +43,7 @@ public class LeadImpl extends Scheduler implements Lead {
     private final CommittedTransactions committed;
     private final ReadTransactions readTransactions;
     private final Heartbeats heartbeats;
-    private volatile boolean reconciliationGoing;
+    private final Reconciler reconciler;
 
     LeadImpl(
             LeadStateAssistant stateAssistant,
@@ -51,11 +51,13 @@ public class LeadImpl extends Scheduler implements Lead {
             CommittedTransactions committed,
             Heartbeats heartbeats,
             GapDetectionStrategy gapDetectionStrategy,
+            Reconciler reconciler,
             RuleTimeouts timeouts
     ) {
         this.readTransactions = readTransactions;
         this.committed = committed;
         this.heartbeats = heartbeats;
+        this.reconciler = reconciler;
         pushTask(() -> stateAssistant.load(this));
         registerRule(this.committed::compress);
         per(timeouts.getHearbeatExpirationThreshold()).execute(this::markLostAndFound);
@@ -68,9 +70,10 @@ public class LeadImpl extends Scheduler implements Lead {
 
     @SuppressWarnings("unused") // used in Spring config
     public LeadImpl(LeadStateAssistant stateAssistant, GapDetectionStrategy gapDetectionStrategy,
-                    RuleTimeouts ruleTimeouts) {
+                    Reconciler reconciler, RuleTimeouts ruleTimeouts) {
         this(stateAssistant, new ReadTransactions(), CommittedTransactions.createNotReady(),
-                new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold()), gapDetectionStrategy, ruleTimeouts);
+                new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold()), gapDetectionStrategy, reconciler,
+                ruleTimeouts);
     }
 
     /**
@@ -128,7 +131,7 @@ public class LeadImpl extends Scheduler implements Lead {
 
     @Override
     public boolean isReconciliationGoing() {
-        return reconciliationGoing;
+        return reconciler.isReconciliationGoing();
     }
 
     private void markLostAndFound() {
@@ -155,16 +158,12 @@ public class LeadImpl extends Scheduler implements Lead {
                         value.stream().map(TransactionScope::getTransactionId).collect(toList())));
     }
 
-    private void reconcileOnGaps(ReadTransactions readTransactions, CommittedTransactions committed, GapDetectionStrategy gapDetectionStrategy) {
-        boolean gapExists = gapDetectionStrategy.gapDetected(committed, readTransactions);
-        if (gapExists && !reconciliationGoing) {
-            startReconciliation();
+    private void reconcileOnGaps(ReadTransactions readTransactions, CommittedTransactions committed,
+                                 GapDetectionStrategy gapDetectionStrategy) {
+        List<Long> gaps = gapDetectionStrategy.gapDetected(committed, readTransactions);
+        if (!gaps.isEmpty() && !isReconciliationGoing()) {
+            reconciler.startReconciliation(gaps);
         }
-    }
-
-    private void startReconciliation() {
-        reconciliationGoing = true;
-        //todo implement mechanism of reconciliation
     }
 
     @Override

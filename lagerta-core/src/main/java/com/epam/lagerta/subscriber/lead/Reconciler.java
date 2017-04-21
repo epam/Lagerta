@@ -18,6 +18,9 @@ package com.epam.lagerta.subscriber.lead;
 
 import java.util.List;
 
-public interface GapDetectionStrategy {
-    List<Long> gapDetected(CommittedTransactions commited, ReadTransactions read);
+public interface Reconciler {
+
+    boolean isReconciliationGoing();
+    void startReconciliation(List<Long> gaps);
+
 }

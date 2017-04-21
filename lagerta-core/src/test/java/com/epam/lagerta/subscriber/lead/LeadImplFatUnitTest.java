@@ -18,12 +18,14 @@ package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.mocks.LeadStateAssistantMock;
+import com.epam.lagerta.mocks.ReconcilerStub;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
@@ -48,20 +50,23 @@ public class LeadImplFatUnitTest {
     private static final String CACHE2 = "cache2";
 
     private Lead lead;
-    private GapDetectionStrategy gapDetectionStrategy;
 
     private void startDefaultLead() {
         startConfiguredLead(MOCK_STATE_ASSISTANT);
     }
 
     private void startConfiguredLead(LeadStateAssistant assistant) {
+        GapDetectionStrategy gapDetectionStrategy = mock(GapDetectionStrategy.class);
+        doReturn(Collections.emptyList()).when(gapDetectionStrategy).gapDetected(any(), any());
+        startConfiguredLead(assistant, gapDetectionStrategy);
+    }
+
+    private void startConfiguredLead(LeadStateAssistant assistant, GapDetectionStrategy gapDetectionStrategy) {
         RuleTimeouts ruleTimeouts = new RuleTimeouts();
         Heartbeats heartbeats = new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold());
 
-        gapDetectionStrategy = mock(GapDetectionStrategy.class);
-        doReturn(false).when(gapDetectionStrategy).gapDetected(any(), any());
         lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats,
-                gapDetectionStrategy, ruleTimeouts);
+                gapDetectionStrategy, new ReconcilerStub(), ruleTimeouts);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
@@ -183,8 +188,9 @@ public class LeadImplFatUnitTest {
 
     @Test
     public void reconciliationStartsOnFoundGap() {
-        startDefaultLead();
-        doReturn(true).when(gapDetectionStrategy).gapDetected(any(), any());
+        GapDetectionStrategy gapDetectionStrategy = mock(GapDetectionStrategy.class);
+        doReturn(Collections.singletonList(1)).when(gapDetectionStrategy).gapDetected(any(), any());
+        startConfiguredLead(MOCK_STATE_ASSISTANT, gapDetectionStrategy);
 
         waitForReconciliationStart();
     }

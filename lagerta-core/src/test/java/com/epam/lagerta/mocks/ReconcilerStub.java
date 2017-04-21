@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.lagerta.subscriber.lead;
+package com.epam.lagerta.mocks;
+
+import com.epam.lagerta.subscriber.lead.Reconciler;
 
 import java.util.List;
 
-public interface GapDetectionStrategy {
-    List<Long> gapDetected(CommittedTransactions commited, ReadTransactions read);
+public class ReconcilerStub implements Reconciler {
+
+    private boolean reconciliationWasCalled;
+
+    @Override
+    public boolean isReconciliationGoing() {
+        return reconciliationWasCalled;
+    }
+
+    @Override
+    public void startReconciliation(List<Long> gaps) {
+        reconciliationWasCalled = true;
+    }
+
 }
