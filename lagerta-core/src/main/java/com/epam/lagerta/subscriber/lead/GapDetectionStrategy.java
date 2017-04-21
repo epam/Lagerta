@@ -16,6 +16,8 @@
 
 package com.epam.lagerta.subscriber.lead;
 
+import java.util.List;
+
 public interface GapDetectionStrategy {
-    boolean gapDetected(CommittedTransactions commited, ReadTransactions read);
+    List<Long> gapDetected(CommittedTransactions commited, ReadTransactions read);
 }

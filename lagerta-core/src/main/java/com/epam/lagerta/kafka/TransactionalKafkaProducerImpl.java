@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import static com.epam.lagerta.util.TransactionPartitionUtil.partition;
+
 public class TransactionalKafkaProducerImpl implements TransactionalProducer {
     private final String dataTopic;
     private final int partitions;
@@ -54,10 +56,10 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
     public Future<RecordMetadata> send(long transactionId,
         Map<String, Collection<Cache.Entry<?, ?>>> updates) throws CacheWriterException {
         try {
-            int partition = Long.hashCode(transactionId) % partitions;
+            int partition = partition(transactionId, partitions);
             TransactionScope key = keyTransformer.apply(transactionId, updates);
             List<List> value = valueTransformer.apply(updates);
-            ProducerRecord record = new ProducerRecord(dataTopic, partition, serializer.serialize(key),
+            ProducerRecord record = new ProducerRecord(dataTopic, partition, transactionId, serializer.serialize(key),
                 serializer.serialize(value));
             return producer.send(record);
         }

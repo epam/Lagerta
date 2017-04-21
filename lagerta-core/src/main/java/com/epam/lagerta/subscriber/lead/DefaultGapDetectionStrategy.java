@@ -16,20 +16,23 @@
 
 package com.epam.lagerta.subscriber.lead;
 
+import java.util.Collections;
+import java.util.List;
+
 public class DefaultGapDetectionStrategy implements GapDetectionStrategy {
 
     private long lastCheckedDenseCommitted = CommittedTransactions.INITIAL_COMMIT_ID;
 
     @Override
-    public boolean gapDetected(CommittedTransactions commited, ReadTransactions read) {
+    public List<Long> gapDetected(CommittedTransactions commited, ReadTransactions read) {
         if (lastCheckedDenseCommitted == CommittedTransactions.INITIAL_COMMIT_ID) {
             lastCheckedDenseCommitted = commited.getLastDenseCommit();
-            return false;
+            return Collections.emptyList();
         }
         boolean gapMayExist = commited.isReady() && read.isProbableGap(lastCheckedDenseCommitted);
         boolean noProgressMade = lastCheckedDenseCommitted == commited.getLastDenseCommit();
 
-        return gapMayExist && noProgressMade;
+        return (gapMayExist && noProgressMade)? read.gapsInSparseTransactions() : Collections.emptyList();
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017. EPAM Systems.
+ * Copyright 2017 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.lagerta.kafka;
+package com.epam.lagerta.mocks;
 
-import com.epam.lagerta.BaseIntegrationTest;
+import com.epam.lagerta.subscriber.lead.Reconciler;
 
-public class PerTestSubscriberConfig extends SubscriberConfig {
+import java.util.List;
+
+public class ReconcilerStub implements Reconciler {
+
+    private boolean reconciliationWasCalled;
+
     @Override
-    public String getRemoteTopic() {
-        return BaseIntegrationTest.adjustTopicNameForTest(super.getRemoteTopic());
+    public boolean isReconciliationGoing() {
+        return reconciliationWasCalled;
     }
+
+    @Override
+    public void startReconciliation(List<Long> gaps) {
+        reconciliationWasCalled = true;
+    }
+
 }

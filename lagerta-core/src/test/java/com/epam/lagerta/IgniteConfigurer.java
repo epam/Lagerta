@@ -23,7 +23,7 @@ import java.util.Collections;
 
 public class IgniteConfigurer {
 
-    public static IgniteConfiguration getIgniteConfiguration(String gridName) {
+    public static IgniteConfiguration getIgniteConfiguration(String gridName, boolean clientMode) {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
         TcpDiscoverySpi tcpDiscoverySpi = new TcpDiscoverySpi();
@@ -31,6 +31,7 @@ public class IgniteConfigurer {
         IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setDiscoverySpi(tcpDiscoverySpi);
         configuration.setGridName(gridName);
+        configuration.setClientMode(clientMode);
         return configuration;
     }
 

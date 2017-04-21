@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017. EPAM Systems.
+ * Copyright (c) 2017. EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.lagerta.kafka;
+package com.epam.lagerta.cluster;
 
-import com.epam.lagerta.BaseIntegrationTest;
+import com.epam.lagerta.resources.FullClusterResource;
+import org.apache.ignite.Ignition;
 
-public class PerTestKafkaIdSequencer extends KafkaIdSequencer {
-    public PerTestKafkaIdSequencer(String topic, KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
-        super(BaseIntegrationTest.adjustTopicNameForTest(topic), kafkaFactory, subscriberConfig);
+public class IgniteStarter {
+
+    public static void main(String[] args) {
+        Ignition.start(FullClusterResource.CONFIG_XML);
     }
 }

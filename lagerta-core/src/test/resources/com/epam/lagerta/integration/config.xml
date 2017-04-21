@@ -36,7 +36,9 @@
     </util:properties>
 
     <util:properties id="consumer-properties" location="${configBasePath}consumer.properties"/>
+    <util:properties id="recon-consumer-properties" location="${configBasePath}reconciliation_consumer.properties"/>
     <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
+    <util:properties id="recon-producer-properties" location="${configBasePath}reconciliation_producer.properties"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
@@ -53,11 +55,18 @@
     <bean id="lead" class="com.epam.lagerta.subscriber.lead.LeadImpl" scope="prototype"
           c:stateAssistant-ref="stateAssistant"
           c:gapDetectionStrategy-ref="gapDetector"
+          c:reconciler-ref="reconciler"
           c:ruleTimeouts-ref="leadTimeouts"/>
 
     <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
 
     <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
+
+    <bean id="reconciler" class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
+          c:kafkaFactory-ref="kafka-factory"
+          c:dataRecoveryConfig-ref="data-recovery-config"
+          c:subscriberConfig-ref="subscriber-config"
+          c:serializer-ref="serializer"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.ReaderConfig"/>
@@ -70,11 +79,13 @@
               p:name="#{T(com.epam.lagerta.services.LeadService).NAME}"
               p:maxPerNodeCount="1"
               p:totalCount="1"
-              p:service-ref="lead-service"/>
+              p:service-ref="lead-service"
+              p:nodeFilter-ref="serviceFilter"/>
         <bean class="org.apache.ignite.services.ServiceConfiguration"
               p:name="#{T(com.epam.lagerta.services.ReaderService).NAME}"
               p:maxPerNodeCount="1"
-              p:service-ref="reader-service"/>
+              p:service-ref="reader-service"
+              p:nodeFilter-ref="serviceFilter"/>
     </util:list>
 
     <util:list id="caches">
@@ -95,15 +106,21 @@
         </property>
     </bean>
 
+    <bean id="serviceFilter" class="com.epam.lagerta.ServiceFilterPredicate"/>
+
     <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="personJDBCDataCapturerLoader"/>
 
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.PerTestSubscriberConfig"
+    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
           p:remoteTopic="remoteTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
+    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
+          p:reconciliationTopic="reconciliation"
+          p:consumerConfig-ref="recon-consumer-properties"
+          p:producerConfig-ref="recon-producer-properties"/>
 
-    <bean id="id-sequencer" class="com.epam.lagerta.kafka.PerTestKafkaIdSequencer" scope="prototype"
+    <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
           c:subscriberConfig-ref="subscriber-config"/>
@@ -115,36 +132,43 @@
     <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="personJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter" scope="prototype">
+    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter">
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
-            <bean class="com.epam.lagerta.kafka.PerTestSubscriberConfig"
+            <bean class="com.epam.lagerta.kafka.SubscriberConfig"
                   p:remoteTopic="local-index-topic"
                   p:consumerConfig-ref="consumer-properties"
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>
     </bean>
 
-    <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryImpl"/>
+    <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryForTests">
+        <constructor-arg index="0">
+            <bean class="com.epam.lagerta.kafka.KafkaFactoryImpl"/>
+        </constructor-arg>
+        <constructor-arg index="1" ref="producer-properties"/>
+    </bean>
 
     <util:list id="subscriber-configs">
         <ref bean="subscriber-config"/>
     </util:list>
 
-    <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager" scope="prototype"
+    <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
           c:kafkaFactory-ref="kafka-factory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
           c:serializer-ref="serializer"/>
 
-    <util:list id="key-value-listeners" scope="prototype">
-        <bean class="com.epam.lagerta.capturer.SynchronousPublisher" scope="prototype">
-            <constructor-arg index="0" ref="producers-manager"/>
-        </bean>
+    <util:list id="key-value-listeners">
+        <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
+              c:producers-ref="producers-manager"/>
     </util:list>
 
     <bean id="cache-store-factory" class="com.epam.lagerta.capturer.DataCapturerBusFactory"/>
+
+    <bean id="buffer-overflow" class="com.epam.lagerta.subscriber.SimpleBufferOverflowCondition"
+          c:limit="10000"/>
 
     <!-- Caches configuration -->
     <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
