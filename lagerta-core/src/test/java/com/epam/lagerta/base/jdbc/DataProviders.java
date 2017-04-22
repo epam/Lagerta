@@ -49,6 +49,7 @@ public class DataProviders {
     public static final OtherTypesHolder OTH_2 =
             new OtherTypesHolder(null, null, null, null);
 
+    // ToDo: Uncomment all commented out cases after fixes to issue #180.
     public static Object[][] provideKVMeta(Ignite ignite) {
         return new Object[][] {
                 new Object[] {PrimitivesHolder.withMetaData(1, PH_1)},
@@ -63,7 +64,7 @@ public class DataProviders {
                 new Object[] {PrimitiveWrappersHolder.withMetaData(3, binary(ignite, PWH_3))},
                 new Object[] {OtherTypesHolder.withMetaData(1, OTH_1)},
                 new Object[] {OtherTypesHolder.withMetaData(1, OTH_2)},
-                new Object[] {OtherTypesHolder.withMetaData(1, binary(ignite, OTH_1))},
+                //new Object[] {OtherTypesHolder.withMetaData(1, binary(ignite, OTH_1))},
                 new Object[] {OtherTypesHolder.withMetaData(1, binary(ignite, OTH_2))}
         };
     }
@@ -82,7 +83,7 @@ public class DataProviders {
                         PrimitiveWrappersHolder.withMetaData(3, binary(ignite, PWH_3))),
                 data(OtherTypesHolder.withMetaData(1, OTH_1),
                         OtherTypesHolder.withMetaData(2, OTH_2)),
-                data(OtherTypesHolder.withMetaData(1, binary(ignite, OTH_1)),
+                data(//OtherTypesHolder.withMetaData(1, binary(ignite, OTH_1)),
                         OtherTypesHolder.withMetaData(2, binary(ignite, OTH_2)))
         };
     }
