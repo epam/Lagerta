@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 
 public final class JDBCKeyValueMapper {
 
-    static final String KEY_FIELD_NAME = "key";
-    static final String VAL_FIELD_NAME = "val";
+    public static final String KEY_FIELD_NAME = "key";
+    public static final String VAL_FIELD_NAME = "val";
 
     private static final Map<Class<?>, Class<?>> objectToPrimitiveMap = new HashMap<>();
 
