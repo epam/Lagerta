@@ -16,26 +16,50 @@
 
 package com.epam.lagerta.base.jdbc;
 
+import com.epam.lagerta.base.BlobValueTransformer;
 import com.epam.lagerta.base.FieldDescriptor;
+import com.epam.lagerta.base.ValueTransformer;
+import com.epam.lagerta.base.jdbc.committer.JDBCCommitter;
 import com.epam.lagerta.base.jdbc.committer.SQLSupplier;
-import com.epam.lagerta.base.jdbc.common.Person;
-import com.epam.lagerta.base.jdbc.common.PersonEntries;
+import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
+import com.epam.lagerta.capturer.JDBCDataCapturerLoader;
+import com.epam.lagerta.util.JDBCKeyValueMapper;
+import com.epam.lagerta.util.Serializer;
+import com.epam.lagerta.util.SerializerImpl;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
 import javax.sql.DataSource;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class JDBCUtil {
+    private static final String SQL_BASE_PATH = "/com/epam/lagerta/base/jdbc/committer/";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO %s VALUES (%s)";
+    private static final Serializer SERIALIZER = new SerializerImpl();
+
+    public static final ValueTransformer BLOB_TRANSFORMER = new BlobValueTransformer(SERIALIZER);
+    public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
+    public static final String DROP_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "drop_tables.sql";
+    public static final String SELECT_FROM_TEMPLATE = "SELECT * FROM %s";
 
     private JDBCUtil() {
+    }
+
+    public static JDBCCommitter getJDBCCommitter(DataSource dataSource) {
+        return new JDBCCommitter(dataSource, EntityDescriptors.getEntityDescriptors());
+    }
+
+    public static JDBCDataCapturerLoader getJDBCDataCapturerLoader(DataSource dataSource) {
+        return new JDBCDataCapturerLoader(dataSource, EntityDescriptors.getEntityDescriptors());
     }
 
     public static void executeUpdateQueryFromResource(Connection connection, String resourceName) {
@@ -59,34 +83,39 @@ public final class JDBCUtil {
         }
     }
 
-    public static void insertIntoPersonTable(
-            DataSource dataSource,
-            Integer key,
-            Object val,
-            String name,
-            Integer id
-    ) throws SQLException {
-        applyInConnection(dataSource, connection -> insertIntoPersonTable(connection, key, val, name, id));
+    public static boolean isOrdinaryColumn(String column) {
+        return !(JDBCKeyValueMapper.KEY_FIELD_NAME.equals(column)
+                || JDBCKeyValueMapper.VAL_FIELD_NAME.equals(column));
     }
 
-    public static void insertIntoPersonTable(
-            Connection connection,
-            Integer key,
-            Object val,
-            String name,
-            Integer id
-    ) throws SQLException {
-        String maskFields = PersonEntries.getPersonFieldDescriptor().entrySet().stream()
+    public static void fillSpecialColumnsFromResultSet(ResultSet resultSet, Map<String, Object> keyValueMap) throws SQLException {
+        Blob blob = resultSet.getBlob(JDBCKeyValueMapper.VAL_FIELD_NAME);
+        Object deserializedVal = null;
+
+        if (blob != null) {
+            int length = (int) blob.length();
+            deserializedVal = SERIALIZER.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
+        }
+        keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, deserializedVal);
+        keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, resultSet.getInt(JDBCKeyValueMapper.KEY_FIELD_NAME));
+    }
+
+    public static void insertIntoDB(DataSource dataSource, KeyValueAndMetadata kvMeta) {
+        applyInConnection(dataSource, connection -> insertIntoDB(connection, kvMeta));
+    }
+
+    public static void insertIntoDB(Connection connection, KeyValueAndMetadata kvMeta) throws SQLException {
+        String maskFields = kvMeta
+                .getFieldDescriptors()
+                .entrySet()
+                .stream()
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
         try (PreparedStatement preparedStatement = connection.prepareStatement(
-                String.format(INSERT_INTO_TEMPLATE, Person.PERSON_TABLE, maskFields))) {
-            Map<String, FieldDescriptor> personFieldDescriptor = PersonEntries.getPersonFieldDescriptor();
-
-            set(personFieldDescriptor.get(Person.PERSON_KEY), preparedStatement, key);
-            set(personFieldDescriptor.get(Person.PERSON_VAL), preparedStatement, val);
-            set(personFieldDescriptor.get(Person.PERSON_ID), preparedStatement, id);
-            set(personFieldDescriptor.get(Person.PERSON_NAME), preparedStatement, name);
+                String.format(INSERT_INTO_TEMPLATE, kvMeta.getTable(), maskFields))) {
+            for (FieldDescriptor descriptor : kvMeta.getFieldDescriptors().values()) {
+                set(descriptor, preparedStatement, kvMeta.getKeyValueMap().get(descriptor.getName()));
+            }
             preparedStatement.execute();
             if (!connection.getAutoCommit()) {
                 connection.commit();
