@@ -45,7 +45,7 @@ public class KafkaFactoryImpl implements KafkaFactory {
 
     @Override
     public <K, V> Consumer<K, V> consumer(Properties properties) {
-        return add(new KafkaConsumer<>(properties));
+        return new KafkaConsumer<>(properties);
     }
 
     private <T extends Closeable> T add(T t) {
