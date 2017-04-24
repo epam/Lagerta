@@ -15,6 +15,7 @@
  */
 package com.epam.lagerta.util;
 
+import com.epam.lagerta.common.ToMapCollector;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
@@ -26,6 +27,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import static java.util.function.Function.identity;
 
 public final class JDBCKeyValueMapper {
 
@@ -71,7 +74,7 @@ public final class JDBCKeyValueMapper {
      * BinaryObject will be separated by its fields,
      * All other - as "val" -> value.this
      * Also, the result map contain key as "key" -> key.this
-     * @param key is field name
+     * @param key   is field name
      * @param value is field value
      * @return map of "fieldName" -> value
      */
@@ -82,7 +85,7 @@ public final class JDBCKeyValueMapper {
         Map<String, Object> result = new HashMap<>();
         result.put(KEY_FIELD_NAME, key);
         if (value instanceof BinaryObject) {
-            result.putAll(mapBinaryObject((BinaryObject)value));
+            result.putAll(mapBinaryObject((BinaryObject) value));
         } else {
             result.put(VAL_FIELD_NAME, value);
         }
@@ -94,11 +97,8 @@ public final class JDBCKeyValueMapper {
     private static Map<String, Object> mapBinaryObject(BinaryObject binaryObject) {
         BinaryType type = binaryObject.type();
         Collection<String> fields = type.fieldNames();
-        Map<String, Object> result = new HashMap<>(fields.size());
-        for (String field : fields) {
-            result.put(field, binaryObject.field(field));
-        }
-        return result;
+        return fields.stream()
+                .collect(ToMapCollector.toMap(identity(), binaryObject::field));
     }
 
     /**
