@@ -46,7 +46,7 @@ public class PrimitivesHolder implements Serializable {
             PrimitivesHolder.class,
             TABLE,
             JDBCKeyValueMapper.KEY_FIELD_NAME,
-            PrimitivesFieldConstants.FIELD_DESCRIPTORS
+            FIELD_DESCRIPTORS
     );
 
     private boolean booleanValue;
