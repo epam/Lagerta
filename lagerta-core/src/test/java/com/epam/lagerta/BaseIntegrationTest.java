@@ -60,7 +60,6 @@ public abstract class BaseIntegrationTest {
             Person.PERSON_KEY
     );
     private static final long TX_WAIT_TIME = 10_000;
-    private static final String ADJUSTED_TOPIC_SUFFIX = "_adjusted_";
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
     private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
@@ -92,10 +91,7 @@ public abstract class BaseIntegrationTest {
     }
 
     public static String adjustTopicNameForTest(String topic) {
-        if (topic.contains(ADJUSTED_TOPIC_SUFFIX)) {
-            return topic;
-        }
-        return topic + ADJUSTED_TOPIC_SUFFIX + TEST_NUMBER;
+        return topic + "_" + TEST_NUMBER;
     }
 
 
