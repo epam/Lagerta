@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static java.util.function.Function.identity;
+
 public class LeadStateLoader {
 
     private static final long POLLING_TIME = 100L;
@@ -113,7 +115,7 @@ public class LeadStateLoader {
 
     private void shiftToLastCommitted(Consumer<?, ?> consumer, long commitId) {
         Map<TopicPartition, Long> partitionsAndTimestamps = getTopicPartitionStream(consumer)
-                .collect(Collectors.toMap(k -> k, v -> commitId));
+                .collect(Collectors.toMap(identity(), v -> commitId));
         Map<TopicPartition, OffsetAndMetadata> partitionsAndOffsets = consumer
                 .offsetsForTimes(partitionsAndTimestamps)
                 .entrySet()
