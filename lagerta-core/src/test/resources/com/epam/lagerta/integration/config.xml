@@ -175,7 +175,7 @@
           c:limit="10000"/>
 
     <!-- Caches configuration -->
-    <bean id="cache-base" abstract="true"
+    <bean id="cache-base" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true"
           p:readThrough="true"
           p:writeThrough="true"
           p:cacheMode="PARTITIONED"
@@ -183,22 +183,22 @@
           p:backups="2"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="primitives-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"/>
 
-    <bean id="binary-primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-primitives-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"/>
 
-    <bean id="primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="primitive-wrappers-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"/>
 
-    <bean id="binary-primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-primitive-wrappers-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"/>
 
-    <bean id="other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="other-types-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"/>
 
-    <bean id="binary-other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-other-types-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"/>
 
     <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
