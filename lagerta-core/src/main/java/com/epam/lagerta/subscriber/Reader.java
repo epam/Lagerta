@@ -171,6 +171,9 @@ public class Reader extends Scheduler {
             List<TransactionScope> scopes = new ArrayList<>(records.count());
             for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
                 TransactionScope transactionScope = serializer.deserialize(record.key());
+                if (transactionScope.getScope().isEmpty()) {
+                    LOGGER.warn("[R] {} polled empty transaction {}", readerId, transactionScope.getTransactionId());
+                }
                 TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
                 buffer.put(transactionScope.getTransactionId(),
                         new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));

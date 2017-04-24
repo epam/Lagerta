@@ -18,9 +18,9 @@ package com.epam.lagerta.subscriber.lead;
 
 public class RuleTimeouts {
 
-    private static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
-    private static final long SAVE_STATE_PERIOD = 1_000;
-    private static final long DEFAULT_GAP_CHECK = 120_000;
+    public static final long DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD = 60_000;
+    public static final long SAVE_STATE_PERIOD = 1_000;
+    public static final long DEFAULT_GAP_CHECK = 120_000;
 
     private final long hearbeatExpirationThreshold;
     private final long saveStatePeriod;
