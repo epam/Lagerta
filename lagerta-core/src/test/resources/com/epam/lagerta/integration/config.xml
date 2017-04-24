@@ -175,8 +175,7 @@
           c:limit="10000"/>
 
     <!-- Caches configuration -->
-    <bean id="primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"
+    <bean id="cache-base" abstract="true"
           p:readThrough="true"
           p:writeThrough="true"
           p:cacheMode="PARTITIONED"
@@ -184,53 +183,23 @@
           p:backups="2"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="binary-primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:storeKeepBinary="true"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"/>
 
-    <bean id="primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="binary-primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"/>
 
-    <bean id="binary-primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:storeKeepBinary="true"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"/>
 
-    <bean id="other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="binary-primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"/>
 
-    <bean id="binary-other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:storeKeepBinary="true"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"/>
+
+    <bean id="binary-other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"/>
 
     <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>
