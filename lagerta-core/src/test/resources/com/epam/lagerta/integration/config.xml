@@ -127,7 +127,8 @@
     <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"/>
+          c:subscriberConfig-ref="subscriber-config"
+          destroy-method="close"/>
 
     <bean id="key-transformer" class="com.epam.lagerta.capturer.DefaultKeyTransformer"/>
     <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>

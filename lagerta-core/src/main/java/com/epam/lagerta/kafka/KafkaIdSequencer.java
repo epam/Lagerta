@@ -30,7 +30,7 @@ public class KafkaIdSequencer implements IdSequencer {
 
     public KafkaIdSequencer(String topic, KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
         this.topic = topic;
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
+        producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
     }
 
     @SuppressWarnings("unchecked")
@@ -41,5 +41,9 @@ public class KafkaIdSequencer implements IdSequencer {
         } catch (ExecutionException | InterruptedException e) {
             throw new CacheWriterException(e);
         }
+    }
+
+    public void close() {
+        producer.close();
     }
 }
