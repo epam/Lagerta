@@ -43,7 +43,7 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
 
     public TransactionalKafkaProducerImpl(SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
                                           KeyTransformer keyTransformer, ValueTransformer valueTransformer, Serializer serializer) {
-        dataTopic = subscriberConfig.getRemoteTopic();
+        dataTopic = subscriberConfig.getInputTopic();
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
         producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());

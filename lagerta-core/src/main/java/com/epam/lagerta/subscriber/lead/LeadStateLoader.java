@@ -109,7 +109,7 @@ public class LeadStateLoader {
 
     private Consumer<?, ?> createAndSubscribeConsumer() {
         Consumer<?, ?> consumer = createConsumer();
-        consumer.subscribe(Collections.singleton(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singleton(config.getInputTopic()));
         return consumer;
     }
 
@@ -131,7 +131,7 @@ public class LeadStateLoader {
     }
 
     private Stream<TopicPartition> getTopicPartitionStream(Consumer<?, ?> consumer) {
-        String topic = config.getRemoteTopic();
+        String topic = config.getInputTopic();
         return consumer.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
     }

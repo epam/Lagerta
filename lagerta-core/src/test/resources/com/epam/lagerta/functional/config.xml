@@ -135,7 +135,7 @@ limitations under the License.
         </property>
     </bean>
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="testTopic"
+          p:inputTopic="testTopic"
           p:consumerConfig-ref="consumer-props"
     />
     <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"

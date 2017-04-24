@@ -93,7 +93,7 @@ public class KafkaMockFactory implements KafkaFactory {
 
     private Map<String, List<PartitionInfo>> getInfos() {
         // Note: more topics are expected to be added.
-        return Stream.of(config.getRemoteTopic())
+        return Stream.of(config.getInputTopic())
                 .flatMap(
                         topic -> IntStream
                                 .range(0, NUMBER_OF_PARTITIONS)

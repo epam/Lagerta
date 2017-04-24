@@ -28,7 +28,7 @@ public class KafkaLogCommitter {
 
     public KafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
         producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
-        logTopic = subscriberConfig.getRemoteTopic();
+        logTopic = subscriberConfig.getInputTopic();
     }
 
     @SuppressWarnings("unchecked")

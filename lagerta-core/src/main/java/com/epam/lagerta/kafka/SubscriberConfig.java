@@ -21,7 +21,7 @@ import java.util.Properties;
 public class SubscriberConfig implements Serializable {
     private String subscriberId;
     private boolean suspendAllowed;
-    private String remoteTopic;
+    private String inputTopic;
     private Properties consumerConfig;
     private Properties producerConfig;
 
@@ -41,12 +41,12 @@ public class SubscriberConfig implements Serializable {
         this.suspendAllowed = suspendAllowed;
     }
 
-    public String getRemoteTopic() {
-        return remoteTopic;
+    public String getInputTopic() {
+        return inputTopic;
     }
 
-    public void setRemoteTopic(String remoteTopic) {
-        this.remoteTopic = remoteTopic;
+    public void setInputTopic(String inputTopic) {
+        this.inputTopic = inputTopic;
     }
 
     public Properties getConsumerConfig() {

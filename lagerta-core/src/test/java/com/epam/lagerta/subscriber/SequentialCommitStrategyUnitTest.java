@@ -65,7 +65,7 @@ public class SequentialCommitStrategyUnitTest {
     @BeforeClass
     public void init(){
         subscriberConfig = new SubscriberConfig();
-        subscriberConfig.setRemoteTopic(TOPIC);
+        subscriberConfig.setInputTopic(TOPIC);
         subscriberConfig.setSubscriberId("1");
         subscriberConfig.setSuspendAllowed(false);
         kafkaMockFactory = new KafkaMockFactory(null, null, subscriberConfig, serializer);

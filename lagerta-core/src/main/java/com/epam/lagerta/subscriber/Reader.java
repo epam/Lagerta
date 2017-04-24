@@ -162,7 +162,7 @@ public class Reader extends Scheduler {
 
         ConsumerReader() {
             consumer = kafkaFactory.consumer(config.getConsumerConfig());
-            consumer.subscribe(Arrays.asList(config.getRemoteTopic(), reconciliationTopic),
+            consumer.subscribe(Arrays.asList(config.getInputTopic(), reconciliationTopic),
                     new ReaderRebalanceListener(this, committedOffsetMap));
         }
 
@@ -208,9 +208,9 @@ public class Reader extends Scheduler {
         }
 
         private List<TopicPartition> getMainTopicPartitions() {
-            String remoteTopic = config.getRemoteTopic();
+            String inputTopic = config.getInputTopic();
             return consumer.assignment().stream()
-                    .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
+                    .filter(topicPartition -> inputTopic.equals(topicPartition.topic()))
                     .collect(Collectors.toList());
         }
 

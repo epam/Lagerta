@@ -116,7 +116,7 @@
           factory-method="getJDBCDataCapturerLoader"/>
 
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="remoteTopic"
+          p:inputTopic="inputTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
     <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
@@ -141,7 +141,7 @@
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
             <bean class="com.epam.lagerta.kafka.SubscriberConfig"
-                  p:remoteTopic="local-index-topic"
+                  p:inputTopic="local-index-topic"
                   p:consumerConfig-ref="consumer-properties"
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>

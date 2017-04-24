@@ -42,7 +42,7 @@ public class ReconcilerImpl implements Reconciler {
 
     private static final int POLL_TIMEOUT = 200;
 
-    private final String remoteTopic;
+    private final String inputTopic;
     private final String reconciliationTopic;
     private final KafkaFactory kafkaFactory;
     private final DataRecoveryConfig dataRecoveryConfig;
@@ -55,7 +55,7 @@ public class ReconcilerImpl implements Reconciler {
         this.kafkaFactory = kafkaFactory;
         this.dataRecoveryConfig = dataRecoveryConfig;
         this.serializer = serializer;
-        remoteTopic = subscriberConfig.getRemoteTopic();
+        inputTopic = subscriberConfig.getInputTopic();
         reconciliationTopic = dataRecoveryConfig.getReconciliationTopic();
         transactionValueTemplate = serializer.serialize(Collections.emptyList());
     }
@@ -85,7 +85,7 @@ public class ReconcilerImpl implements Reconciler {
         }
 
         public void startReconciliation(List<Long> gaps) {
-            int reconPartitions = producer.partitionsFor(remoteTopic).size();
+            int reconPartitions = producer.partitionsFor(inputTopic).size();
             Map<Integer, List<Long>> txByPartition = gaps.stream()
                     .collect(Collectors.groupingBy(txId -> partition(txId, reconPartitions), toCollection(ArrayList::new)));
             seekToMissingTransactions(txByPartition);
@@ -95,7 +95,7 @@ public class ReconcilerImpl implements Reconciler {
         private void seekToMissingTransactions(Map<Integer, List<Long>> txByPartition) {
             Map<TopicPartition, OffsetAndMetadata> toCommit = txByPartition.entrySet().stream()
                     .collect(Collectors.toMap(
-                            entry -> new TopicPartition(remoteTopic, entry.getKey()),
+                            entry -> new TopicPartition(inputTopic, entry.getKey()),
                             entry -> new OffsetAndMetadata(Collections.min(entry.getValue()))
                     ));
             consumer.commitSync(toCommit);
@@ -103,7 +103,7 @@ public class ReconcilerImpl implements Reconciler {
 
         // todo for now loading in one thread, but probably will need to do it in parallel
         private void resendMissingTransactions(int partition, List<Long> txIds) {
-            TopicPartition topicPartition = new TopicPartition(remoteTopic, partition);
+            TopicPartition topicPartition = new TopicPartition(inputTopic, partition);
             consumer.assign(Collections.singleton(topicPartition));
             long lastOffset = consumer.endOffsets(Collections.singleton(topicPartition)).get(topicPartition);
             long currentOffset = 0;
