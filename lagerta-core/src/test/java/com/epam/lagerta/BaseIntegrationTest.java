@@ -22,6 +22,8 @@ import com.epam.lagerta.capturer.DataCapturerLoader;
 import com.epam.lagerta.resources.DBResource;
 import com.epam.lagerta.resources.FullClusterResource;
 import com.epam.lagerta.subscriber.Committer;
+import com.google.common.util.concurrent.Uninterruptibles;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +93,8 @@ public abstract class BaseIntegrationTest {
         return ALL_RESOURCES.igniteCluster().ignite();
     }
 
-    public void awaitTransactions() throws InterruptedException {
-        Thread.sleep(TX_WAIT_TIME);
+    public void awaitTransactions() {
+        Uninterruptibles.sleepUninterruptibly(TX_WAIT_TIME, TimeUnit.MILLISECONDS);
         LOGGER.debug("[T] SLEPT {}", TX_WAIT_TIME);
     }
 }
