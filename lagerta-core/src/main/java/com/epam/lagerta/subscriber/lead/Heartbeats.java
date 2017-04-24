@@ -29,8 +29,8 @@ public class Heartbeats {
         this.expirationThreshold = expirationThreshold;
     }
 
-    public boolean isAvailable(UUID consumerId) {
-        Long beat = beats.get(consumerId);
+    public boolean isAvailable(UUID readerId) {
+        Long beat = beats.get(readerId);
         return beat != null && !isBeatExpired(beat);
     }
 
@@ -42,11 +42,11 @@ public class Heartbeats {
         return System.currentTimeMillis() - beat > expirationThreshold;
     }
 
-    public void update(UUID consumerId) {
-        beats.put(consumerId, System.currentTimeMillis());
+    public void update(UUID readerId) {
+        beats.put(readerId, System.currentTimeMillis());
     }
 
-    public void removeDead(UUID consumerId) {
-        beats.remove(consumerId);
+    public void removeDead(UUID readerId) {
+        beats.remove(readerId);
     }
 }
