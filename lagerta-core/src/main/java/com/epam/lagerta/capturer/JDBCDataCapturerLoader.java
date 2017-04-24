@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.function.Function.identity;
+
 public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     private final DataSource dataSource;
@@ -36,7 +38,7 @@ public class JDBCDataCapturerLoader implements DataCapturerLoader {
 
     public JDBCDataCapturerLoader(DataSource dataSource, List<EntityDescriptor> descriptors) {
         this(dataSource, descriptors.stream().collect(Collectors
-                .toMap(EntityDescriptor::getTableName, descriptor -> descriptor)));
+                .toMap(EntityDescriptor::getTableName, identity())));
     }
 
     public JDBCDataCapturerLoader(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {

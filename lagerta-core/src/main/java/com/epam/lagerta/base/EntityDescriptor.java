@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.function.Function.identity;
+
 public class EntityDescriptor<T> {
     private final Class<T> clazz;
     private final String tableName;
@@ -35,12 +37,12 @@ public class EntityDescriptor<T> {
 
     public EntityDescriptor(String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
         this(null, tableName, keyField, fieldDescriptors.stream().collect(Collectors
-                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+                .toMap(FieldDescriptor::getName, identity())));
     }
 
     public EntityDescriptor(Class<T> clazz, String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
         this(clazz, tableName, keyField, fieldDescriptors.stream().collect(Collectors
-                .toMap(FieldDescriptor::getName, descriptor -> descriptor)));
+                .toMap(FieldDescriptor::getName, identity())));
     }
 
     public EntityDescriptor(Class<T> clazz, String tableName, String keyField,
