@@ -18,13 +18,13 @@ package com.epam.lagerta.cluster;
 
 import com.epam.lagerta.resources.FullClusterResource;
 import org.apache.ignite.Ignite;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class IgniteStarter {
 
     public static void main(String[] args) {
-        ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext(FullClusterResource.CONFIG_XML);
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext(FullClusterResource.CONFIG_XML);
         applicationContext.getBean(Ignite.class);
     }
 }
