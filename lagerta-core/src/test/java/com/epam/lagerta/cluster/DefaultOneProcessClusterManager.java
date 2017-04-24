@@ -15,9 +15,16 @@
  */
 package com.epam.lagerta.cluster;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.services.ServiceConfiguration;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -25,7 +32,7 @@ import java.util.stream.IntStream;
  * Implementation of {@link IgniteClusterManager} which starts all grids inside one process and uses Java configuration.
  * Abstract manager which starts all grids in one process.
  */
-public abstract class DefaultOneProcessClusterManager implements IgniteClusterManager {
+public abstract class DefaultOneProcessClusterManager extends BaseIgniteClusterManager {
     /**
      * Started grids.
      */
@@ -38,7 +45,10 @@ public abstract class DefaultOneProcessClusterManager implements IgniteClusterMa
                 .range(0, clusterSize)
                 .mapToObj(gridNumber -> startGrid(gridNumber, clusterSize))
                 .collect(Collectors.toList());
-        return servers.get(0);
+        clientNode = servers.get(0);
+        cacheConfigs = getNonSystemCacheConfigs();
+        serviceConfigs = clientNode.configuration().getServiceConfiguration();
+        return clientNode;
     }
 
     /*
@@ -53,10 +63,16 @@ public abstract class DefaultOneProcessClusterManager implements IgniteClusterMa
     /** {@inheritDoc} */
     @Override
     public void stopCluster() {
-        servers.get(0).services().cancelAll();
+        clientNode.services().cancelAll();
         for (Ignite server : servers) {
             server.executorService().shutdownNow();
             server.close();
         }
+    }
+
+    @Override
+    public void reloadCluster() {
+        stopServicesAndCaches();
+        startServicesAndCaches();
     }
 }
