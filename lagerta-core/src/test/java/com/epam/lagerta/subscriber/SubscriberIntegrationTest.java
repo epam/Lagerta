@@ -20,10 +20,17 @@ import com.epam.lagerta.BaseSingleJVMIntegrationTest;
 import com.epam.lagerta.base.jdbc.DataProviders;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
+import com.epam.lagerta.capturer.IdSequencer;
+import com.epam.lagerta.mocks.ProxyReconciler;
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.SpringResource;
@@ -54,7 +61,7 @@ public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
         cache.put(1, second);
         awaitTransactions();
 
-        assertObjectInDB(1, second, asBinary);
+        assertObjectsInDB(Collections.singletonMap(1, second), asBinary);
     }
 
     @Test(dataProvider = PRIMITIVES_CACHE_NAMES_PROVIDER)
@@ -71,35 +78,40 @@ public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
         Assert.assertEquals(actual, expected);
     }
 
-    private void assertObjectInDB(int key, PrimitivesHolder holder, boolean asBinary) throws SQLException {
+    private void assertObjectsInDB(Map<Integer, PrimitivesHolder> holders, boolean asBinary) throws SQLException {
         JDBCUtil.applyInConnection(dataSource, connection -> {
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(PRIMITIVES_TABLE_SELECT)) {
+                for (Map.Entry<Integer, PrimitivesHolder> entry : holders.entrySet()) {
+                    Assert.assertTrue(resultSet.next(), "Not sufficient entries in result set");
 
-                Assert.assertTrue(resultSet.next());
+                    Map<String, Object> expectedMap = PrimitivesHolder.toMap(entry.getKey(), entry.getValue(), asBinary);
+                    Map<String, Object> actualMap = PrimitivesHolder.getResultMap(resultSet);
 
-                Map<String, Object> expectedMap = PrimitivesHolder.toMap(key, holder, asBinary);
-                Map<String, Object> actualMap = PrimitivesHolder.getResultMap(resultSet);
-
-                Assert.assertEquals(expectedMap, actualMap);
+                    Assert.assertEquals(expectedMap, actualMap);
+                }
             }
         });
     }
 
     @Test
     public void gapDetectionProcessFillsGaps() throws Exception {
-        int firstPersonKey = 1;
-        Person firstPerson = new Person(0, "some_name");
-        writePersonToCache(CACHE_NAME, firstPersonKey, firstPerson);
+        int firstKey = 1;
+        PrimitivesHolder firstValue = new PrimitivesHolder();
+        IgniteCache<Integer, PrimitivesHolder> cache = ignite().cache(PrimitivesHolder.CACHE);
+        cache.put(firstKey, firstValue);
 
         long missedTx = createGap();
-        int lastPersonKey = 2;
-        Person lastPerson = new Person(1, "abyrvalg");
-        writePersonToCache(CACHE_NAME, lastPersonKey, lastPerson);
+        int lastKey = 2;
+        PrimitivesHolder lastValue = new PrimitivesHolder(true, (byte) 1, (short) 1, 1, 1, 1, 1);
+        cache.put(lastKey, lastValue);
 
         awaitReconciliationOnTransaction(missedTx);
         awaitTransactions();
-        assertObjectsInDB(false, entry(firstPersonKey, firstPerson), entry(lastPersonKey, lastPerson));
+        Map<Integer, PrimitivesHolder> expected = new LinkedHashMap<>();
+        expected.put(firstKey, firstValue);
+        expected.put(lastKey, lastValue);
+        assertObjectsInDB(expected, false);
     }
 
     private void awaitReconciliationOnTransaction(long missedTx) {
