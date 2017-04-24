@@ -15,6 +15,7 @@
  */
 package com.epam.lagerta.util;
 
+import com.epam.lagerta.common.ToMapCollector;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
@@ -26,7 +27,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import static java.util.function.Function.identity;
 
 public final class JDBCKeyValueMapper {
 
@@ -96,7 +98,7 @@ public final class JDBCKeyValueMapper {
         BinaryType type = binaryObject.type();
         Collection<String> fields = type.fieldNames();
         return fields.stream()
-                .collect(Collectors.toMap(field -> field, binaryObject::field));
+                .collect(ToMapCollector.toMap(identity(), binaryObject::field));
     }
 
     /**
