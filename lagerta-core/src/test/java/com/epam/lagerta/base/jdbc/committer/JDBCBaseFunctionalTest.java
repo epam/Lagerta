@@ -17,8 +17,8 @@
 package com.epam.lagerta.base.jdbc.committer;
 
 import com.epam.lagerta.BaseFunctionalTest;
-import com.epam.lagerta.base.jdbc.common.Person;
-import com.epam.lagerta.base.jdbc.common.PersonEntries;
+import com.epam.lagerta.base.jdbc.DataProviders;
+import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.resources.DBResource;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -28,26 +28,16 @@ import org.testng.annotations.DataProvider;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.Date;
 
 public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
+    private static final String DATA_BASE_NAME = "h2_functional_test";
 
-    protected static final String DATA_BASE_NAME = "h2_functional_test";
-    protected static final String DATA_PROVIDER_VAL_NAME = "val";
+    @DataProvider(name = DataProviders.KV_META_LIST_PROVIDER)
+    public static Object[][] provideKVMetaList() {
+        return DataProviders.provideKVMetaList(ignite);
+    }
 
     private final DBResource dbResource = new DBResource(DATA_BASE_NAME);
-
-    @DataProvider(name = DATA_PROVIDER_VAL_NAME)
-    public static Object[][] primitives() {
-        return new Object[][]{
-                {1, 2, null, 0},
-                {2, "string", null, 0},
-                {3, 'c', null, 0},
-                {4, new Date(System.currentTimeMillis()), null, 0},
-                {5, 0.2, null, 0},
-                {6, new Person(1, "Name"), null, 0}
-        };
-    }
 
     protected DataSource dataSource;
 
@@ -63,12 +53,12 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
 
     @BeforeMethod()
     public void initState() throws SQLException {
-        dbResource.initState(PersonEntries.CREATE_TABLE_SQL_RESOURCE);
+        dbResource.initState(JDBCUtil.CREATE_TABLE_SQL_RESOURCE);
         dataSource = dbResource.getDataSource();
     }
 
     @AfterMethod
     public void clearBase() throws SQLException {
-        dbResource.clearState(PersonEntries.DROP_TABLE_SQL_RESOUCE);
+        dbResource.clearState(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
     }
 }

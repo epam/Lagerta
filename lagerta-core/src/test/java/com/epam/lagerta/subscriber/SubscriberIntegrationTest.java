@@ -17,10 +17,13 @@
 package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.BaseSingleJVMIntegrationTest;
-import com.epam.lagerta.base.jdbc.common.Person;
-import com.epam.lagerta.capturer.IdSequencer;
-import com.epam.lagerta.mocks.ProxyReconciler;
-import com.google.common.util.concurrent.Uninterruptibles;
+import com.epam.lagerta.base.jdbc.DataProviders;
+import com.epam.lagerta.base.jdbc.JDBCUtil;
+import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.SpringResource;
@@ -28,42 +31,59 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
 public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
     private static final String CACHE_INFO_PROVIDER = "cacheInfoProvider";
+    private static final String PRIMITIVES_TABLE_SELECT = String.format(
+        JDBCUtil.SELECT_FROM_TEMPLATE,
+        PrimitivesHolder.TABLE
+    );
 
     @DataProvider(name = CACHE_INFO_PROVIDER)
     public static Object[][] provideCacheInformation() {
-        return DataProviderUtil.concat(provideCacheName(), new Object[][]{{false}, {true}});
+        return DataProviderUtil.concat(providePrimitivesCacheName(), new Object[][]{{false}, {true}});
     }
 
     @Test(dataProvider = CACHE_INFO_PROVIDER)
     public void sequentialTransactions(String cacheName, boolean asBinary) throws Exception {
-        Person firstPerson = new Person(0, "firstName");
-        Person secondPerson = new Person(1, "secondName");
+        IgniteCache<Integer, PrimitivesHolder> cache = ignite().cache(cacheName);
+        PrimitivesHolder first = DataProviders.PH_1;
+        PrimitivesHolder second = DataProviders.PH_2;
 
-        writePersonToCache(cacheName, 1, firstPerson);
-        writePersonToCache(cacheName, 1, secondPerson);
+        cache.put(1, first);
+        cache.put(1, second);
         awaitTransactions();
 
-        assertObjectsInDB(asBinary, entry(1, secondPerson));
+        assertObjectInDB(1, second, asBinary);
     }
 
-    @Test(dataProvider = CACHE_NAME_PROVIDER)
+    @Test(dataProvider = PRIMITIVES_CACHE_NAMES_PROVIDER)
     public void testWriteThroughAndReadThrough(String cacheName) throws Exception {
-        Person expected = new Person(312, "name");
+        PrimitivesHolder expected = DataProviders.PH_1;
+        IgniteCache<Integer, PrimitivesHolder> cache = ignite().cache(cacheName);
 
-        writePersonToCache(cacheName, 1, expected);
+        cache.put(1, expected);
         awaitTransactions();
 
-        IgniteCache<Object, Person> cache = ignite().cache(cacheName);
         cache.withSkipStore().clear(1);
 
-        Person actual = cache.get(1);
-        Assert.assertEquals(actual.getId(), expected.getId());
-        Assert.assertEquals(actual.getName(), expected.getName());
+        PrimitivesHolder actual = cache.get(1);
+        Assert.assertEquals(actual, expected);
+    }
+
+    private void assertObjectInDB(int key, PrimitivesHolder holder, boolean asBinary) throws SQLException {
+        JDBCUtil.applyInConnection(dataSource, connection -> {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(PRIMITIVES_TABLE_SELECT)) {
+
+                Assert.assertTrue(resultSet.next());
+
+                Map<String, Object> expectedMap = PrimitivesHolder.toMap(key, holder, asBinary);
+                Map<String, Object> actualMap = PrimitivesHolder.getResultMap(resultSet);
+
+                Assert.assertEquals(expectedMap, actualMap);
+            }
+        });
     }
 
     @Test

@@ -14,9 +14,35 @@
 --   limitations under the License.
 --
 
-CREATE TABLE cache_information (
-    id INT,
+CREATE TABLE primitivesTable (
     key INT PRIMARY KEY,
     val BLOB,
-    name VARCHAR(255)
+    booleanValue BIT,
+    byteValue TINYINT,
+    shortValue SMALLINT,
+    intValue INT,
+    longValue BIGINT,
+    floatValue REAL,
+    doubleValue FLOAT
+);
+
+CREATE TABLE primitiveWrappersTable (
+      key INT PRIMARY KEY,
+      val BLOB,
+      booleanValue BIT,
+      byteValue TINYINT,
+      shortValue SMALLINT,
+      intValue INT,
+      longValue BIGINT,
+      floatValue REAL,
+      doubleValue FLOAT
+);
+
+CREATE TABLE otherTypesTable (
+      key INT PRIMARY KEY,
+      val BLOB,
+      bytesValue BINARY,
+      bigDecimalValue DECIMAL,
+      dateValue DATE,
+      timestampValue TIMESTAMP
 );

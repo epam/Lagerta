@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.function.Function.identity;
+
 public class JDBCCommitter implements Committer {
 
     private static final int BATCH_SIZE = 50_000;
@@ -36,7 +38,7 @@ public class JDBCCommitter implements Committer {
 
     public JDBCCommitter(DataSource dataSource, List<EntityDescriptor> descriptors) {
         this(dataSource, descriptors.stream().collect(Collectors
-                .toMap(EntityDescriptor::getTableName, descriptor -> descriptor)));
+                .toMap(EntityDescriptor::getTableName, identity())));
     }
 
     public JDBCCommitter(DataSource dataSource, Map<String, EntityDescriptor> entityDescriptors) {
