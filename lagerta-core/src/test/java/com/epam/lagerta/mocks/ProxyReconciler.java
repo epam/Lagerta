@@ -18,20 +18,38 @@ package com.epam.lagerta.mocks;
 
 import com.epam.lagerta.subscriber.lead.Reconciler;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ReconcilerStub implements Reconciler {
+public class ProxyReconciler implements Reconciler {
 
-    private boolean reconciliationWasCalled;
+    private final Reconciler delegate;
+    private final Collection<Long> registeredGaps = new ConcurrentLinkedQueue<>();
+
+    public ProxyReconciler() {
+        this(null);
+    }
+
+    public ProxyReconciler(Reconciler delegate) {
+        this.delegate = delegate;
+    }
 
     @Override
     public boolean isReconciliationGoing() {
-        return reconciliationWasCalled;
+        return delegate != null && delegate.isReconciliationGoing();
     }
 
     @Override
     public void startReconciliation(List<Long> gaps) {
-        reconciliationWasCalled = true;
+        registeredGaps.addAll(gaps);
+        if (delegate != null) {
+            delegate.startReconciliation(gaps);
+        }
+    }
+
+    public boolean wasReconciliationCalled(long txId) {
+        return registeredGaps.contains(txId);
     }
 
 }
