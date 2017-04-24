@@ -100,7 +100,7 @@ public final class JDBCUtil {
         keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, resultSet.getInt(JDBCKeyValueMapper.KEY_FIELD_NAME));
     }
 
-    public static void insertIntoDB(DataSource dataSource, KeyValueAndMetadata kvMeta) throws SQLException {
+    public static void insertIntoDB(DataSource dataSource, KeyValueAndMetadata kvMeta) {
         applyInConnection(dataSource, connection -> insertIntoDB(connection, kvMeta));
     }
 
