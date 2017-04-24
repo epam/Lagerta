@@ -74,7 +74,7 @@ public final class JDBCKeyValueMapper {
      * BinaryObject will be separated by its fields,
      * All other - as "val" -> value.this
      * Also, the result map contain key as "key" -> key.this
-     * @param key   is field name
+     * @param key is field name
      * @param value is field value
      * @return map of "fieldName" -> value
      */
@@ -85,7 +85,7 @@ public final class JDBCKeyValueMapper {
         Map<String, Object> result = new HashMap<>();
         result.put(KEY_FIELD_NAME, key);
         if (value instanceof BinaryObject) {
-            result.putAll(mapBinaryObject((BinaryObject) value));
+            result.putAll(mapBinaryObject((BinaryObject)value));
         } else {
             result.put(VAL_FIELD_NAME, value);
         }
