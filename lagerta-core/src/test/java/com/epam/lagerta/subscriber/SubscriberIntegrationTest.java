@@ -22,10 +22,13 @@ import com.epam.lagerta.capturer.IdSequencer;
 import com.epam.lagerta.mocks.ProxyReconciler;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.SpringResource;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
@@ -80,13 +83,31 @@ public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
     }
 
     private void awaitReconciliationOnTransaction(long missedTx) {
-        ProxyReconciler proxyReconciler = getBean(ProxyReconciler.class);
+        boolean wasReconciliationCalled;
         do {
-            Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-        } while (!proxyReconciler.wasReconciliationCalled(missedTx));
+            Collection<Boolean> gapDetectionResult = ignite().compute().broadcast(new ReconCheckerCallable(missedTx));
+            wasReconciliationCalled = gapDetectionResult.stream().anyMatch(Boolean::booleanValue);
+            Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+        } while (!wasReconciliationCalled);
     }
 
     private long createGap() {
         return getBean(IdSequencer.class).getNextId();
+    }
+
+    private static class ReconCheckerCallable implements IgniteCallable<Boolean> {
+        @SpringResource(resourceClass = ProxyReconciler.class)
+        private transient ProxyReconciler reconciler;
+
+        private final long missedTx;
+
+        public ReconCheckerCallable(long missedTx) {
+            this.missedTx = missedTx;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            return reconciler.wasReconciliationCalled(missedTx);
+        }
     }
 }

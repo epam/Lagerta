@@ -29,6 +29,8 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ import static java.util.stream.Collectors.toCollection;
 
 public class ReconcilerImpl implements Reconciler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReconcilerImpl.class);
     private static final int POLL_TIMEOUT = 200;
 
     private final String remoteTopic;
@@ -133,6 +136,7 @@ public class ReconcilerImpl implements Reconciler {
         ByteBuffer key = serializer.serialize(scope);
         ProducerRecord<ByteBuffer, ByteBuffer> producerRecord =
                 new ProducerRecord<>(reconciliationTopic, key, transactionValueTemplate);
+        LOGGER.warn("[L] Reconciler is sending empty transaction with id {}", txId);
         producer.send(producerRecord);
     }
 
