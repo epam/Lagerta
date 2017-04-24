@@ -40,9 +40,10 @@ public abstract class BaseFunctionalTest {
     private static final int NUMBER_OF_NODES = 2;
     private static final IgniteClusterResource CLUSTER_RESOURCE =
             new IgniteClusterResource(NUMBER_OF_NODES, CLUSTER_MANAGER);
+    
+    protected static Ignite ignite;
 
     protected KafkaMockFactory kafkaMockFactory;
-    protected Ignite ignite;
 
     private int currentTxId;
 
