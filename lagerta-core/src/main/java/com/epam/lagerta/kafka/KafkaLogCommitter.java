@@ -27,8 +27,8 @@ public class KafkaLogCommitter {
     private final Producer producer;
 
     public KafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
-        this.logTopic = subscriberConfig.getRemoteTopic();
+        producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
+        logTopic = subscriberConfig.getRemoteTopic();
     }
 
     @SuppressWarnings("unchecked")
@@ -36,5 +36,9 @@ public class KafkaLogCommitter {
         int partition = 0;
         ProducerRecord record = new ProducerRecord(logTopic, partition, transactionId, null, null);
         return producer.send(record);
+    }
+
+    public void close() {
+        producer.close();
     }
 }

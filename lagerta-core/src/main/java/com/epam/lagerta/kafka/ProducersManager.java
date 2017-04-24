@@ -57,10 +57,14 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
 
     public synchronized void updateConfiguration(List<SubscriberConfig> configs) {
         Producers newProducers = new Producers(configs.size());
-
-        // ToDo: Close unsubscribed producers.
         configs.forEach(config -> newProducers.addProducer(config, producers));
+        Producers oldProducers = producers;
         producers = newProducers;
+        oldProducers.close();
+    }
+
+    public void close() {
+        producers.close();
     }
 
     private class Producers {
@@ -103,6 +107,10 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
             }
             producerList.add(producer);
             subscriberToProducer.put(subscriberId, producer);
+        }
+
+        public void close() {
+            producerList.forEach(TransactionalProducer::close);
         }
     }
 }

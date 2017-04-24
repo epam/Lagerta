@@ -163,7 +163,8 @@
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
-          c:serializer-ref="serializer"/>
+          c:serializer-ref="serializer"
+          destroy-method="close"/>
 
     <util:list id="key-value-listeners">
         <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
