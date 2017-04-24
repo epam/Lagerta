@@ -34,7 +34,6 @@ public class ToMapCollector<T, K, U> implements Collector<T, Map<K, U>, Map<K, U
             = Collections.unmodifiableSet(EnumSet.of(Collector.Characteristics.IDENTITY_FINISH));
 
     private final BiConsumer<Map<K, U>, T> accumulator;
-    private final BinaryOperator<Map<K, U>> combiner;
 
     public static <T, K, U> Collector<T, ?, Map<K, U>> toMap(Function<? super T, ? extends K> keyMapper,
                                                              Function<? super T, ? extends U> valueMapper) {
@@ -45,10 +44,6 @@ public class ToMapCollector<T, K, U> implements Collector<T, Map<K, U>, Map<K, U
 
     private ToMapCollector(BiConsumer<Map<K, U>, T> accumulator) {
         this.accumulator = accumulator;
-        combiner = (a, b) -> {
-            a.putAll(b);
-            return a;
-        };
     }
 
     @Override
@@ -63,7 +58,10 @@ public class ToMapCollector<T, K, U> implements Collector<T, Map<K, U>, Map<K, U
 
     @Override
     public BinaryOperator<Map<K, U>> combiner() {
-        return combiner;
+        return (a, b) -> {
+            a.putAll(b);
+            return a;
+        };
     }
 
     @Override
