@@ -82,6 +82,27 @@ public class OtherTypesHolder implements Serializable {
             FIELD_DESCRIPTORS
     );
 
+    private byte[] bytesValue;
+    private BigDecimal bigDecimalValue;
+    private Date dateValue;
+    private Timestamp timestampValue;
+
+    @SuppressWarnings("unused")
+    public OtherTypesHolder() {
+    }
+
+    public OtherTypesHolder(
+            byte[] bytesValue,
+            BigDecimal bigDecimalValue,
+            Date dateValue,
+            Timestamp timestampValue
+    ) {
+        this.bytesValue = bytesValue;
+        this.bigDecimalValue = bigDecimalValue;
+        this.dateValue = dateValue;
+        this.timestampValue = timestampValue;
+    }
+
     public static Map<String, Object> getResultMap(ResultSet resultSet) throws SQLException {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
@@ -129,27 +150,6 @@ public class OtherTypesHolder implements Serializable {
             keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
-    }
-
-    private byte[] bytesValue;
-    private BigDecimal bigDecimalValue;
-    private Date dateValue;
-    private Timestamp timestampValue;
-
-    @SuppressWarnings("unused")
-    public OtherTypesHolder() {
-    }
-
-    public OtherTypesHolder(
-            byte[] bytesValue,
-            BigDecimal bigDecimalValue,
-            Date dateValue,
-            Timestamp timestampValue
-    ) {
-        this.bytesValue = bytesValue;
-        this.bigDecimalValue = bigDecimalValue;
-        this.dateValue = dateValue;
-        this.timestampValue = timestampValue;
     }
 
     @Override

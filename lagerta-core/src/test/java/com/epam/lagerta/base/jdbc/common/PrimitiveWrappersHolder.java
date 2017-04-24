@@ -89,6 +89,36 @@ public class PrimitiveWrappersHolder implements Serializable {
             FIELD_DESCRIPTORS
     );
 
+    private Boolean booleanValue;
+    private Byte byteValue;
+    private Short shortValue;
+    private Integer intValue;
+    private Long longValue;
+    private Float floatValue;
+    private Double doubleValue;
+
+    @SuppressWarnings("unused")
+    public PrimitiveWrappersHolder() {
+    }
+
+    public PrimitiveWrappersHolder(
+            Boolean booleanValue,
+            Byte byteValue,
+            Short shortValue,
+            Integer intValue,
+            Long longValue,
+            Float floatValue,
+            Double doubleValue
+    ) {
+        this.booleanValue = booleanValue;
+        this.byteValue = byteValue;
+        this.shortValue = shortValue;
+        this.intValue = intValue;
+        this.longValue = longValue;
+        this.floatValue = floatValue;
+        this.doubleValue = doubleValue;
+    }
+
     public static Map<String, Object> getResultMap(ResultSet resultSet) throws SQLException {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
@@ -134,36 +164,6 @@ public class PrimitiveWrappersHolder implements Serializable {
             keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
-    }
-
-    private Boolean booleanValue;
-    private Byte byteValue;
-    private Short shortValue;
-    private Integer intValue;
-    private Long longValue;
-    private Float floatValue;
-    private Double doubleValue;
-
-    @SuppressWarnings("unused")
-    public PrimitiveWrappersHolder() {
-    }
-
-    public PrimitiveWrappersHolder(
-            Boolean booleanValue,
-            Byte byteValue,
-            Short shortValue,
-            Integer intValue,
-            Long longValue,
-            Float floatValue,
-            Double doubleValue
-    ) {
-        this.booleanValue = booleanValue;
-        this.byteValue = byteValue;
-        this.shortValue = shortValue;
-        this.intValue = intValue;
-        this.longValue = longValue;
-        this.floatValue = floatValue;
-        this.doubleValue = doubleValue;
     }
 
     @Override

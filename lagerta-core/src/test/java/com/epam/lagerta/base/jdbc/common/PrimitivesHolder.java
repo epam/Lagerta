@@ -82,6 +82,36 @@ public class PrimitivesHolder implements Serializable {
             FIELD_DESCRIPTORS
     );
 
+    private boolean booleanValue;
+    private byte byteValue;
+    private short shortValue;
+    private int intValue;
+    private long longValue;
+    private float floatValue;
+    private double doubleValue;
+
+    @SuppressWarnings("unused")
+    public PrimitivesHolder() {
+    }
+
+    public PrimitivesHolder(
+            boolean booleanValue,
+            byte byteValue,
+            short shortValue,
+            int intValue,
+            long longValue,
+            float floatValue,
+            double doubleValue
+    ) {
+        this.booleanValue = booleanValue;
+        this.byteValue = byteValue;
+        this.shortValue = shortValue;
+        this.intValue = intValue;
+        this.longValue = longValue;
+        this.floatValue = floatValue;
+        this.doubleValue = doubleValue;
+    }
+
     public static Map<String, Object> getResultMap(ResultSet resultSet) throws SQLException {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
@@ -137,36 +167,6 @@ public class PrimitivesHolder implements Serializable {
             keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
-    }
-
-    private boolean booleanValue;
-    private byte byteValue;
-    private short shortValue;
-    private int intValue;
-    private long longValue;
-    private float floatValue;
-    private double doubleValue;
-
-    @SuppressWarnings("unused")
-    public PrimitivesHolder() {
-    }
-
-    public PrimitivesHolder(
-            boolean booleanValue,
-            byte byteValue,
-            short shortValue,
-            int intValue,
-            long longValue,
-            float floatValue,
-            double doubleValue
-    ) {
-        this.booleanValue = booleanValue;
-        this.byteValue = byteValue;
-        this.shortValue = shortValue;
-        this.intValue = intValue;
-        this.longValue = longValue;
-        this.floatValue = floatValue;
-        this.doubleValue = doubleValue;
     }
 
     @Override
