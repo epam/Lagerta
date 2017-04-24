@@ -23,10 +23,10 @@ import com.epam.lagerta.base.jdbc.common.Person;
 import com.epam.lagerta.base.jdbc.common.PersonEntries;
 import com.epam.lagerta.capturer.DataCapturerLoader;
 import com.epam.lagerta.capturer.JDBCDataCapturerLoader;
-import com.epam.lagerta.cluster.IgniteClusterManager;
 import com.epam.lagerta.resources.DBResource;
 import com.epam.lagerta.resources.FullClusterResource;
 import com.epam.lagerta.subscriber.Committer;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
@@ -36,7 +36,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 
 import javax.sql.DataSource;
@@ -46,6 +45,7 @@ import java.sql.Statement;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public abstract class BaseIntegrationTest {
     public static final String CACHE_NAME = "cache";
@@ -60,6 +60,7 @@ public abstract class BaseIntegrationTest {
             Person.PERSON_KEY
     );
     private static final long TX_WAIT_TIME = 10_000;
+    private static final String ADJUSTED_TOPIC_SUFFIX = "_adjusted_";
 
     private static final Map<String, EntityDescriptor> ENTITY_DESCRIPTOR_MAP = new HashMap<>();
     private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
@@ -91,7 +92,10 @@ public abstract class BaseIntegrationTest {
     }
 
     public static String adjustTopicNameForTest(String topic) {
-        return topic + "_" + TEST_NUMBER;
+        if (topic.contains(ADJUSTED_TOPIC_SUFFIX)) {
+            return topic;
+        }
+        return topic + ADJUSTED_TOPIC_SUFFIX + TEST_NUMBER;
     }
 
 
@@ -130,8 +134,8 @@ public abstract class BaseIntegrationTest {
         }
     }
 
-    public void awaitTransactions() throws InterruptedException {
-        Thread.sleep(TX_WAIT_TIME);
+    public void awaitTransactions() {
+        Uninterruptibles.sleepUninterruptibly(TX_WAIT_TIME, TimeUnit.MILLISECONDS);
         LOGGER.debug("[T] SLEPT {}", TX_WAIT_TIME);
     }
 
@@ -142,7 +146,7 @@ public abstract class BaseIntegrationTest {
                  ResultSet resultSet = statement.executeQuery(PERSON_TABLE_SELECT)) {
 
                 for (Map.Entry<Integer, Person> entry : persons) {
-                    AssertJUnit.assertTrue(resultSet.next());
+                    AssertJUnit.assertTrue("No data in person table", resultSet.next());
 
                     Map<String, Object> expectedMap = personEntryToMap(asBinary, entry);
                     Map<String, Object> actualMap = PersonEntries.getResultMapForPerson(resultSet);

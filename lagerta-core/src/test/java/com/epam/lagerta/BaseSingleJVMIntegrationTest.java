@@ -23,9 +23,16 @@ import static com.epam.lagerta.resources.FullClusterResource.CONFIG_XML;
 
 public abstract class BaseSingleJVMIntegrationTest extends BaseIntegrationTest {
 
+    private AppContextOneProcessClusterManager clusterManager;
+
     @BeforeSuite
     public void setUp() throws Exception {
-        ALL_RESOURCES.setClusterManager(new AppContextOneProcessClusterManager(CONFIG_XML));
+        clusterManager = new AppContextOneProcessClusterManager(CONFIG_XML);
+        ALL_RESOURCES.setClusterManager(clusterManager);
         ALL_RESOURCES.setUp();
+    }
+
+    protected <T> T getBean(Class<T> clazz) {
+        return clusterManager.getBean(clazz);
     }
 }

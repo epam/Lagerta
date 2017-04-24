@@ -20,15 +20,21 @@ import com.epam.lagerta.BaseIntegrationTest;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class KafkaFactoryForTests implements KafkaFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaFactoryForTests.class);
+
     private final KafkaFactory kafkaFactory;
     private final Properties producerConfig;
 
@@ -67,6 +73,7 @@ public class KafkaFactoryForTests implements KafkaFactory {
 
     private static class ConsumerProxy implements InvocationHandler {
         private static final String SUBSCRIBE_METHOD_NAME = "subscribe";
+        private static final String OFFSETS_TIMES_METHOD_NAME = "offsetsForTimes";
 
         private final KafkaFactoryForTests kafkaFactory;
         private final Consumer consumer;
@@ -79,15 +86,33 @@ public class KafkaFactoryForTests implements KafkaFactory {
         @SuppressWarnings("unchecked")
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (SUBSCRIBE_METHOD_NAME.equals(method.getName())) {
+            String name = method.getName();
+            if (SUBSCRIBE_METHOD_NAME.equals(name)) {
                 Collection<String> topics = ((Collection<String>) args[0])
                         .stream()
                         .map(BaseIntegrationTest::adjustTopicNameForTest)
                         .collect(Collectors.toList());
                 args[0] = topics;
                 kafkaFactory.ensureTopicsCreated(topics);
+            } else if (OFFSETS_TIMES_METHOD_NAME.equals(name)) {
+                Map<TopicPartition, Long> timestamps = (Map<TopicPartition, Long>) args[0];
+                Map<TopicPartition, Long> timestampsByAdjustedTopic = timestamps.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                entry -> {
+                                    TopicPartition topicPartition = entry.getKey();
+                                    String topic = BaseIntegrationTest.adjustTopicNameForTest(topicPartition.topic());
+                                    return new TopicPartition(topic, topicPartition.partition());
+                                },
+                                Map.Entry::getValue
+                        ));
+                args[0] = timestampsByAdjustedTopic;
             }
-            return method.invoke(consumer, args);
+            try {
+                return method.invoke(consumer, args);
+            } catch (Exception e) {
+                LOGGER.error("Exception caught on proxied method " + method, e);
+                throw e;
+            }
         }
     }
 

@@ -18,10 +18,15 @@ package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.BaseSingleJVMIntegrationTest;
 import com.epam.lagerta.base.jdbc.common.Person;
+import com.epam.lagerta.capturer.IdSequencer;
+import com.epam.lagerta.mocks.ProxyReconciler;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.IgniteCache;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.TimeUnit;
 
 public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
     private static final String CACHE_INFO_PROVIDER = "cacheInfoProvider";
@@ -56,5 +61,32 @@ public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
         Person actual = cache.get(1);
         Assert.assertEquals(actual.getId(), expected.getId());
         Assert.assertEquals(actual.getName(), expected.getName());
+    }
+
+    @Test
+    public void gapDetectionProcessFillsGaps() throws Exception {
+        int firstPersonKey = 1;
+        Person firstPerson = new Person(0, "some_name");
+        writePersonToCache(CACHE_NAME, firstPersonKey, firstPerson);
+
+        long missedTx = createGap();
+        int lastPersonKey = 2;
+        Person lastPerson = new Person(1, "abyrvalg");
+        writePersonToCache(CACHE_NAME, lastPersonKey, lastPerson);
+
+        awaitReconciliationOnTransaction(missedTx);
+        awaitTransactions();
+        assertObjectsInDB(false, entry(firstPersonKey, firstPerson), entry(lastPersonKey, lastPerson));
+    }
+
+    private void awaitReconciliationOnTransaction(long missedTx) {
+        ProxyReconciler proxyReconciler = getBean(ProxyReconciler.class);
+        do {
+            Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
+        } while (!proxyReconciler.wasReconciliationCalled(missedTx));
+    }
+
+    private long createGap() {
+        return getBean(IdSequencer.class).getNextId();
     }
 }

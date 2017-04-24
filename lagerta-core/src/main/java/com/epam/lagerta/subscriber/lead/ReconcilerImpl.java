@@ -24,8 +24,10 @@ import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
@@ -68,30 +70,46 @@ public class ReconcilerImpl implements Reconciler {
     @Override
     public void startReconciliation(List<Long> gaps) {
         reconciliationGoing = true;
-        int reconPartitions = producer.partitionsFor(remoteTopic).size();
-        Map<Integer, List<Long>> txByPartition = gaps.stream()
-                .collect(Collectors.groupingBy(txId -> partition(txId, reconPartitions), toCollection(ArrayList::new)));
+        Map<Integer, TopicPartition> reconPartitions = producer.partitionsFor(remoteTopic).stream()
+                .collect(Collectors.toMap(
+                        PartitionInfo::partition,
+                        info -> new TopicPartition(info.topic(), info.partition())
+                ));
+        int partitions = reconPartitions.size();
+        Map<TopicPartition, List<Long>> txByPartition = gaps.stream()
+                .collect(Collectors.groupingBy(
+                        txId -> reconPartitions.get(partition(txId, partitions)),
+                        toCollection(ArrayList::new))
+                );
         seekToMissingTransactions(txByPartition);
         txByPartition.forEach(this::resendMissingTransactions);
         reconciliationGoing = false;
     }
 
-    private void seekToMissingTransactions(Map<Integer, List<Long>> txByPartition) {
-        Map<TopicPartition, OffsetAndMetadata> toCommit = txByPartition.entrySet().stream()
+    private void seekToMissingTransactions(Map<TopicPartition, List<Long>> txByPartition) {
+        Map<TopicPartition, Long> timestamps = txByPartition.entrySet().stream()
                 .collect(Collectors.toMap(
-                        entry -> new TopicPartition(remoteTopic, entry.getKey()),
-                        entry -> new OffsetAndMetadata(Collections.min(entry.getValue()))
+                        Map.Entry::getKey,
+                        entry -> Collections.min(entry.getValue())
+                ));
+        Map<TopicPartition, OffsetAndTimestamp> foundOffsets = consumer.offsetsForTimes(timestamps);
+        Map<TopicPartition, OffsetAndMetadata> toCommit = foundOffsets.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> {
+                            long offset = entry.getValue() != null? entry.getValue().offset() : 0;
+                            return new OffsetAndMetadata(offset);
+                        }
                 ));
         consumer.commitSync(toCommit);
     }
 
     // todo for now loading in one thread, but probably will need to do it in parallel
-    private void resendMissingTransactions(int partition, List<Long> txIds) {
-        TopicPartition topicPartition = new TopicPartition(remoteTopic, partition);
+    private void resendMissingTransactions(TopicPartition topicPartition, List<Long> txIds) {
         consumer.assign(Collections.singleton(topicPartition));
         long lastOffset = consumer.endOffsets(Collections.singleton(topicPartition)).get(topicPartition);
         long currentOffset = 0;
-        while (currentOffset < lastOffset - 1 || !txIds.isEmpty()) {
+        while (currentOffset < lastOffset - 1 && !txIds.isEmpty()) {
             for (ConsumerRecord<ByteBuffer, ByteBuffer> record : consumer.poll(POLL_TIMEOUT)) {
                 currentOffset = Math.max(currentOffset, record.offset());
                 processSingleRecord(txIds, record);
