@@ -17,7 +17,6 @@
 package com.epam.lagerta.base.jdbc.common;
 
 import com.epam.lagerta.base.EntityDescriptor;
-import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.util.JDBCKeyValueMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -28,58 +27,26 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static com.epam.lagerta.base.SimpleValueTransformer.BOOLEAN;
-import static com.epam.lagerta.base.SimpleValueTransformer.BYTE;
-import static com.epam.lagerta.base.SimpleValueTransformer.DOUBLE;
-import static com.epam.lagerta.base.SimpleValueTransformer.FLOAT;
-import static com.epam.lagerta.base.SimpleValueTransformer.INTEGER;
-import static com.epam.lagerta.base.SimpleValueTransformer.LONG;
-import static com.epam.lagerta.base.SimpleValueTransformer.SHORT;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BOOLEAN_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BYTE_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.DOUBLE_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.FIELD_DESCRIPTORS;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.FLOAT_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.INT_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.LONG_VALUE;
+import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.SHORT_VALUE;
 
 public class PrimitivesHolder implements Serializable {
     public static final String CACHE = "primitivesCache";
     public static final String BINARY_KEEPING_CACHE = "binaryKeepingPrimitivesCache";
     public static final String TABLE = "primitivesTable";
 
-    private static final String BOOLEAN_VALUE = "booleanValue";
-    private static final String BYTE_VALUE = "byteValue";
-    private static final String SHORT_VALUE = "shortValue";
-    private static final String INT_VALUE = "intValue";
-    private static final String LONG_VALUE = "longValue";
-    private static final String FLOAT_VALUE = "floatValue";
-    private static final String DOUBLE_VALUE = "doubleValue";
-
-    private static final int KEY_INDEX = 1;
-    private static final int VAL_INDEX = 2;
-    private static final int BOOLEAN_VALUE_INDEX = 3;
-    private static final int BYTE_VALUE_INDEX = 4;
-    private static final int SHORT_VALUE_INDEX = 5;
-    private static final int INT_VALUE_INDEX = 6;
-    private static final int LONG_VALUE_INDEX = 7;
-    private static final int FLOAT_VALUE_INDEX = 8;
-    private static final int DOUBLE_VALUE_INDEX = 9;
-
-    private static final Map<String, FieldDescriptor> FIELD_DESCRIPTORS = Stream.of(
-            new FieldDescriptor(KEY_INDEX, JDBCKeyValueMapper.KEY_FIELD_NAME, INTEGER),
-            new FieldDescriptor(VAL_INDEX, JDBCKeyValueMapper.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
-            new FieldDescriptor(BOOLEAN_VALUE_INDEX, BOOLEAN_VALUE, BOOLEAN),
-            new FieldDescriptor(BYTE_VALUE_INDEX, BYTE_VALUE, BYTE),
-            new FieldDescriptor(SHORT_VALUE_INDEX, SHORT_VALUE, SHORT),
-            new FieldDescriptor(INT_VALUE_INDEX, INT_VALUE, INTEGER),
-            new FieldDescriptor(LONG_VALUE_INDEX, LONG_VALUE, LONG),
-            new FieldDescriptor(FLOAT_VALUE_INDEX, FLOAT_VALUE, FLOAT),
-            new FieldDescriptor(DOUBLE_VALUE_INDEX, DOUBLE_VALUE, DOUBLE)
-    ).collect(Collectors.toMap(FieldDescriptor::getName, Function.identity()));
-
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitivesHolder.class,
             TABLE,
             JDBCKeyValueMapper.KEY_FIELD_NAME,
-            FIELD_DESCRIPTORS
+            PrimitivesFieldConstants.FIELD_DESCRIPTORS
     );
 
     private boolean booleanValue;
