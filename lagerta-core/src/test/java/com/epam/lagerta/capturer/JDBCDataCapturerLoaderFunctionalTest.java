@@ -22,6 +22,7 @@ import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
+import org.apache.ignite.binary.BinaryObject;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -79,7 +80,11 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         jdbcDataCapturerLoader = new JDBCDataCapturerLoader(
                 dataSource, Collections.singletonMap(cacheName, descriptor));
         Object actual = jdbcDataCapturerLoader.load(cacheName, kvMeta.getKey());
-        assertEquals(actual, kvMeta.getUnwrappedValue());
+        if (kvMeta.getValue() instanceof BinaryObject) {
+            assertEquals(actual.getClass(), Object.class);
+        } else {
+            assertEquals(actual, kvMeta.getValue());
+        }
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
