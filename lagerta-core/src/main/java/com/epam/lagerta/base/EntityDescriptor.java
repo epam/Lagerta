@@ -18,6 +18,7 @@ package com.epam.lagerta.base;
 
 import com.epam.lagerta.base.util.FieldDescriptorHelper;
 import com.epam.lagerta.util.JDBCKeyValueMapper;
+import com.epam.lagerta.util.Serializer;
 import com.epam.lagerta.util.SerializerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ public class EntityDescriptor<T> {
     public static final String KEY_FIELD_NAME = "key";
     public static final String VAL_FIELD_NAME = "val";
 
-    private static final SerializerImpl SERIALIZER = new SerializerImpl();
+    private static final Serializer SERIALIZER = new SerializerImpl();
 
     private final Class<T> clazz;
     private final String tableName;
@@ -68,10 +69,11 @@ public class EntityDescriptor<T> {
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
         //maybe customization sql syntax for different dialect in future
-        upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + KEY_FIELD_NAME + ")" +
-                " VALUES (" + maskFields + ")";
+        upsertQuery = String.format("MERGE INTO %s (%s) KEY(%s) VALUES (%s)",
+                tableName, columnNames, KEY_FIELD_NAME, maskFields);
         // specific IN semantic for h2
-        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE array_contains(?, " + KEY_FIELD_NAME + ")";
+        selectQuery = String.format("SELECT %s FROM %s WHERE array_contains(?, %s)",
+                columnNames, tableName, KEY_FIELD_NAME);
     }
 
     private static List<FieldDescriptor> setDescriptors(List<FieldDescriptor> fieldDescriptors) {
@@ -81,7 +83,7 @@ public class EntityDescriptor<T> {
 
     private static <T> List<FieldDescriptor> parseClass(Class<T> clazz) {
         Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
-        LOG.warn("field descriptor was not set, default will be used instead");
+        LOG.warn("FieldDescriptors were not set, defaults will be used instead");
         return new FieldDescriptorHelper(SERIALIZER)
                 .parseFields(clazz);
     }

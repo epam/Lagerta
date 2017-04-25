@@ -22,10 +22,11 @@ import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.SimpleValueTransformer;
 import com.epam.lagerta.base.ValueTransformer;
 import com.epam.lagerta.util.Serializer;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.epam.lagerta.base.EntityDescriptor.KEY_FIELD_NAME;
@@ -40,33 +41,41 @@ public final class FieldDescriptorHelper {
     }
 
     public <T> List<FieldDescriptor> parseFields(Class<T> clazz) {
-        Field[] fields = clazz.getDeclaredFields();
-        int i = 1;
-        List<FieldDescriptor> descriptors = new LinkedList<>();
-        for (Field field : fields) {
+        List<Field> fields = new ArrayList<>();
+        ReflectionUtils.doWithFields(clazz, field -> {
             int modifiers = field.getModifiers();
             if (!Modifier.isTransient(modifiers) && !Modifier.isStatic(modifiers)) {
-                boolean accessible = field.isAccessible();
-                if (!accessible) {
-                    field.setAccessible(true);
-                }
-                Class<?> type = field.getType();
-                ValueTransformer transformer;
-                if (type.isEnum()) {
-                    transformer = EnumValueTransformer.of(type);
-                } else {
-                    transformer = SimpleValueTransformer.of(type);
-                    if (transformer == SimpleValueTransformer.DUMMY) {
-                        transformer = blobValueTransformer;
-                    }
-                }
-                descriptors.add(new FieldDescriptor(i++, field.getName(), transformer));
-                if (!accessible) {
-                    field.setAccessible(false);
-                }
+                fields.add(field);
+            }
+        });
+        int i = 1;
+        List<FieldDescriptor> descriptors = new ArrayList<>();
+        for (Field field : fields) {
+            boolean accessible = field.isAccessible();
+            if (!accessible) {
+                field.setAccessible(true);
+            }
+            Class<?> type = field.getType();
+            ValueTransformer transformer = identifyTransformer(type);
+            descriptors.add(new FieldDescriptor(i++, field.getName(), transformer));
+            if (!accessible) {
+                field.setAccessible(false);
             }
         }
         return descriptors;
+    }
+
+    private ValueTransformer identifyTransformer(Class<?> type) {
+        ValueTransformer transformer;
+        if (type.isEnum()) {
+            transformer = EnumValueTransformer.of(type);
+        } else {
+            transformer = SimpleValueTransformer.of(type);
+            if (transformer == SimpleValueTransformer.DUMMY) {
+                transformer = blobValueTransformer;
+            }
+        }
+        return transformer;
     }
 
     /**
