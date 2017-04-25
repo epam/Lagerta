@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 public interface TransactionalProducer {
+
     Future<RecordMetadata> send(long transactionId, Map<String, Collection<Cache.Entry<?, ?>>> updates);
+
     void close();
+
 }
