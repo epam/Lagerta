@@ -16,13 +16,16 @@
 
 package com.epam.lagerta;
 
+import com.epam.lagerta.cluster.IgniteClusterManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
 public class ServiceFilterPredicate implements IgnitePredicate<ClusterNode> {
 
     @Override
     public boolean apply(ClusterNode clusterNode) {
-        return !clusterNode.isClient();
+        return !IgniteClusterManager.CLIENT_GRID_NAME.equalsIgnoreCase(clusterNode.attribute(ATTR_GRID_NAME));
     }
 }

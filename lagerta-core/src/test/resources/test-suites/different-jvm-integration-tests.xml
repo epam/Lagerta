@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2017. EPAM Systems.
+  ~ Copyright (c) 2017. EPAM Systems
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
   -->
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-<suite name="Integration Tests">
-    <suite-files>
-        <suite-file path="single-jvm-integration-tests.xml"/>
-        <suite-file path="different-jvm-integration-tests.xml"/>
-    </suite-files>
+<!--Per test timeout set to 5 minutes.-->
+<suite name="Different-JVM Integration Tests" time-out="300000">
+    <test name="All">
+        <classes>
+        </classes>
+    </test>
 </suite>
-

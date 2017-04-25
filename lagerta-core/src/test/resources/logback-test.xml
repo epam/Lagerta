@@ -37,6 +37,8 @@
 
     <logger name="kafka" level="WARN"/>
 
+    <logger name="org.apache.ignite" level="WARN"/>
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE"/>

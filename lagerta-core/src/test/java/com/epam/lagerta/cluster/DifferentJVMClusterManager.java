@@ -16,11 +16,12 @@
 
 package com.epam.lagerta.cluster;
 
-import com.epam.lagerta.IgniteConfigurer;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteCluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.GenericXmlApplicationContext;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,38 +29,67 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-public class DifferentJVMClusterManager implements IgniteClusterManager {
+public class DifferentJVMClusterManager extends BaseIgniteClusterManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(DifferentJVMClusterManager.class);
-    private static final String CLIENT_GRID_NAME = "clientNode";
+    private static final String CONFIG_XML = "com/epam/lagerta/integration/client-config.xml";
 
-    private Ignite clientNode;
     private IgniteStopper igniteStopper;
+    private List<Process> processes;
+    private int clusterSize = 0;
 
     @Override
     public Ignite startCluster(int clusterSize) {
+        this.clusterSize = clusterSize;
+        clientNode = new GenericXmlApplicationContext(CONFIG_XML).getBean(Ignite.class);
+        processes = new ArrayList<>(clusterSize);
+        startServerNodes();
+        igniteStopper = new IgniteStopper(clientNode);
+        cacheConfigs = getNonSystemCacheConfigs();
+        serviceConfigs = clientNode.configuration().getServiceConfiguration();
+        return clientNode;
+    }
+
+    private void startServerNodes() {
+        processes = processes.stream().filter(Process::isAlive).collect(Collectors.toList());
         try {
-            for (int gridNumber = 0; gridNumber < clusterSize; gridNumber++) {
-                startJVM("node-" + gridNumber, IgniteStarter.class);
+            for (int gridNumber = processes.size(); gridNumber < clusterSize; gridNumber++) {
+                processes.add(startJVM("node-" + gridNumber, IgniteStarter.class));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        clientNode = Ignition.start(IgniteConfigurer.getIgniteConfiguration(CLIENT_GRID_NAME, true));
-        igniteStopper = new IgniteStopper(clientNode);
-        return clientNode;
     }
 
     @Override
     public void stopCluster() {
-        igniteStopper.stopAllServerNodes();
+        if (igniteStopper != null) {
+            igniteStopper.stopAllServerNodes();
+        }
+        processes.stream().filter(Process::isAlive).forEach(Process::destroy);
         clientNode.close();
+    }
+
+    @Override
+    public void reloadCluster() {
+        startServerNodes();
+        IgniteCluster cluster = clientNode.cluster();
+        do {
+            Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
+        } while (cluster.forServers().nodes().size() <= clusterSize);
+        stopServicesAndCaches();
+        startServicesAndCaches();
     }
 
     public IgniteStopper getIgniteStopper() {
         return igniteStopper;
+    }
+
+    public long getCountAliveServerNodes() {
+        return processes.stream().filter(Process::isAlive).count();
     }
 
     private Process startJVM(String gridName, Class classForRun) throws IOException, InterruptedException {
