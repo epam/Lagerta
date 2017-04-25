@@ -41,7 +41,7 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
     private final ValueTransformer valueTransformer;
     private final Serializer serializer;
 
-    public TransactionalKafkaProducerImpl(SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
+    public TransactionalKafkaProducerImpl(com.epam.lagerta.kafka.config.SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
                                           KeyTransformer keyTransformer, ValueTransformer valueTransformer, Serializer serializer) {
         dataTopic = subscriberConfig.getInputTopic();
         this.keyTransformer = keyTransformer;

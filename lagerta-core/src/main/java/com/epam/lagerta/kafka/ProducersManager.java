@@ -36,7 +36,7 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
     private volatile Producers producers;
 
     public ProducersManager(KafkaFactory kafkaFactory, KeyTransformer keyTransformer, ValueTransformer valueTransformer,
-                            List<SubscriberConfig> configs, Serializer serializer) {
+                            List<com.epam.lagerta.kafka.config.SubscriberConfig> configs, Serializer serializer) {
         this.kafkaFactory = kafkaFactory;
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
@@ -55,7 +55,7 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
         ((SuspendableProducer)producers.get(subscriberId)).resume();
     }
 
-    public synchronized void updateConfiguration(List<SubscriberConfig> configs) {
+    public synchronized void updateConfiguration(List<com.epam.lagerta.kafka.config.SubscriberConfig> configs) {
         Producers newProducers = new Producers(configs.size());
         configs.forEach(config -> newProducers.addProducer(config, producers));
         Producers oldProducers = producers;
@@ -84,11 +84,11 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
             return subscriberToProducer.get(subscriberId);
         }
 
-        void addProducer(SubscriberConfig config) {
+        void addProducer(com.epam.lagerta.kafka.config.SubscriberConfig config) {
             addProducer(config, null);
         }
 
-        void addProducer(SubscriberConfig config, Producers existingProducers) {
+        void addProducer(com.epam.lagerta.kafka.config.SubscriberConfig config, Producers existingProducers) {
             String subscriberId = config.getSubscriberId();
             TransactionalProducer producer = existingProducers == null
                 ? null : existingProducers.get(subscriberId);

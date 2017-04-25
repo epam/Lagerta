@@ -17,7 +17,7 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -45,10 +45,10 @@ public class LeadStateLoader {
     private static final int PAGE_SIZE = 4;
 
     private final KafkaFactory kafkaFactory;
-    private final SubscriberConfig config;
+    private final BasicTopicConfig config;
     private final String groupId;
 
-    public LeadStateLoader(KafkaFactory kafkaFactory, SubscriberConfig config, String groupId) {
+    public LeadStateLoader(KafkaFactory kafkaFactory, BasicTopicConfig config, String groupId) {
         this.kafkaFactory = kafkaFactory;
         this.config = config;
         this.groupId = groupId + UUID.randomUUID();
@@ -109,12 +109,12 @@ public class LeadStateLoader {
 
     private Consumer<?, ?> createAndSubscribeConsumer() {
         Consumer<?, ?> consumer = createConsumer();
-        consumer.subscribe(Collections.singleton(config.getInputTopic()));
+        consumer.subscribe(Collections.singleton(config.getTopic()));
         return consumer;
     }
 
     private Consumer<?, ?> createConsumer() {
-        Properties properties = config.getConsumerConfig();
+        Properties properties = config.getKafkaConfig().getConsumerConfig();
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         return kafkaFactory.consumer(properties);
     }
@@ -131,7 +131,7 @@ public class LeadStateLoader {
     }
 
     private Stream<TopicPartition> getTopicPartitionStream(Consumer<?, ?> consumer) {
-        String topic = config.getInputTopic();
+        String topic = config.getTopic();
         return consumer.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
     }

@@ -15,6 +15,7 @@
  */
 package com.epam.lagerta.kafka;
 
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -26,9 +27,9 @@ public class KafkaLogCommitter {
     private final String logTopic;
     private final Producer producer;
 
-    public KafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
-        producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
-        logTopic = subscriberConfig.getInputTopic();
+    public KafkaLogCommitter(KafkaFactory kafkaFactory, BasicTopicConfig localIndexConfig) {
+        producer = kafkaFactory.producer(localIndexConfig.getKafkaConfig().getProducerConfig());
+        logTopic = localIndexConfig.getTopic();
     }
 
     @SuppressWarnings("unchecked")

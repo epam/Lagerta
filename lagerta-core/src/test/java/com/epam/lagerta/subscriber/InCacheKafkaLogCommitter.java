@@ -18,7 +18,7 @@ package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.KafkaLogCommitter;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.ignite.Ignite;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
@@ -30,8 +30,8 @@ public class InCacheKafkaLogCommitter extends KafkaLogCommitter {
 
     private final Ignite ignite;
 
-    public InCacheKafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig, Ignite ignite) {
-        super(kafkaFactory, subscriberConfig);
+    public InCacheKafkaLogCommitter(KafkaFactory kafkaFactory, BasicTopicConfig localIndexConfig, Ignite ignite) {
+        super(kafkaFactory, localIndexConfig);
         this.ignite = ignite;
     }
 

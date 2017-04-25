@@ -18,6 +18,7 @@ package com.epam.lagerta.kafka;
 import java.io.Serializable;
 import java.util.Properties;
 
+@Deprecated
 public class SubscriberConfig implements Serializable {
     private String subscriberId;
     private boolean suspendAllowed;
