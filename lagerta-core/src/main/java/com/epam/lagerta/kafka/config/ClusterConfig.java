@@ -56,7 +56,7 @@ public class ClusterConfig implements Serializable {
         this.kafkaConfig = kafkaConfig;
     }
 
-    public SubscriberConfig build() {
-        return new SubscriberConfig(inputTopic, reconciliationTopic, gapTopic, kafkaConfig.getProducerConfig());
+    public SubscriberConfig build(String subscriberId, boolean suspendAllowed) {
+        return new SubscriberConfig(subscriberId, suspendAllowed, inputTopic, reconciliationTopic, gapTopic, kafkaConfig.getProducerConfig());
     }
 }

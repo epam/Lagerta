@@ -20,16 +20,28 @@ import java.io.Serializable;
 import java.util.Properties;
 
 public class SubscriberConfig implements Serializable {
+    private final String subscriberId;
+    private final boolean suspendAllowed;
     private final String inputTopic;
     private final String reconciliationTopic;
     private final String gapTopic;
     private final Properties producerConfig;
 
-    public SubscriberConfig(String inputTopic, String reconciliationTopic, String gapTopic, Properties producerConfig) {
+    public SubscriberConfig(String subscriberId, boolean suspendAllowed, String inputTopic, String reconciliationTopic, String gapTopic, Properties producerConfig) {
+        this.subscriberId = subscriberId;
+        this.suspendAllowed = suspendAllowed;
         this.inputTopic = inputTopic;
         this.reconciliationTopic = reconciliationTopic;
         this.gapTopic = gapTopic;
         this.producerConfig = producerConfig;
+    }
+
+    public String getSubscriberId() {
+        return subscriberId;
+    }
+
+    public boolean isSuspendAllowed() {
+        return suspendAllowed;
     }
 
     public String getInputTopic() {
