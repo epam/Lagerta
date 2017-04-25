@@ -59,6 +59,7 @@ public class CommitServitor {
             Iterator<List> keys = scope.stream().map(Map.Entry::getValue).iterator();
             Iterator values = serializer.<List>deserialize(transactionScopeAndSerializedValues.getValue()).iterator();
 
+            LOGGER.trace("[R] Beginning commit sequence for transaction {}", txId);
             committer.commit(cacheNames, keys, values);
             kafkaLogCommitter.commitTransaction(txId);
             return true;

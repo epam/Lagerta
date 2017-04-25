@@ -63,7 +63,10 @@ limitations under the License.
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="cacheConfig"
           p:discoverySpi-ref="discoverySpi"
-          p:serviceConfiguration-ref="services"/>
+          p:serviceConfiguration-ref="services"
+          p:gridLogger-ref="grid-logger"/>
+
+    <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
 
     <!-- Caches configuration -->
     <util:list id="cacheConfig">
@@ -105,7 +108,7 @@ limitations under the License.
 
     <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
 
-    <bean id="reconciler" class="com.epam.lagerta.mocks.ReconcilerStub"/>
+    <bean id="reconciler" class="com.epam.lagerta.mocks.ProxyReconciler"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.TestReaderConfig"/>

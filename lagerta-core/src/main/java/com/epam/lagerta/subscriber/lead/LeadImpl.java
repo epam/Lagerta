@@ -162,6 +162,7 @@ public class LeadImpl extends Scheduler implements Lead {
                                  GapDetectionStrategy gapDetectionStrategy) {
         List<Long> gaps = gapDetectionStrategy.gapDetected(committed, readTransactions);
         if (!gaps.isEmpty() && !isReconciliationGoing()) {
+            LOGGER.debug("[L] Gaps were found. Starting gap fixing");
             reconciler.startReconciliation(gaps);
         }
     }
