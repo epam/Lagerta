@@ -44,7 +44,10 @@
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="caches"
           p:discoverySpi-ref="discovery-spi"
-          p:serviceConfiguration-ref="services"/>
+          p:serviceConfiguration-ref="services"
+          p:gridLogger-ref="grid-logger"/>
+
+    <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
 
     <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
           p:configuration-ref="ignite.cfg"/>
