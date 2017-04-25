@@ -194,19 +194,22 @@
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"/>
 
     <bean id="binary-primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"/>
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
 
     <bean id="primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"/>
 
     <bean id="binary-primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"/>
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
 
     <bean id="other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"/>
 
     <bean id="binary-other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
-          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"/>
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
 
     <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>

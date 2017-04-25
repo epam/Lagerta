@@ -88,7 +88,7 @@ public class SubscriberIntegrationTest extends BaseSingleJVMIntegrationTest {
                     Map<String, Object> expectedMap = PrimitivesHolder.toMap(entry.getKey(), entry.getValue(), asBinary);
                     Map<String, Object> actualMap = PrimitivesHolder.getResultMap(resultSet);
 
-                    Assert.assertEquals(expectedMap, actualMap);
+                    Assert.assertEquals(actualMap, expectedMap);
                 }
             }
         });
