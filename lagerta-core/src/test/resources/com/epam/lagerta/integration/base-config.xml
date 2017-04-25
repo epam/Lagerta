@@ -123,7 +123,7 @@
           factory-method="getJDBCDataCapturerLoader"/>
 
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="remoteTopic"
+          p:inputTopic="inputTopic"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
     <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
@@ -134,7 +134,8 @@
     <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
           c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"/>
+          c:subscriberConfig-ref="subscriber-config"
+          destroy-method="close"/>
 
     <bean id="key-transformer" class="com.epam.lagerta.capturer.DefaultKeyTransformer"/>
     <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>
@@ -147,7 +148,7 @@
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
             <bean class="com.epam.lagerta.kafka.SubscriberConfig"
-                  p:remoteTopic="local-index-topic"
+                  p:inputTopic="local-index-topic"
                   p:consumerConfig-ref="consumer-properties"
                   p:producerConfig-ref="producer-properties"/>
         </constructor-arg>
@@ -169,7 +170,8 @@
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
-          c:serializer-ref="serializer"/>
+          c:serializer-ref="serializer"
+          destroy-method="close"/>
 
     <util:list id="key-value-listeners">
         <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
@@ -182,7 +184,7 @@
           c:limit="10000"/>
 
     <!-- Caches configuration -->
-    <bean id="cache-base" abstract="true"
+    <bean id="cache-base" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true"
           p:readThrough="true"
           p:writeThrough="true"
           p:cacheMode="PARTITIONED"
@@ -190,24 +192,24 @@
           p:backups="2"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="primitives-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"/>
 
-    <bean id="binary-primitives-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-primitives-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"
           p:storeKeepBinary="true"/>
 
-    <bean id="primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="primitive-wrappers-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"/>
 
-    <bean id="binary-primitive-wrappers-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-primitive-wrappers-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"
           p:storeKeepBinary="true"/>
 
-    <bean id="other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="other-types-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"/>
 
-    <bean id="binary-other-types-cache" class="org.apache.ignite.configuration.CacheConfiguration" parent="cache-base"
+    <bean id="binary-other-types-cache" parent="cache-base"
           p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"
           p:storeKeepBinary="true"/>
 

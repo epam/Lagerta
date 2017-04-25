@@ -138,7 +138,7 @@ limitations under the License.
         </property>
     </bean>
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="testTopic"
+          p:inputTopic="testTopic"
           p:consumerConfig-ref="consumer-props"
     />
     <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
@@ -156,7 +156,8 @@ limitations under the License.
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriberConfigs"
-          c:serializer-ref="serializer"/>
+          c:serializer-ref="serializer"
+          destroy-method="close"/>
 
     <util:list id="subscriberConfigs">
         <ref bean="subscriber-config"/>

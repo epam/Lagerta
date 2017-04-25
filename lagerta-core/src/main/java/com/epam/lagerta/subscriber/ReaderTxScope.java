@@ -21,20 +21,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ConsumerTxScope extends TransactionScope {
+public class ReaderTxScope extends TransactionScope {
 
-    private final UUID consumerId;
+    private final UUID readerId;
 
     private boolean orphan;
     private boolean inProgress;
 
-    public ConsumerTxScope(UUID consumerId, long transactionId, List<Map.Entry<String, List>> scope) {
+    public ReaderTxScope(UUID readerId, long transactionId, List<Map.Entry<String, List>> scope) {
         super(transactionId, scope);
-        this.consumerId = consumerId;
+        this.readerId = readerId;
     }
 
-    public UUID getConsumerId() {
-        return consumerId;
+    public UUID getReaderId() {
+        return readerId;
     }
 
     public boolean isOrphan() {
@@ -55,13 +55,13 @@ public class ConsumerTxScope extends TransactionScope {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof ConsumerTxScope)) {
+        if (!(obj instanceof ReaderTxScope)) {
             return false;
         }
         if (this == obj) {
             return true;
         }
-        return getTransactionId() == ((ConsumerTxScope) obj).getTransactionId();
+        return getTransactionId() == ((ReaderTxScope) obj).getTransactionId();
     }
 
     @Override

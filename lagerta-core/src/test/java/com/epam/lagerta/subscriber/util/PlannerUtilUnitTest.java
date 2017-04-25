@@ -16,7 +16,7 @@
 package com.epam.lagerta.subscriber.util;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.epam.lagerta.subscriber.lead.CommittedTransactions;
 import com.epam.lagerta.subscriber.lead.Heartbeats;
 import com.epam.lagerta.subscriber.lead.ReadTransactions;
@@ -67,9 +67,9 @@ public class PlannerUtilUnitTest {
             Map<UUID, List<Long>> expected) {
         transactions.makeReady();
         transactions.pruneCommitted(EMPTY_COMMITTED, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
-        List<ConsumerTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
+        List<ReaderTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> plan = ready.stream()
-                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .collect(groupingBy(ReaderTxScope::getReaderId, toList()))
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,

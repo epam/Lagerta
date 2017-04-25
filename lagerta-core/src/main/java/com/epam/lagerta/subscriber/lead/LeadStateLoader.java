@@ -60,29 +60,35 @@ public class LeadStateLoader {
             shiftToLastCommitted(consumer, commitId);
             partitionStream = getTopicPartitionStream(consumer);
         }
-        List<ConsumerKeeper> consumerKeepers = partitionStream
-                .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
-                .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
-                .collect(Collectors.toList());
-        CommittedTransactions committed = new CommittedTransactions();
-        ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
-        pool.submit(() -> {
-            while (true) {
-                List<List<List<Long>>> collect = consumerKeepers
-                        .parallelStream()
-                        .filter(ConsumerKeeper::isAlive)
-                        .map(this::consumePartitionUntilOffset)
-                        .collect(Collectors.toList());
-                collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
-                committed.compress();
-                if (collect.isEmpty()) {
-                    break;
+        List<ConsumerKeeper> consumerKeepers = Collections.emptyList();
+        try {
+            consumerKeepers = partitionStream
+                    .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
+                    .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
+                    .collect(Collectors.toList());
+            List<ConsumerKeeper> finalConsumerKeepers = consumerKeepers;
+
+            CommittedTransactions committed = new CommittedTransactions();
+            ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
+            pool.submit(() -> {
+                while (true) {
+                    List<List<List<Long>>> collect = finalConsumerKeepers
+                            .parallelStream()
+                            .filter(ConsumerKeeper::isAlive)
+                            .map(this::consumePartitionUntilOffset)
+                            .collect(Collectors.toList());
+                    collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
+                    committed.compress();
+                    if (collect.isEmpty()) {
+                        break;
+                    }
                 }
-            }
+                return committed;
+            }).join();
             return committed;
-        }).join();
-        consumerKeepers.forEach(ConsumerKeeper::close);
-        return committed;
+        } finally {
+            consumerKeepers.forEach(ConsumerKeeper::close);
+        }
     }
 
     private List<List<Long>> consumePartitionUntilOffset(ConsumerKeeper consumerKeeper) {
@@ -103,7 +109,7 @@ public class LeadStateLoader {
 
     private Consumer<?, ?> createAndSubscribeConsumer() {
         Consumer<?, ?> consumer = createConsumer();
-        consumer.subscribe(Collections.singleton(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singleton(config.getInputTopic()));
         return consumer;
     }
 
@@ -125,7 +131,7 @@ public class LeadStateLoader {
     }
 
     private Stream<TopicPartition> getTopicPartitionStream(Consumer<?, ?> consumer) {
-        String topic = config.getRemoteTopic();
+        String topic = config.getInputTopic();
         return consumer.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
     }

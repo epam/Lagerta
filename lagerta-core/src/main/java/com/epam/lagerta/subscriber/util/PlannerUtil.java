@@ -15,7 +15,7 @@
  */
 package com.epam.lagerta.subscriber.util;
 
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.epam.lagerta.subscriber.lead.CommittedTransactions;
 import com.epam.lagerta.subscriber.lead.ReadTransactions;
 
@@ -39,7 +39,7 @@ public final class PlannerUtil {
     private PlannerUtil() {
     }
 
-    public static List<ConsumerTxScope> plan(
+    public static List<ReaderTxScope> plan(
             ReadTransactions read,
             CommittedTransactions committed,
             Set<Long> inProgress,
@@ -47,21 +47,21 @@ public final class PlannerUtil {
 
         Map<String, Set<?>> blocked = new HashMap<>();
         Map<UUID, Map<String, Set<?>>> claimed = new HashMap<>();
-        List<ConsumerTxScope> plan = new ArrayList<>();
+        List<ReaderTxScope> plan = new ArrayList<>();
 
-        for (ConsumerTxScope info : read) {
+        for (ReaderTxScope info : read) {
             long id = info.getTransactionId();
             if (!committed.contains(id)) {
                 List<Entry<String, List>> scope = info.getScope();
-                if (inProgress.contains(id) || lostReaders.contains(info.getConsumerId())
+                if (inProgress.contains(id) || lostReaders.contains(info.getReaderId())
                         || info.isOrphan() || isIntersected(blocked, scope)) {
                     scope.forEach(addTo(blocked));
                 } else {
-                    UUID consumerId = info.getConsumerId();
-                    if (isIntersectedWithClaimed(consumerId, scope, claimed)) {
+                    UUID readerId = info.getReaderId();
+                    if (isIntersectedWithClaimed(readerId, scope, claimed)) {
                         scope.forEach(addTo(blocked));
                     } else {
-                        Map<String, Set<?>> claimedScope = claimed.computeIfAbsent(consumerId, CLAIMED);
+                        Map<String, Set<?>> claimedScope = claimed.computeIfAbsent(readerId, CLAIMED);
                         scope.forEach(addTo(claimedScope));
                         plan.add(info);
                     }
@@ -79,11 +79,11 @@ public final class PlannerUtil {
     }
 
     private static boolean isIntersectedWithClaimed(
-            UUID consumerId,
+            UUID readerId,
             List<Entry<String, List>> scope,
             Map<UUID, Map<String, Set<?>>> claimed) {
         return claimed.entrySet().stream()
-                .filter(entry -> !entry.getKey().equals(consumerId))
+                .filter(entry -> !entry.getKey().equals(readerId))
                 .map(Entry::getValue)
                 .anyMatch(map -> isIntersected(map, scope));
     }

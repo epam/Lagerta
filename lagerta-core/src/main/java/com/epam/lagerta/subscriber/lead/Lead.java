@@ -26,7 +26,7 @@ public interface Lead {
      * notifies lead that transactions has been read
      *
      * @param readerId id of Reader
-     * @param scopes   sorted transaction scopes read by the consumer
+     * @param scopes   sorted transaction scopes read by the reader
      * @return transactions ids that can be committed
      */
     List<Long> notifyRead(UUID readerId, List<TransactionScope> scopes);

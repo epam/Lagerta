@@ -16,7 +16,7 @@
 
 package com.epam.lagerta.jmh;
 
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.epam.lagerta.subscriber.lead.CommittedTransactions;
 import com.epam.lagerta.subscriber.lead.ReadTransactions;
 import com.epam.lagerta.subscriber.util.PlannerUtil;
@@ -56,7 +56,7 @@ public abstract class AbstractPlannerUtilPerformance {
     public abstract void setup();
 
     @Benchmark
-    public List<ConsumerTxScope> runSample() {
+    public List<ReaderTxScope> runSample() {
         return PlannerUtil.plan(read, committed, inProgress, lostReaders);
     }
 }

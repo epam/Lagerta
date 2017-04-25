@@ -43,10 +43,10 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
 
     public TransactionalKafkaProducerImpl(SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
                                           KeyTransformer keyTransformer, ValueTransformer valueTransformer, Serializer serializer) {
-        this.dataTopic = subscriberConfig.getRemoteTopic();
+        dataTopic = subscriberConfig.getInputTopic();
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
+        producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
         this.serializer = serializer;
         partitions = producer.partitionsFor(dataTopic).size();
     }
@@ -66,5 +66,10 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
         catch (Exception e) {
             throw new CacheWriterException(e);
         }
+    }
+
+    @Override
+    public void close() {
+        producer.close();
     }
 }
