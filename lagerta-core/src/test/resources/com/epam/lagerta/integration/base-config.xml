@@ -40,7 +40,7 @@
     <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
     <util:properties id="recon-producer-properties" location="${configBasePath}reconciliation_producer.properties"/>
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
+    <bean id="base_ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="caches"
           p:discoverySpi-ref="discovery-spi"
@@ -48,9 +48,6 @@
           p:gridLogger-ref="grid-logger"/>
 
     <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
-
-    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
-          p:configuration-ref="ignite.cfg"/>
 
     <bean id="stateAssistant" class="com.epam.lagerta.subscriber.lead.LeadStateAssistantImpl" scope="prototype"
           c:ignite-ref="ignite-bean"/>

@@ -45,7 +45,7 @@ public abstract class BaseIntegrationTest {
     protected static final String PRIMITIVES_CACHE_NAMES_PROVIDER = "primitivesCacheNamesProvider";
 
 
-    private static int TEST_NUMBER = 0;
+    protected static int TEST_NUMBER = 0;
 
     protected DataSource dataSource;
 

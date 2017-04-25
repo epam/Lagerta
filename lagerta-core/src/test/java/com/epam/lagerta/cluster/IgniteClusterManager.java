@@ -23,6 +23,11 @@ import java.util.List;
  * Exposes control over starting and stopping cluster for tests.
  */
 public interface IgniteClusterManager {
+
+    long AWAIT_TIME = 3_000;
+
+    String CLIENT_GRID_NAME = "clientNode";
+
     /**
      * Starts ignite cluster.
      *
@@ -35,4 +40,6 @@ public interface IgniteClusterManager {
      * Stops all previously created nodes.
      */
     void stopCluster();
+
+    void reloadCluster();
 }
