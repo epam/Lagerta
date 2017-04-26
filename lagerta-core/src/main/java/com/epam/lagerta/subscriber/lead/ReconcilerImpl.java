@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.epam.lagerta.util.TransactionPartitionUtil.partition;
@@ -45,6 +46,7 @@ public class ReconcilerImpl implements Reconciler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReconcilerImpl.class);
     private static final int POLL_TIMEOUT = 200;
+    private static final String GAP_FIX_ID = "gapFixGroupId";
 
     private final KafkaFactory kafkaFactory;
     private final ClusterConfig clusterConfig;
@@ -80,7 +82,7 @@ public class ReconcilerImpl implements Reconciler {
 
         private GapFixer() {
             producer = kafkaFactory.producer(clusterConfig.getKafkaConfig().getProducerConfig());
-            consumer = kafkaFactory.consumer(clusterConfig.getKafkaConfig().getConsumerConfig());
+            consumer = kafkaFactory.consumer(clusterConfig.getKafkaConfig().getConsumerConfig(GAP_FIX_ID + UUID.randomUUID()));
         }
 
         private void startReconciliation(List<Long> gaps) {
