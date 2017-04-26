@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.list;
 import static org.testng.Assert.assertEquals;
 
 public class MergeUtilUnitTest {

@@ -21,30 +21,31 @@ import org.apache.ignite.binary.BinaryObject;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 public class KeyValueAndMetadata {
     private final int key;
     private final Object value;
-    private final String cache;
-    private final String table;
+    private final String cacheName;
+    private final String tableName;
     private final Map<String, Object> keyValueMap;
-    private final Map<String, FieldDescriptor> fieldDescriptors;
+    private final List<FieldDescriptor> fieldDescriptors;
     private final ResultMapGetter resultMapGetter;
 
     public KeyValueAndMetadata(
             int key,
             Object value,
-            String cache,
+            String cacheName,
             String table,
             Map<String, Object> keyValueMap,
-            Map<String, FieldDescriptor> fieldDescriptors,
+            List<FieldDescriptor> fieldDescriptors,
             ResultMapGetter resultMapGetter
     ) {
         this.key = key;
         this.value = value;
-        this.cache = cache;
-        this.table = table;
+        this.cacheName = cacheName;
+        this.tableName = table;
         this.keyValueMap = keyValueMap;
         this.fieldDescriptors = fieldDescriptors;
         this.resultMapGetter = resultMapGetter;
@@ -62,19 +63,19 @@ public class KeyValueAndMetadata {
         return value instanceof BinaryObject ? ((BinaryObject) value).deserialize() : value;
     }
 
-    public String getCache() {
-        return cache;
+    public String getCacheName() {
+        return cacheName;
     }
 
-    public String getTable() {
-        return table;
+    public String getTableName() {
+        return tableName;
     }
 
     public Map<String, Object> getKeyValueMap() {
         return keyValueMap;
     }
 
-    public Map<String, FieldDescriptor> getFieldDescriptors() {
+    public List<FieldDescriptor> getFieldDescriptors() {
         return fieldDescriptors;
     }
 

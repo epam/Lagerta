@@ -15,10 +15,10 @@
  */
 package com.epam.lagerta.base.jdbc.committer;
 
+import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.jdbc.DataProviders;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import com.google.common.collect.Iterators;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -45,8 +45,8 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
         Map<Integer, Map<String, Object>> expectedResults = data
                 .stream()
                 .collect(Collectors.toMap(KeyValueAndMetadata::getKey, KeyValueAndMetadata::getKeyValueMap));
-        String cache = data.get(0).getCache();
-        String table = data.get(0).getTable();
+        String cache = data.get(0).getCacheName();
+        String table = data.get(0).getTableName();
         KeyValueAndMetadata.ResultMapGetter resultMapGetter = data.get(0).getResultMapGetter();
         Iterator<String> caches = Iterators.singletonIterator(cache);
         Iterator<List> keys = Iterators.singletonIterator(data
@@ -66,7 +66,7 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
                  ResultSet resultSet = statement.executeQuery(selectQuery)) {
                 while (resultSet.next()) {
                     Map<String, Object> map = resultMapGetter.getResultMap(resultSet);
-                    int key = (int) map.get(JDBCKeyValueMapper.KEY_FIELD_NAME);
+                    int key = (int) map.get(EntityDescriptor.KEY_FIELD_NAME);
                     Map<String, Object> expectedMap = expectedResults.get(key);
 
                     Assert.assertEquals(map.size(), expectedMap.size());

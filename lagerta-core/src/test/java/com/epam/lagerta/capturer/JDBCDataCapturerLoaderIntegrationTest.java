@@ -64,7 +64,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
     public void partiallyFoundLoadAll(KeyValueAndMetadata kvMeta) throws SQLException {
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
 
-        IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCache());
+        IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCacheName());
 
         Map<Integer, Object> results = cache.getAll(DataProviders.KEYS);
         Map<Integer, Object> expected = Collections.singletonMap(kvMeta.getKey(), kvMeta.getUnwrappedValue());
@@ -76,7 +76,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
     public void loadPerson(KeyValueAndMetadata kvMeta) throws SQLException {
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
 
-        IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCache());
+        IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCacheName());
 
         Object result = cache.get(kvMeta.getKey());
         Object expected = kvMeta.getUnwrappedValue();
@@ -94,7 +94,7 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
         Map<Integer, Object> expectedResults = kvMetas
                 .stream()
                 .collect(Collectors.toMap(KeyValueAndMetadata::getKey, KeyValueAndMetadata::getUnwrappedValue));
-        String cacheName = kvMetas.get(0).getCache();
+        String cacheName = kvMetas.get(0).getCacheName();
         IgniteCache<Integer, Object> cache = ignite().cache(cacheName);
         Map<Integer, Object> results = cache.getAll(expectedResults.keySet());
 

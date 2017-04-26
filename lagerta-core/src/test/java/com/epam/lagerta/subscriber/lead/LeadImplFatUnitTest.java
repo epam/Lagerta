@@ -31,9 +31,9 @@ import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static com.epam.lagerta.util.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.util.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.txScope;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
