@@ -16,18 +16,19 @@
 
 package com.epam.lagerta.base.jdbc;
 
+import com.epam.lagerta.resources.H2DataBaseServer;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 public class H2HikariDataSource {
 
-    private static final String CONNECTION_STR_PATTERN = "jdbc:h2:mem:%s";
+    private static final String CONNECTION_STR_PATTERN = "jdbc:h2:tcp://%s:%s/mem:%s";
     private static final String DRIVER_NAME = "org.h2.Driver";
     private static final long CONNECTION_TIMEOUT = 5000L;
     private static final int MAX_POOL_SIZE = 5;
 
     public static HikariDataSource create(String dbName) {
-        String dbUrl = String.format(CONNECTION_STR_PATTERN, dbName);
+        String dbUrl = String.format(CONNECTION_STR_PATTERN, H2DataBaseServer.HOST, H2DataBaseServer.PORT, dbName);
 
         HikariConfig config = new HikariConfig();
         config.setDriverClassName(DRIVER_NAME);

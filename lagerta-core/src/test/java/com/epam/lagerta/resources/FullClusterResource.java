@@ -28,7 +28,7 @@ public class FullClusterResource implements Resource {
     public static final int CLUSTER_SIZE = 2;
 
     private final DBResource dbResource;
-
+    private final H2DataBaseServer h2DataBaseServer = new H2DataBaseServer();
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
     private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE);
     private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE);
@@ -51,12 +51,12 @@ public class FullClusterResource implements Resource {
 
     @Override
     public void setUp() throws Exception {
-        setUpResources(tmpDir, kafka, dbResource, cluster);
+        setUpResources(tmpDir, kafka, h2DataBaseServer, dbResource, cluster);
     }
 
     @Override
     public void tearDown() {
-        tearDownResources(cluster, kafka, dbResource, tmpDir);
+        tearDownResources(cluster, kafka, dbResource, h2DataBaseServer, tmpDir);
     }
 
     public void cleanUpClusters() throws SQLException {

@@ -18,10 +18,9 @@ package com.epam.lagerta;
 
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
-import com.epam.lagerta.capturer.DataCapturerLoader;
 import com.epam.lagerta.resources.DBResource;
+import com.epam.lagerta.resources.DBResourceFactory;
 import com.epam.lagerta.resources.FullClusterResource;
-import com.epam.lagerta.subscriber.Committer;
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -37,27 +36,15 @@ import org.testng.annotations.DataProvider;
 
 public abstract class BaseIntegrationTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseIntegrationTest.class);
-    private static final String DB_NAME = "testDB";
     private static final long TX_WAIT_TIME = 10_000;
 
-    private static final DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final DBResource DB_RESOURCE = DBResourceFactory.getDBResource();
     protected static final FullClusterResource ALL_RESOURCES = new FullClusterResource(DB_RESOURCE);
     protected static final String PRIMITIVES_CACHE_NAMES_PROVIDER = "primitivesCacheNamesProvider";
-
 
     protected static int TEST_NUMBER = 0;
 
     protected DataSource dataSource;
-
-    @SuppressWarnings("unused")
-    private static Committer getJDBCCommitter() {
-        return JDBCUtil.getJDBCCommitter(DB_RESOURCE.getDataSource());
-    }
-
-    @SuppressWarnings("unused")
-    private static DataCapturerLoader getJDBCDataCapturerLoader() {
-        return JDBCUtil.getJDBCDataCapturerLoader(DB_RESOURCE.getDataSource());
-    }
 
     @DataProvider(name = PRIMITIVES_CACHE_NAMES_PROVIDER)
     public static Object[][] providePrimitivesCacheName() {
@@ -78,7 +65,7 @@ public abstract class BaseIntegrationTest {
 
     @BeforeMethod
     public void initializeResources() throws SQLException {
-        DB_RESOURCE.initState(JDBCUtil.CREATE_TABLE_SQL_RESOURCE);
+        DB_RESOURCE.executeResource(JDBCUtil.CREATE_TABLE_SQL_RESOURCE);
         dataSource = DB_RESOURCE.getDataSource();
     }
 
@@ -86,7 +73,7 @@ public abstract class BaseIntegrationTest {
     public void cleanupResources() throws SQLException {
         TEST_NUMBER++;
         ALL_RESOURCES.cleanUpClusters();
-        DB_RESOURCE.clearState(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
+        DB_RESOURCE.executeResource(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
     }
 
     public static Ignite ignite() {

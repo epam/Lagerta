@@ -20,6 +20,7 @@ import com.epam.lagerta.BaseFunctionalTest;
 import com.epam.lagerta.base.jdbc.DataProviders;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.resources.DBResource;
+import com.epam.lagerta.resources.H2DataBaseServer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -38,27 +39,30 @@ public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
     }
 
     private final DBResource dbResource = new DBResource(DATA_BASE_NAME);
+    private final H2DataBaseServer h2DataBaseServer = new H2DataBaseServer();
 
     protected DataSource dataSource;
 
     @BeforeClass
     public void init() throws Exception {
+        h2DataBaseServer.setUp();
         dbResource.setUp();
     }
 
     @AfterClass
     public void clean() throws Exception {
         dbResource.tearDown();
+        h2DataBaseServer.tearDown();
     }
 
     @BeforeMethod()
     public void initState() throws SQLException {
-        dbResource.initState(JDBCUtil.CREATE_TABLE_SQL_RESOURCE);
+        dbResource.executeResource(JDBCUtil.CREATE_TABLE_SQL_RESOURCE);
         dataSource = dbResource.getDataSource();
     }
 
     @AfterMethod
     public void clearBase() throws SQLException {
-        dbResource.clearState(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
+        dbResource.executeResource(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
     }
 }
