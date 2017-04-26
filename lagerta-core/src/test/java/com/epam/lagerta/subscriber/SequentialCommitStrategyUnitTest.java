@@ -19,6 +19,7 @@ package com.epam.lagerta.subscriber;
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.KafkaLogCommitter;
+import com.epam.lagerta.kafka.KafkaLogCommitterImpl;
 import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.mocks.KafkaMockFactory;
@@ -79,7 +80,7 @@ public class SequentialCommitStrategyUnitTest {
         KafkaFactory kafkaFactory = mock(KafkaFactory.class);
         when(kafkaFactory.producer(any())).thenReturn(producer);
 
-        KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitter(kafkaFactory, localIndexConfig);
+        KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitterImpl(kafkaFactory, localIndexConfig);
         statefulCommitter = new StatefulCommitter();
         Ignite ignite = mock(Ignite.class);
         doReturn(mock(IgniteServices.class)).when(ignite).services();

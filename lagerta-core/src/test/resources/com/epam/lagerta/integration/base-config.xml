@@ -144,7 +144,7 @@
     <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="getJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter">
+    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitterImpl">
         <constructor-arg index="0" ref="kafka-factory"/>
         <constructor-arg index="1">
             <bean class="com.epam.lagerta.kafka.SubscriberConfig"
