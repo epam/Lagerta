@@ -35,7 +35,7 @@ public class KafkaLogCommitterImpl implements KafkaLogCommitter {
     @Override
     @SuppressWarnings("unchecked")
     public Future<RecordMetadata> commitTransaction(long transactionId) {
-        int partition = 0;
+        int partition = 0;  //todo fix me in #208
         ProducerRecord record = new ProducerRecord(logTopic, partition, transactionId, null, null);
         return producer.send(record);
     }
