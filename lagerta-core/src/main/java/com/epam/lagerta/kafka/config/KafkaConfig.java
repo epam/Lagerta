@@ -30,7 +30,8 @@ public class KafkaConfig implements Serializable {
     }
 
     public Properties getConsumerConfig(String groupId) {
-        Properties result = new Properties(consumerConfig);
+        Properties result = new Properties();
+        result.putAll(consumerConfig);
         result.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         return result;
     }
