@@ -25,11 +25,6 @@ public class KafkaConfig implements Serializable {
     private Properties consumerConfig;
     private Properties producerConfig;
 
-    public KafkaConfig(Properties consumerConfig, Properties producerConfig) {
-        this.consumerConfig = consumerConfig;
-        this.producerConfig = producerConfig;
-    }
-
     public Properties getConsumerConfig() {
         return consumerConfig;
     }

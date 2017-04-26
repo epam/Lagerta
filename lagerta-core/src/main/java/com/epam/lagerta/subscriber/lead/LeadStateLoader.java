@@ -19,7 +19,6 @@ package com.epam.lagerta.subscriber.lead;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -30,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
@@ -114,9 +112,7 @@ public class LeadStateLoader {
     }
 
     private Consumer<?, ?> createConsumer() {
-        Properties properties = config.getKafkaConfig().getConsumerConfig();
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        return kafkaFactory.consumer(properties);
+        return kafkaFactory.consumer(config.getKafkaConfig().getConsumerConfig(groupId));
     }
 
     private void shiftToLastCommitted(Consumer<?, ?> consumer, long commitId) {

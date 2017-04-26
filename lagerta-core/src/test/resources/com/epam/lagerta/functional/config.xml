@@ -135,18 +135,22 @@ limitations under the License.
             </props>
         </property>
     </bean>
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
+
+    <bean id="kafka-config" class="com.epam.lagerta.kafka.config.KafkaConfig"
+          p:consumerConfig-ref="consumer-props"/>
+
+    <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
           p:inputTopic="testTopic"
-          p:consumerConfig-ref="consumer-props"
-    />
-    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
-          p:reconciliationTopic="reconciliation"/>
+          p:reconciliationTopic="recon"
+          p:gapTopic="reconciliation"
+          p:kafkaConfig-ref="kafka-config"/>
+
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
     <bean id="kafka-factory" class="com.epam.lagerta.mocks.KafkaMockFactory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
-          c:config-ref="subscriber-config"
+          c:config-ref="cluster-config"
           c:serializer-ref="serializer"/>
 
     <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
@@ -157,8 +161,13 @@ limitations under the License.
           c:serializer-ref="serializer"
           destroy-method="close"/>
 
+    <bean id="local-log-config" class="com.epam.lagerta.kafka.config.SubscriberConfig" factory-bean="cluster-config"
+          factory-method="build"
+          c:subscriberId="-"
+          c:suspendAllowed="false"/>
+
     <util:list id="subscriberConfigs">
-        <ref bean="subscriber-config"/>
+        <ref bean="local-log-config"/>
     </util:list>
 
     <util:list id="key-value-listeners">

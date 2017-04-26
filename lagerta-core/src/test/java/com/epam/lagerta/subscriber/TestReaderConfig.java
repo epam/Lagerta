@@ -16,7 +16,6 @@
 
 package com.epam.lagerta.subscriber;
 
-import com.epam.lagerta.kafka.DataRecoveryConfig;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.KafkaLogCommitter;
 import com.epam.lagerta.kafka.config.ClusterConfig;
@@ -39,7 +38,7 @@ public class TestReaderConfig {
 
     @Bean
     public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, ClusterConfig config,
-                         DataRecoveryConfig dataRecoveryConfig, Serializer serializer, CommitStrategy commitStrategy,
+                         Serializer serializer, CommitStrategy commitStrategy,
                          @Qualifier("commitToKafkaCondition") PeriodicIterationCondition commitToKafkaCondition,
                          @Qualifier("readerId") UUID readerId,
                          @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {

@@ -67,10 +67,10 @@
 
     <bean id="reconciler" class="com.epam.lagerta.mocks.ProxyReconciler">
         <constructor-arg>
+            <!--todo-->
             <bean class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
                   c:kafkaFactory-ref="kafka-factory"
-                  c:dataRecoveryConfig-ref="data-recovery-config"
-                  c:subscriberConfig-ref="subscriber-config"
+                  c:clusterConfig-ref="cluster-config"
                   c:serializer-ref="serializer"/>
         </constructor-arg>
     </bean>
@@ -122,37 +122,41 @@
     <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="getJDBCDataCapturerLoader"/>
 
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:inputTopic="inputTopic"
+    <bean id="kafka-config" class="com.epam.lagerta.kafka.config.KafkaConfig"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
-    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
-          p:reconciliationTopic="reconciliation"
-          p:consumerConfig-ref="recon-consumer-properties"
-          p:producerConfig-ref="recon-producer-properties"/>
+
+    <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
+          p:inputTopic="inputTopic"
+          p:reconciliationTopic="recon"
+          p:gapTopic="reconciliation"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="id-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="txIdTopic"
+          p:kafkaConfig-ref="kafka-config"/>
 
     <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
-          c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"
+          c:idConfig-ref="id-config"
           destroy-method="close"/>
 
     <bean id="key-transformer" class="com.epam.lagerta.capturer.DefaultKeyTransformer"/>
+
     <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>
+
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
     <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
           factory-method="getJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitterImpl">
-        <constructor-arg index="0" ref="kafka-factory"/>
-        <constructor-arg index="1">
-            <bean class="com.epam.lagerta.kafka.SubscriberConfig"
-                  p:inputTopic="local-index-topic"
-                  p:consumerConfig-ref="consumer-properties"
-                  p:producerConfig-ref="producer-properties"/>
-        </constructor-arg>
-    </bean>
+    <bean id="local-index-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="local-index-topic"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitterImpl"
+          c:kafkaFactory-ref="kafka-factory"
+          c:localIndexConfig-ref="local-index-config"/>
 
     <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryForTests">
         <constructor-arg index="0">
@@ -161,8 +165,13 @@
         <constructor-arg index="1" ref="producer-properties"/>
     </bean>
 
+    <bean id="local-log-config" class="com.epam.lagerta.kafka.config.SubscriberConfig" factory-bean="cluster-config"
+          factory-method="build"
+          c:subscriberId="-"
+          c:suspendAllowed="false"/>
+
     <util:list id="subscriber-configs">
-        <ref bean="subscriber-config"/>
+        <ref bean="local-log-config"/>
     </util:list>
 
     <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
