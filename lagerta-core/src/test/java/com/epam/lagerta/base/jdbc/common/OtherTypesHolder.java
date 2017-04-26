@@ -19,7 +19,6 @@ package com.epam.lagerta.base.jdbc.common;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -33,15 +32,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.epam.lagerta.base.SimpleValueTransformer.BIG_DECIMAL;
 import static com.epam.lagerta.base.SimpleValueTransformer.BYTES;
 import static com.epam.lagerta.base.SimpleValueTransformer.DATE;
 import static com.epam.lagerta.base.SimpleValueTransformer.INTEGER;
 import static com.epam.lagerta.base.SimpleValueTransformer.TIMESTAMP;
+import static com.epam.lagerta.util.DataProviderUtil.list;
 
 public class OtherTypesHolder implements Serializable {
     public static final String CACHE = "otherTypesCache";
@@ -60,25 +58,23 @@ public class OtherTypesHolder implements Serializable {
     private static final int DATE_VALUE_INDEX = 5;
     private static final int TIMESTAMP_VALUE_INDEX = 6;
 
-    private static final Map<String, FieldDescriptor> FIELD_DESCRIPTORS = Stream.of(
-            new FieldDescriptor(KEY_INDEX, JDBCKeyValueMapper.KEY_FIELD_NAME, INTEGER),
-            new FieldDescriptor(VAL_INDEX, JDBCKeyValueMapper.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
+    private static final List<FieldDescriptor> FIELD_DESCRIPTORS = list(
+            new FieldDescriptor(KEY_INDEX, EntityDescriptor.KEY_FIELD_NAME, INTEGER),
+            new FieldDescriptor(VAL_INDEX, EntityDescriptor.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
             new FieldDescriptor(BYTES_VALUE_INDEX, BYTES_VALUE, BYTES),
             new FieldDescriptor(BIG_DECIMAL_VALUE_INDEX, BIG_DECIMAL_VALUE, BIG_DECIMAL),
             new FieldDescriptor(DATE_VALUE_INDEX, DATE_VALUE, DATE),
-            new FieldDescriptor(TIMESTAMP_VALUE_INDEX, TIMESTAMP_VALUE, TIMESTAMP)
-    ).collect(Collectors.toMap(FieldDescriptor::getName, Function.identity()));
+            new FieldDescriptor(TIMESTAMP_VALUE_INDEX, TIMESTAMP_VALUE, TIMESTAMP));
 
     private static final List<String> ORDINARY_COLUMNS = FIELD_DESCRIPTORS
-            .keySet()
             .stream()
+            .map(FieldDescriptor::getName)
             .filter(JDBCUtil::isOrdinaryColumn)
             .collect(Collectors.toList());
 
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             OtherTypesHolder.class,
             TABLE,
-            JDBCKeyValueMapper.KEY_FIELD_NAME,
             FIELD_DESCRIPTORS
     );
 
@@ -138,16 +134,16 @@ public class OtherTypesHolder implements Serializable {
     public static Map<String, Object> toMap(int key, OtherTypesHolder holder, boolean asBinary) {
         Map<String, Object> keyValueMap = new HashMap<>(FIELD_DESCRIPTORS.size());
 
-        keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, key);
+        keyValueMap.put(EntityDescriptor.KEY_FIELD_NAME, key);
         if (asBinary) {
             keyValueMap.put(BYTES_VALUE, holder.bytesValue);
             keyValueMap.put(BIG_DECIMAL_VALUE, holder.bigDecimalValue);
             keyValueMap.put(DATE_VALUE, holder.dateValue);
             keyValueMap.put(TIMESTAMP_VALUE, holder.timestampValue);
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, null);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, null);
         } else {
             ORDINARY_COLUMNS.forEach(column -> keyValueMap.put(column, null));
-            keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, holder);
+            keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, holder);
         }
         return keyValueMap;
     }

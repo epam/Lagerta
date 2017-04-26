@@ -16,14 +16,11 @@
 
 package com.epam.lagerta.base.jdbc.common;
 
+import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
 
 import static com.epam.lagerta.base.SimpleValueTransformer.BOOLEAN;
 import static com.epam.lagerta.base.SimpleValueTransformer.BYTE;
@@ -32,6 +29,7 @@ import static com.epam.lagerta.base.SimpleValueTransformer.FLOAT;
 import static com.epam.lagerta.base.SimpleValueTransformer.INTEGER;
 import static com.epam.lagerta.base.SimpleValueTransformer.LONG;
 import static com.epam.lagerta.base.SimpleValueTransformer.SHORT;
+import static com.epam.lagerta.util.DataProviderUtil.list;
 
 final class PrimitivesFieldConstants {
     static final String BOOLEAN_VALUE = "booleanValue";
@@ -52,18 +50,15 @@ final class PrimitivesFieldConstants {
     private static final int FLOAT_VALUE_INDEX = 8;
     private static final int DOUBLE_VALUE_INDEX = 9;
 
-    static final Map<String, FieldDescriptor> FIELD_DESCRIPTORS = Stream.of(
-            new FieldDescriptor(KEY_INDEX, JDBCKeyValueMapper.KEY_FIELD_NAME, INTEGER),
-            new FieldDescriptor(VAL_INDEX, JDBCKeyValueMapper.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
+    static final List<FieldDescriptor> FIELD_DESCRIPTORS = list(
+            new FieldDescriptor(KEY_INDEX, EntityDescriptor.KEY_FIELD_NAME, INTEGER),
+            new FieldDescriptor(VAL_INDEX, EntityDescriptor.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
             new FieldDescriptor(BOOLEAN_VALUE_INDEX, BOOLEAN_VALUE, BOOLEAN),
             new FieldDescriptor(BYTE_VALUE_INDEX, BYTE_VALUE, BYTE),
             new FieldDescriptor(SHORT_VALUE_INDEX, SHORT_VALUE, SHORT),
             new FieldDescriptor(INT_VALUE_INDEX, INT_VALUE, INTEGER),
             new FieldDescriptor(LONG_VALUE_INDEX, LONG_VALUE, LONG),
             new FieldDescriptor(FLOAT_VALUE_INDEX, FLOAT_VALUE, FLOAT),
-            new FieldDescriptor(DOUBLE_VALUE_INDEX, DOUBLE_VALUE, DOUBLE)
-    ).collect(Collectors.toMap(FieldDescriptor::getName, Function.identity()));
+            new FieldDescriptor(DOUBLE_VALUE_INDEX, DOUBLE_VALUE, DOUBLE));
 
-    private PrimitivesFieldConstants() {
-    }
 }

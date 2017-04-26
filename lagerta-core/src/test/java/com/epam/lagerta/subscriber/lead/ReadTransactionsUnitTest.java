@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static com.epam.lagerta.util.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.util.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")

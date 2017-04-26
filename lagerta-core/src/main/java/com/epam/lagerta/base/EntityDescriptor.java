@@ -24,47 +24,44 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static java.util.function.Function.identity;
-
 public class EntityDescriptor<T> {
+
+    // todo mark this names as restriction for users
+    public static final String KEY_FIELD_NAME = "key";
+    public static final String VAL_FIELD_NAME = "val";
+
     private final Class<T> clazz;
     private final String tableName;
-    private final Map<String, FieldDescriptor> fieldDescriptors;
+    private final List<FieldDescriptor> fieldDescriptors;
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
-        this(null, tableName, keyField, fieldDescriptors.stream().collect(Collectors
-                .toMap(FieldDescriptor::getName, identity())));
-    }
+    public EntityDescriptor(Class<T> clazz, String tableName, List<FieldDescriptor> fieldDescriptors) {
+        Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
 
-    public EntityDescriptor(Class<T> clazz, String tableName, String keyField, List<FieldDescriptor> fieldDescriptors) {
-        this(clazz, tableName, keyField, fieldDescriptors.stream().collect(Collectors
-                .toMap(FieldDescriptor::getName, identity())));
-    }
-
-    public EntityDescriptor(Class<T> clazz, String tableName, String keyField,
-                            Map<String, FieldDescriptor> fieldDescriptors) {
         this.clazz = clazz;
         this.tableName = tableName;
         this.fieldDescriptors = fieldDescriptors;
 
-        List<String> sortedColumns = fieldDescriptors.entrySet()
+        List<String> sortedColumns = this.fieldDescriptors
                 .stream()
-                .sorted((e1, e2) -> Integer.valueOf(e1.getValue().getIndex()).compareTo(e2.getValue().getIndex()))
-                .map(Map.Entry::getKey)
+                .sorted((e1, e2) -> Integer.valueOf(e1.getIndex()).compareTo(e2.getIndex()))
+                .map(FieldDescriptor::getName)
                 .collect(Collectors.toList());
+
         String columnNames = String.join(",", sortedColumns);
-        String maskFields = fieldDescriptors.entrySet().stream()
+        String maskFields = this.fieldDescriptors.stream()
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
         //maybe customization sql syntax for different dialect in future
-        upsertQuery = "MERGE INTO " + tableName + " (" + columnNames + ") KEY(" + keyField + ")" +
-                " VALUES (" + maskFields + ")";
+        upsertQuery = String.format("MERGE INTO %s (%s) KEY(%s) VALUES (%s)",
+                tableName, columnNames, KEY_FIELD_NAME, maskFields);
         // specific IN semantic for h2
-        selectQuery = "SELECT " + columnNames + " FROM " + tableName + " WHERE array_contains(?, " + keyField + ")";
+        selectQuery = String.format("SELECT %s FROM %s WHERE array_contains(?, %s)",
+                columnNames, tableName, KEY_FIELD_NAME);
     }
 
     public String getTableName() {
@@ -81,9 +78,8 @@ public class EntityDescriptor<T> {
 
     public void addValuesToBatch(Object key, Object value, PreparedStatement statement) throws SQLException {
         Map<String, Object> parametersValue = JDBCKeyValueMapper.keyValueMap(key, value);
-        for (Map.Entry<String, FieldDescriptor> fieldNameAndDescriptor : fieldDescriptors.entrySet()) {
-            Object valueForField = parametersValue.get(fieldNameAndDescriptor.getKey());
-            FieldDescriptor descriptor = fieldNameAndDescriptor.getValue();
+        for (FieldDescriptor descriptor : fieldDescriptors) {
+            Object valueForField = parametersValue.get(descriptor.getName());
             if (valueForField == null) {
                 statement.setObject(descriptor.getIndex(), null);
             } else {
@@ -98,9 +94,9 @@ public class EntityDescriptor<T> {
         Map<K, T> result = new HashMap<>();
         while (resultSet.next()) {
             Map<String, Object> objectParameters = new HashMap<>(fieldDescriptors.size());
-            for (Map.Entry<String, FieldDescriptor> entry : fieldDescriptors.entrySet()) {
-                FieldDescriptor descriptor = entry.getValue();
-                objectParameters.put(entry.getKey(), descriptor.getTransformer().get(resultSet, descriptor.getIndex()));
+            for (FieldDescriptor descriptor : fieldDescriptors) {
+                Object value = descriptor.getTransformer().get(resultSet, descriptor.getIndex());
+                objectParameters.put(descriptor.getName(), value);
             }
             JDBCKeyValueMapper.KeyAndValue<T> keyAndValue = JDBCKeyValueMapper.getObject(objectParameters, clazz);
             result.put((K) keyAndValue.getKey(), keyAndValue.getValue());
@@ -110,6 +106,6 @@ public class EntityDescriptor<T> {
 
     @Override
     public String toString() {
-        return "Entity {" +  ", table '" + tableName + "'\', fields " + fieldDescriptors.values() + '}';
+        return "Entity {" + ", table '" + tableName + "'\', fields " + fieldDescriptors + '}';
     }
 }

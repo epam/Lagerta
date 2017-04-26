@@ -17,13 +17,13 @@
 package com.epam.lagerta.base.jdbc;
 
 import com.epam.lagerta.base.BlobValueTransformer;
+import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.ValueTransformer;
 import com.epam.lagerta.base.jdbc.committer.JDBCCommitter;
 import com.epam.lagerta.base.jdbc.committer.SQLSupplier;
 import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
 import com.epam.lagerta.capturer.JDBCDataCapturerLoader;
-import com.epam.lagerta.util.JDBCKeyValueMapper;
 import com.epam.lagerta.util.Serializer;
 import com.epam.lagerta.util.SerializerImpl;
 import com.google.common.base.Charsets;
@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 public final class JDBCUtil {
     private static final String SQL_BASE_PATH = "/com/epam/lagerta/base/jdbc/committer/";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO %s VALUES (%s)";
-    private static final Serializer SERIALIZER = new SerializerImpl();
 
+    public static final Serializer SERIALIZER = new SerializerImpl();
     public static final ValueTransformer BLOB_TRANSFORMER = new BlobValueTransformer(SERIALIZER);
     public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
     public static final String DROP_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "drop_tables.sql";
@@ -84,20 +84,20 @@ public final class JDBCUtil {
     }
 
     public static boolean isOrdinaryColumn(String column) {
-        return !(JDBCKeyValueMapper.KEY_FIELD_NAME.equals(column)
-                || JDBCKeyValueMapper.VAL_FIELD_NAME.equals(column));
+        return !(EntityDescriptor.KEY_FIELD_NAME.equals(column)
+                || EntityDescriptor.VAL_FIELD_NAME.equals(column));
     }
 
     public static void fillSpecialColumnsFromResultSet(ResultSet resultSet, Map<String, Object> keyValueMap) throws SQLException {
-        Blob blob = resultSet.getBlob(JDBCKeyValueMapper.VAL_FIELD_NAME);
+        Blob blob = resultSet.getBlob(EntityDescriptor.VAL_FIELD_NAME);
         Object deserializedVal = null;
 
         if (blob != null) {
             int length = (int) blob.length();
             deserializedVal = SERIALIZER.deserialize(ByteBuffer.wrap(blob.getBytes(1, length)));
         }
-        keyValueMap.put(JDBCKeyValueMapper.VAL_FIELD_NAME, deserializedVal);
-        keyValueMap.put(JDBCKeyValueMapper.KEY_FIELD_NAME, resultSet.getInt(JDBCKeyValueMapper.KEY_FIELD_NAME));
+        keyValueMap.put(EntityDescriptor.VAL_FIELD_NAME, deserializedVal);
+        keyValueMap.put(EntityDescriptor.KEY_FIELD_NAME, resultSet.getInt(EntityDescriptor.KEY_FIELD_NAME));
     }
 
     public static void insertIntoDB(DataSource dataSource, KeyValueAndMetadata kvMeta) {
@@ -107,13 +107,12 @@ public final class JDBCUtil {
     public static void insertIntoDB(Connection connection, KeyValueAndMetadata kvMeta) throws SQLException {
         String maskFields = kvMeta
                 .getFieldDescriptors()
-                .entrySet()
                 .stream()
                 .map(i -> "?")
                 .collect(Collectors.joining(", "));
         try (PreparedStatement preparedStatement = connection.prepareStatement(
-                String.format(INSERT_INTO_TEMPLATE, kvMeta.getTable(), maskFields))) {
-            for (FieldDescriptor descriptor : kvMeta.getFieldDescriptors().values()) {
+                String.format(INSERT_INTO_TEMPLATE, kvMeta.getTableName(), maskFields))) {
+            for (FieldDescriptor descriptor : kvMeta.getFieldDescriptors()) {
                 set(descriptor, preparedStatement, kvMeta.getKeyValueMap().get(descriptor.getName()));
             }
             preparedStatement.execute();
