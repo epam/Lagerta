@@ -41,21 +41,17 @@ public class FieldDescriptorHelper {
     }
 
     public <T> List<FieldDescriptor> parseFields(Class<T> clazz) {
-        List<Field> fields = new ArrayList<>();
-        ReflectionUtils.doWithFields(clazz, field -> {
-            int modifiers = field.getModifiers();
-            if (!Modifier.isTransient(modifiers) && !Modifier.isStatic(modifiers)) {
-                fields.add(field);
-            }
-        });
-        int i = 1;
+        int[] index = new int[]{1};
         List<FieldDescriptor> descriptors = new ArrayList<>();
-        for (Field field : fields) {
+        ReflectionUtils.doWithFields(clazz, field -> {
             ReflectionUtils.makeAccessible(field);
             Class<?> type = field.getType();
             ValueTransformer transformer = identifyTransformer(type);
-            descriptors.add(new FieldDescriptor(i++, field.getName(), transformer));
-        }
+            descriptors.add(new FieldDescriptor(index[0]++, field.getName(), transformer));
+        }, field -> {
+            int modifiers = field.getModifiers();
+            return !Modifier.isTransient(modifiers) && !Modifier.isStatic(modifiers);
+        });
         return addDefaultDescriptors(descriptors);
     }
 
