@@ -70,6 +70,7 @@
             <bean class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
                   c:kafkaFactory-ref="kafka-factory"
                   c:clusterConfig-ref="cluster-config"
+                  c:localLog-ref="local-log"
                   c:serializer-ref="serializer"/>
         </constructor-arg>
     </bean>
@@ -129,6 +130,10 @@
           p:inputTopic="inputTopic"
           p:reconciliationTopic="reconciliation"
           p:gapTopic="gap"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="local-log" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="txIdTopic"
           p:kafkaConfig-ref="kafka-config"/>
 
     <bean id="id-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"

@@ -18,6 +18,7 @@ package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.kafka.KafkaFactory;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -36,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.epam.lagerta.util.TransactionPartitionUtil.partition;
@@ -50,12 +50,15 @@ public class ReconcilerImpl implements Reconciler {
 
     private final KafkaFactory kafkaFactory;
     private final ClusterConfig clusterConfig;
+    private final BasicTopicConfig localLog;
     private final Serializer serializer;
     private final ByteBuffer transactionValueTemplate;
     private volatile boolean reconciliationGoing;
 
-    public ReconcilerImpl(KafkaFactory kafkaFactory, ClusterConfig clusterConfig, Serializer serializer) {
+    public ReconcilerImpl(KafkaFactory kafkaFactory, ClusterConfig clusterConfig, BasicTopicConfig localLog,
+                          Serializer serializer) {
         this.kafkaFactory = kafkaFactory;
+        this.localLog = localLog;
         this.serializer = serializer;
         this.clusterConfig = clusterConfig;
         transactionValueTemplate = serializer.serialize(Collections.emptyList());
@@ -82,11 +85,11 @@ public class ReconcilerImpl implements Reconciler {
 
         private GapFixer() {
             producer = kafkaFactory.producer(clusterConfig.getKafkaConfig().getProducerConfig());
-            consumer = kafkaFactory.consumer(clusterConfig.getKafkaConfig().getConsumerConfig(GAP_FIX_ID + UUID.randomUUID()));
+            consumer = kafkaFactory.consumer(localLog.getKafkaConfig().getConsumerConfig(GAP_FIX_ID));
         }
 
         private void startReconciliation(List<Long> gaps) {
-            Map<Integer, TopicPartition> reconPartitions = producer.partitionsFor(clusterConfig.getInputTopic()).stream()
+            Map<Integer, TopicPartition> reconPartitions = producer.partitionsFor(localLog.getTopic()).stream()
                     .collect(Collectors.toMap(
                             PartitionInfo::partition,
                             info -> new TopicPartition(info.topic(), info.partition())
