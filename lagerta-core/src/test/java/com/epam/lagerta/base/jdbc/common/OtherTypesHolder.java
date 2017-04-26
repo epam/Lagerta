@@ -19,6 +19,9 @@ package com.epam.lagerta.base.jdbc.common;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
+import com.epam.lagerta.base.util.FieldDescriptorHelper;
+import com.epam.lagerta.util.Serializer;
+import com.epam.lagerta.util.SerializerImpl;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -58,6 +61,8 @@ public class OtherTypesHolder implements Serializable {
     private static final int DATE_VALUE_INDEX = 5;
     private static final int TIMESTAMP_VALUE_INDEX = 6;
 
+    private static final Serializer SERIALIZER = new SerializerImpl();
+
     private static final List<FieldDescriptor> FIELD_DESCRIPTORS = list(
             new FieldDescriptor(KEY_INDEX, EntityDescriptor.KEY_FIELD_NAME, INTEGER),
             new FieldDescriptor(VAL_INDEX, EntityDescriptor.VAL_FIELD_NAME, JDBCUtil.BLOB_TRANSFORMER),
@@ -75,7 +80,8 @@ public class OtherTypesHolder implements Serializable {
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             OtherTypesHolder.class,
             TABLE,
-            FIELD_DESCRIPTORS
+            FIELD_DESCRIPTORS,
+            new FieldDescriptorHelper(SERIALIZER)
     );
 
     private byte[] bytesValue;

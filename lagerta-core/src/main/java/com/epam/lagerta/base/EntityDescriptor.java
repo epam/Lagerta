@@ -18,8 +18,6 @@ package com.epam.lagerta.base;
 
 import com.epam.lagerta.base.util.FieldDescriptorHelper;
 import com.epam.lagerta.util.JDBCKeyValueMapper;
-import com.epam.lagerta.util.Serializer;
-import com.epam.lagerta.util.SerializerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,24 +37,23 @@ public class EntityDescriptor<T> {
     public static final String KEY_FIELD_NAME = "key";
     public static final String VAL_FIELD_NAME = "val";
 
-    private static final Serializer SERIALIZER = new SerializerImpl();
-
     private final Class<T> clazz;
     private final String tableName;
     private final List<FieldDescriptor> fieldDescriptors;
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(Class<T> clazz, String tableName) {
-        this(clazz, tableName, parseClass(clazz));
+    public EntityDescriptor(Class<T> clazz, String tableName, FieldDescriptorHelper descriptorHelper) {
+        this(clazz, tableName, parseClass(clazz, descriptorHelper), descriptorHelper);
     }
 
-    public EntityDescriptor(Class<T> clazz, String tableName, List<FieldDescriptor> fieldDescriptors) {
+    public EntityDescriptor(Class<T> clazz, String tableName, List<FieldDescriptor> fieldDescriptors,
+                            FieldDescriptorHelper descriptorHelper) {
         Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
 
         this.clazz = clazz;
         this.tableName = tableName;
-        this.fieldDescriptors = setDescriptors(fieldDescriptors);
+        this.fieldDescriptors = descriptorHelper.addDefaultDescriptors(fieldDescriptors);
 
         List<String> sortedColumns = this.fieldDescriptors
                 .stream()
@@ -76,16 +73,10 @@ public class EntityDescriptor<T> {
                 columnNames, tableName, KEY_FIELD_NAME);
     }
 
-    private static List<FieldDescriptor> setDescriptors(List<FieldDescriptor> fieldDescriptors) {
-        return new FieldDescriptorHelper(SERIALIZER)
-                .addDefaultDescriptors(fieldDescriptors);
-    }
-
-    private static <T> List<FieldDescriptor> parseClass(Class<T> clazz) {
+    private static List<FieldDescriptor> parseClass(Class<?> clazz, FieldDescriptorHelper descriptorHelper) {
         Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
         LOG.warn("FieldDescriptors were not set, defaults will be used instead");
-        return new FieldDescriptorHelper(SERIALIZER)
-                .parseFields(clazz);
+        return descriptorHelper.parseFields(clazz);
     }
 
     public String getTableName() {

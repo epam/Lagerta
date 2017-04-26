@@ -32,7 +32,7 @@ import java.util.List;
 import static com.epam.lagerta.base.EntityDescriptor.KEY_FIELD_NAME;
 import static com.epam.lagerta.base.EntityDescriptor.VAL_FIELD_NAME;
 
-public final class FieldDescriptorHelper {
+public class FieldDescriptorHelper {
 
     private final BlobValueTransformer blobValueTransformer;
 
@@ -51,16 +51,10 @@ public final class FieldDescriptorHelper {
         int i = 1;
         List<FieldDescriptor> descriptors = new ArrayList<>();
         for (Field field : fields) {
-            boolean accessible = field.isAccessible();
-            if (!accessible) {
-                field.setAccessible(true);
-            }
+            ReflectionUtils.makeAccessible(field);
             Class<?> type = field.getType();
             ValueTransformer transformer = identifyTransformer(type);
             descriptors.add(new FieldDescriptor(i++, field.getName(), transformer));
-            if (!accessible) {
-                field.setAccessible(false);
-            }
         }
         return descriptors;
     }

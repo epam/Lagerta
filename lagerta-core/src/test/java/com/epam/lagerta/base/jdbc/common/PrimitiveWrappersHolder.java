@@ -19,6 +19,9 @@ package com.epam.lagerta.base.jdbc.common;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
+import com.epam.lagerta.base.util.FieldDescriptorHelper;
+import com.epam.lagerta.util.Serializer;
+import com.epam.lagerta.util.SerializerImpl;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -44,6 +47,8 @@ public class PrimitiveWrappersHolder implements Serializable {
     public static final String BINARY_KEEPING_CACHE = "binaryKeepingPrimitiveWrappersCache";
     public static final String TABLE = "primitiveWrappersTable";
 
+    private static final Serializer SERIALIZER = new SerializerImpl();
+
     private static final List<String> ORDINARY_COLUMNS = FIELD_DESCRIPTORS
             .stream()
             .map(FieldDescriptor::getName)
@@ -53,7 +58,8 @@ public class PrimitiveWrappersHolder implements Serializable {
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitiveWrappersHolder.class,
             TABLE,
-            FIELD_DESCRIPTORS
+            FIELD_DESCRIPTORS,
+            new FieldDescriptorHelper(SERIALIZER)
     );
 
     private Boolean booleanValue;
