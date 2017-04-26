@@ -19,6 +19,7 @@ import com.epam.lagerta.capturer.KeyTransformer;
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.capturer.TransactionalProducer;
 import com.epam.lagerta.capturer.ValueTransformer;
+import com.epam.lagerta.kafka.config.SubscriberConfig;
 import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -41,7 +42,7 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
     private final ValueTransformer valueTransformer;
     private final Serializer serializer;
 
-    public TransactionalKafkaProducerImpl(com.epam.lagerta.kafka.config.SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
+    public TransactionalKafkaProducerImpl(SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
                                           KeyTransformer keyTransformer, ValueTransformer valueTransformer, Serializer serializer) {
         dataTopic = subscriberConfig.getInputTopic();
         this.keyTransformer = keyTransformer;

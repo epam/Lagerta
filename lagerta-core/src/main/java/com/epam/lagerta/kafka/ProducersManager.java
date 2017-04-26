@@ -19,6 +19,7 @@ import com.epam.lagerta.capturer.KeyTransformer;
 import com.epam.lagerta.capturer.SuspendableProducer;
 import com.epam.lagerta.capturer.TransactionalProducer;
 import com.epam.lagerta.capturer.ValueTransformer;
+import com.epam.lagerta.kafka.config.SubscriberConfig;
 import com.epam.lagerta.util.Serializer;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
     private volatile Producers producers;
 
     public ProducersManager(KafkaFactory kafkaFactory, KeyTransformer keyTransformer, ValueTransformer valueTransformer,
-                            List<com.epam.lagerta.kafka.config.SubscriberConfig> configs, Serializer serializer) {
+                            List<SubscriberConfig> configs, Serializer serializer) {
         this.kafkaFactory = kafkaFactory;
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
@@ -55,7 +56,7 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
         ((SuspendableProducer)producers.get(subscriberId)).resume();
     }
 
-    public synchronized void updateConfiguration(List<com.epam.lagerta.kafka.config.SubscriberConfig> configs) {
+    public synchronized void updateConfiguration(List<SubscriberConfig> configs) {
         Producers newProducers = new Producers(configs.size());
         configs.forEach(config -> newProducers.addProducer(config, producers));
         Producers oldProducers = producers;
@@ -84,11 +85,11 @@ public class ProducersManager implements Supplier<List<TransactionalProducer>> {
             return subscriberToProducer.get(subscriberId);
         }
 
-        void addProducer(com.epam.lagerta.kafka.config.SubscriberConfig config) {
+        void addProducer(SubscriberConfig config) {
             addProducer(config, null);
         }
 
-        void addProducer(com.epam.lagerta.kafka.config.SubscriberConfig config, Producers existingProducers) {
+        void addProducer(SubscriberConfig config, Producers existingProducers) {
             String subscriberId = config.getSubscriberId();
             TransactionalProducer producer = existingProducers == null
                 ? null : existingProducers.get(subscriberId);
