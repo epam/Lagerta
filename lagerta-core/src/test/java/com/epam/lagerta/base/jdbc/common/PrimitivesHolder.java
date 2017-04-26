@@ -19,8 +19,6 @@ package com.epam.lagerta.base.jdbc.common;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
 import com.epam.lagerta.base.util.FieldDescriptorHelper;
-import com.epam.lagerta.util.Serializer;
-import com.epam.lagerta.util.SerializerImpl;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -30,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.epam.lagerta.base.jdbc.JDBCUtil.SERIALIZER;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BOOLEAN_VALUE;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BYTE_VALUE;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.DOUBLE_VALUE;
@@ -43,8 +42,6 @@ public class PrimitivesHolder implements Serializable {
     public static final String CACHE = "primitivesCache";
     public static final String BINARY_KEEPING_CACHE = "binaryKeepingPrimitivesCache";
     public static final String TABLE = "primitivesTable";
-
-    private static final Serializer SERIALIZER = new SerializerImpl();
 
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitivesHolder.class,

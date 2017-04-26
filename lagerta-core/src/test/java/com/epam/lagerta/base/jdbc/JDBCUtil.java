@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 public final class JDBCUtil {
     private static final String SQL_BASE_PATH = "/com/epam/lagerta/base/jdbc/committer/";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO %s VALUES (%s)";
-    private static final Serializer SERIALIZER = new SerializerImpl();
 
+    public static final Serializer SERIALIZER = new SerializerImpl();
     public static final ValueTransformer BLOB_TRANSFORMER = new BlobValueTransformer(SERIALIZER);
     public static final String CREATE_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "create_tables.sql";
     public static final String DROP_TABLE_SQL_RESOURCE = SQL_BASE_PATH + "drop_tables.sql";
