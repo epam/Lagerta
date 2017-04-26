@@ -27,7 +27,8 @@ public class SubscriberConfig implements Serializable {
     private final String gapTopic;
     private final Properties producerConfig;
 
-    public SubscriberConfig(String subscriberId, boolean suspendAllowed, String inputTopic, String reconciliationTopic, String gapTopic, Properties producerConfig) {
+    public SubscriberConfig(String subscriberId, boolean suspendAllowed, String inputTopic, String reconciliationTopic,
+                            String gapTopic, Properties producerConfig) {
         this.subscriberId = subscriberId;
         this.suspendAllowed = suspendAllowed;
         this.inputTopic = inputTopic;

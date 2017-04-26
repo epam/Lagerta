@@ -67,7 +67,6 @@
 
     <bean id="reconciler" class="com.epam.lagerta.mocks.ProxyReconciler">
         <constructor-arg>
-            <!--todo-->
             <bean class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
                   c:kafkaFactory-ref="kafka-factory"
                   c:clusterConfig-ref="cluster-config"
@@ -128,8 +127,8 @@
 
     <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
           p:inputTopic="inputTopic"
-          p:reconciliationTopic="recon"
-          p:gapTopic="reconciliation"
+          p:reconciliationTopic="reconciliation"
+          p:gapTopic="gap"
           p:kafkaConfig-ref="kafka-config"/>
 
     <bean id="id-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"

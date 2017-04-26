@@ -141,8 +141,8 @@ limitations under the License.
 
     <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
           p:inputTopic="testTopic"
-          p:reconciliationTopic="recon"
-          p:gapTopic="reconciliation"
+          p:reconciliationTopic="reconciliation"
+          p:gapTopic="gap"
           p:kafkaConfig-ref="kafka-config"/>
 
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
