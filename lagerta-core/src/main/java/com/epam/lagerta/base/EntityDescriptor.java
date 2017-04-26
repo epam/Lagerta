@@ -16,10 +16,7 @@
 
 package com.epam.lagerta.base;
 
-import com.epam.lagerta.base.util.FieldDescriptorHelper;
 import com.epam.lagerta.util.JDBCKeyValueMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,7 +28,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class EntityDescriptor<T> {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityDescriptor.class);
 
     // todo mark this names as restriction for users
     public static final String KEY_FIELD_NAME = "key";
@@ -43,17 +39,12 @@ public class EntityDescriptor<T> {
     private final String upsertQuery;
     private final String selectQuery;
 
-    public EntityDescriptor(Class<T> clazz, String tableName, FieldDescriptorHelper descriptorHelper) {
-        this(clazz, tableName, parseClass(clazz, descriptorHelper), descriptorHelper);
-    }
-
-    public EntityDescriptor(Class<T> clazz, String tableName, List<FieldDescriptor> fieldDescriptors,
-                            FieldDescriptorHelper descriptorHelper) {
+    public EntityDescriptor(Class<T> clazz, String tableName, List<FieldDescriptor> fieldDescriptors) {
         Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
 
         this.clazz = clazz;
         this.tableName = tableName;
-        this.fieldDescriptors = descriptorHelper.addDefaultDescriptors(fieldDescriptors);
+        this.fieldDescriptors = fieldDescriptors;
 
         List<String> sortedColumns = this.fieldDescriptors
                 .stream()
@@ -71,12 +62,6 @@ public class EntityDescriptor<T> {
         // specific IN semantic for h2
         selectQuery = String.format("SELECT %s FROM %s WHERE array_contains(?, %s)",
                 columnNames, tableName, KEY_FIELD_NAME);
-    }
-
-    private static List<FieldDescriptor> parseClass(Class<?> clazz, FieldDescriptorHelper descriptorHelper) {
-        Objects.requireNonNull(clazz, "class in " + EntityDescriptor.class + " was not set");
-        LOG.warn("FieldDescriptors were not set, defaults will be used instead");
-        return descriptorHelper.parseFields(clazz);
     }
 
     public String getTableName() {

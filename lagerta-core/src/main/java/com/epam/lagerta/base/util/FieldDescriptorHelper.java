@@ -56,7 +56,7 @@ public class FieldDescriptorHelper {
             ValueTransformer transformer = identifyTransformer(type);
             descriptors.add(new FieldDescriptor(i++, field.getName(), transformer));
         }
-        return descriptors;
+        return addDefaultDescriptors(descriptors);
     }
 
     private ValueTransformer identifyTransformer(Class<?> type) {

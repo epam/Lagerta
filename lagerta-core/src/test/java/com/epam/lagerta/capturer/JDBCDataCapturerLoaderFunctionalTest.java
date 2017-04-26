@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.epam.lagerta.base.jdbc.JDBCUtil.SERIALIZER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -78,8 +79,9 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     public void loadWithDefaultEntityDescriptor(KeyValueAndMetadata kvMeta) {
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
         String cacheName = kvMeta.getCacheName();
+        FieldDescriptorHelper helper = new FieldDescriptorHelper(SERIALIZER);
         EntityDescriptor<?> descriptor = new EntityDescriptor<>(Object.class, kvMeta.getTableName(),
-                new FieldDescriptorHelper(new SerializerImpl()));
+                helper.parseFields(Object.class));
         jdbcDataCapturerLoader = new JDBCDataCapturerLoader(
                 dataSource, Collections.singletonMap(cacheName, descriptor));
         Object actual = jdbcDataCapturerLoader.load(cacheName, kvMeta.getKey());
@@ -95,8 +97,9 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
         String cacheName = kvMeta.getCacheName();
         Class<?> clazz = kvMeta.getUnwrappedValue().getClass();
+        FieldDescriptorHelper helper = new FieldDescriptorHelper(SERIALIZER);
         EntityDescriptor<?> descriptor = new EntityDescriptor<>(clazz, kvMeta.getTableName(),
-                new FieldDescriptorHelper(new SerializerImpl()));
+                helper.parseFields(clazz));
         jdbcDataCapturerLoader = new JDBCDataCapturerLoader(
                 dataSource, Collections.singletonMap(cacheName, descriptor));
         Object actual = jdbcDataCapturerLoader.load(cacheName, kvMeta.getKey());

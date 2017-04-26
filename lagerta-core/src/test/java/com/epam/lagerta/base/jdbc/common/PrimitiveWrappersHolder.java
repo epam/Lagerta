@@ -19,7 +19,6 @@ package com.epam.lagerta.base.jdbc.common;
 import com.epam.lagerta.base.EntityDescriptor;
 import com.epam.lagerta.base.FieldDescriptor;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.base.util.FieldDescriptorHelper;
 import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
@@ -31,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.epam.lagerta.base.jdbc.JDBCUtil.SERIALIZER;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BOOLEAN_VALUE;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.BYTE_VALUE;
 import static com.epam.lagerta.base.jdbc.common.PrimitivesFieldConstants.DOUBLE_VALUE;
@@ -55,8 +53,7 @@ public class PrimitiveWrappersHolder implements Serializable {
     public static final EntityDescriptor ENTITY_DESCRIPTOR = new EntityDescriptor<>(
             PrimitiveWrappersHolder.class,
             TABLE,
-            FIELD_DESCRIPTORS,
-            new FieldDescriptorHelper(SERIALIZER)
+            FIELD_DESCRIPTORS
     );
 
     private Boolean booleanValue;
