@@ -22,8 +22,7 @@ import com.epam.lagerta.subscriber.Committer;
 
 public final class DBResourceFactory {
 
-    private static final String DB_NAME = "testDB";
-    private static DBResource DB_RESOURCE = new DBResource(DB_NAME);
+    private static final DBResource DB_RESOURCE = new DBResource("testDB");
 
     public static DBResource getDBResource() {
         return DB_RESOURCE;
