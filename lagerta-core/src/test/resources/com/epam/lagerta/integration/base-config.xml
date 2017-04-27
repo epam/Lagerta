@@ -119,7 +119,7 @@
 
     <bean id="serviceFilter" class="com.epam.lagerta.ServiceFilterPredicate"/>
 
-    <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
+    <bean id="cache-loader" class="com.epam.lagerta.resources.DBResourceFactory"
           factory-method="getJDBCDataCapturerLoader"/>
 
     <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
@@ -141,7 +141,7 @@
     <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
-    <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
+    <bean id="committer" class="com.epam.lagerta.resources.DBResourceFactory"
           factory-method="getJDBCCommitter"/>
 
     <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter">
