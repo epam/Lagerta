@@ -22,6 +22,7 @@ import com.epam.lagerta.kafka.KafkaLogCommitter;
 import com.epam.lagerta.kafka.KafkaLogCommitterImpl;
 import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import com.epam.lagerta.kafka.config.ClusterConfig;
+import com.epam.lagerta.kafka.config.KafkaConfig;
 import com.epam.lagerta.mocks.KafkaMockFactory;
 import com.epam.lagerta.util.Serializer;
 import com.epam.lagerta.util.SerializerImpl;
@@ -71,6 +72,7 @@ public class SequentialCommitStrategyUnitTest {
         clusterConfig.setInputTopic(TOPIC);
         localIndexConfig = new BasicTopicConfig();
         localIndexConfig.setTopic(TOPIC);
+        localIndexConfig.setKafkaConfig(mock(KafkaConfig.class));
         kafkaMockFactory = new KafkaMockFactory(null, null, clusterConfig, serializer);
     }
 
