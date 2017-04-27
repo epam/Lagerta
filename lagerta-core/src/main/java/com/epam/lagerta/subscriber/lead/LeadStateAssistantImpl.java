@@ -16,7 +16,7 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import com.epam.lagerta.services.ReaderService;
 import com.epam.lagerta.util.Atomic;
 import com.epam.lagerta.util.AtomicsHelper;
@@ -61,8 +61,8 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
         @SpringResource(resourceClass = KafkaFactory.class)
         private transient KafkaFactory kafkaFactory;
 
-        @SpringResource(resourceClass = SubscriberConfig.class)
-        private transient SubscriberConfig config;
+        @SpringResource(resourceName = "local-index-config")
+        private transient BasicTopicConfig config;
 
         @IgniteInstanceResource
         private transient Ignite ignite;

@@ -17,9 +17,9 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.kafka.DataRecoveryConfig;
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
+import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -46,22 +46,21 @@ public class ReconcilerImpl implements Reconciler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReconcilerImpl.class);
     private static final int POLL_TIMEOUT = 200;
+    private static final String GAP_FIX_ID = "gapFixGroupId";
 
-    private final String inputTopic;
-    private final String reconciliationTopic;
     private final KafkaFactory kafkaFactory;
-    private final DataRecoveryConfig dataRecoveryConfig;
+    private final ClusterConfig clusterConfig;
+    private final BasicTopicConfig localLog;
     private final Serializer serializer;
     private final ByteBuffer transactionValueTemplate;
     private volatile boolean reconciliationGoing;
 
-    public ReconcilerImpl(KafkaFactory kafkaFactory, DataRecoveryConfig dataRecoveryConfig,
-                          SubscriberConfig subscriberConfig, Serializer serializer) {
+    public ReconcilerImpl(KafkaFactory kafkaFactory, ClusterConfig clusterConfig, BasicTopicConfig localLog,
+                          Serializer serializer) {
         this.kafkaFactory = kafkaFactory;
-        this.dataRecoveryConfig = dataRecoveryConfig;
+        this.localLog = localLog;
         this.serializer = serializer;
-        inputTopic = subscriberConfig.getInputTopic();
-        reconciliationTopic = dataRecoveryConfig.getReconciliationTopic();
+        this.clusterConfig = clusterConfig;
         transactionValueTemplate = serializer.serialize(Collections.emptyList());
     }
 
@@ -84,13 +83,13 @@ public class ReconcilerImpl implements Reconciler {
         private final Producer<ByteBuffer, ByteBuffer> producer;
         private final Consumer<ByteBuffer, ByteBuffer> consumer;
 
-        public GapFixer() {
-            producer = kafkaFactory.producer(dataRecoveryConfig.getProducerConfig());
-            consumer = kafkaFactory.consumer(dataRecoveryConfig.getConsumerConfig());
+        private GapFixer() {
+            producer = kafkaFactory.producer(clusterConfig.getKafkaConfig().getProducerConfig());
+            consumer = kafkaFactory.consumer(localLog.getKafkaConfig().getConsumerConfig(GAP_FIX_ID));
         }
 
-        public void startReconciliation(List<Long> gaps) {
-            Map<Integer, TopicPartition> reconPartitions = producer.partitionsFor(inputTopic).stream()
+        private void startReconciliation(List<Long> gaps) {
+            Map<Integer, TopicPartition> reconPartitions = producer.partitionsFor(localLog.getTopic()).stream()
                     .collect(Collectors.toMap(
                             PartitionInfo::partition,
                             info -> new TopicPartition(info.topic(), info.partition())
@@ -142,7 +141,7 @@ public class ReconcilerImpl implements Reconciler {
             boolean found = txIds.remove(txId);
             if (found) {
                 ProducerRecord<ByteBuffer, ByteBuffer> producerRecord =
-                        new ProducerRecord<>(reconciliationTopic, record.key(), record.value());
+                        new ProducerRecord<>(clusterConfig.getGapTopic(), record.key(), record.value());
                 producer.send(producerRecord);
             }
         }
@@ -151,7 +150,7 @@ public class ReconcilerImpl implements Reconciler {
             TransactionScope scope = new TransactionScope(txId, Collections.emptyList());
             ByteBuffer key = serializer.serialize(scope);
             ProducerRecord<ByteBuffer, ByteBuffer> producerRecord =
-                    new ProducerRecord<>(reconciliationTopic, key, transactionValueTemplate);
+                    new ProducerRecord<>(clusterConfig.getGapTopic(), key, transactionValueTemplate);
             LOGGER.warn("[L] Reconciler is sending empty transaction with id {}", txId);
             producer.send(producerRecord);
         }

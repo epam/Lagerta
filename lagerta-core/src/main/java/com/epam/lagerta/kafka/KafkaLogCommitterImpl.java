@@ -15,35 +15,32 @@
  */
 package com.epam.lagerta.kafka;
 
-import com.epam.lagerta.capturer.IdSequencer;
 import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
-import javax.cache.integration.CacheWriterException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class KafkaIdSequencer implements IdSequencer {
-    private final String topic;
+public class KafkaLogCommitterImpl implements KafkaLogCommitter {
+
+    private final String logTopic;
     private final Producer producer;
 
-    public KafkaIdSequencer(KafkaFactory kafkaFactory, BasicTopicConfig idConfig) {
-        topic = idConfig.getTopic();
-        producer = kafkaFactory.producer(idConfig.getKafkaConfig().getProducerConfig());
+    public KafkaLogCommitterImpl(KafkaFactory kafkaFactory, BasicTopicConfig localIndexConfig) {
+        producer = kafkaFactory.producer(localIndexConfig.getKafkaConfig().getProducerConfig());
+        logTopic = localIndexConfig.getTopic();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
-    @Override public long getNextId() {
-        try {
-            Future<RecordMetadata> future = producer.send(new ProducerRecord(topic, 0, null, null));
-            return future.get().offset();
-        } catch (ExecutionException | InterruptedException e) {
-            throw new CacheWriterException(e);
-        }
+    public Future<RecordMetadata> commitTransaction(long transactionId) {
+        int partition = 0;  //todo fix me in #208
+        ProducerRecord record = new ProducerRecord(logTopic, partition, transactionId, null, null);
+        return producer.send(record);
     }
 
+    @Override
     public void close() {
         producer.close();
     }

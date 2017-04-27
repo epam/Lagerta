@@ -18,7 +18,7 @@ package com.epam.lagerta.mocks;
 import com.epam.lagerta.capturer.KeyTransformer;
 import com.epam.lagerta.capturer.ValueTransformer;
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.util.Serializer;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -52,12 +52,12 @@ public class KafkaMockFactory implements KafkaFactory {
 
     private final KeyTransformer keyTransformer;
     private final ValueTransformer valueTransformer;
-    private final SubscriberConfig config;
+    private final ClusterConfig config;
     private final Serializer serializer;
 
     private int specifiedNumberOfNodes;
 
-    public KafkaMockFactory(KeyTransformer keyTransformer, ValueTransformer valueTransformer, SubscriberConfig config,
+    public KafkaMockFactory(KeyTransformer keyTransformer, ValueTransformer valueTransformer, ClusterConfig config,
                             Serializer serializer) {
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
