@@ -17,16 +17,17 @@
 package com.epam.lagerta;
 
 import com.epam.lagerta.cluster.DifferentJVMClusterManager;
-import com.epam.lagerta.cluster.IgniteClusterManager;
 import com.epam.lagerta.resources.FullClusterResource;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.testng.annotations.BeforeSuite;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public abstract class BaseMultiJVMIntegrationTest extends BaseIntegrationTest {
 
     private static final DifferentJVMClusterManager JVM_CLUSTER_MANAGER = new DifferentJVMClusterManager();
+    private static final int WAIT_SHUTDOWN = 100;
 
     @BeforeSuite
     public void setUp() throws Exception {
@@ -34,13 +35,23 @@ public abstract class BaseMultiJVMIntegrationTest extends BaseIntegrationTest {
         ALL_RESOURCES.setUp();
     }
 
-    public void stopNodeWithService(String serviceName) {
-        JVM_CLUSTER_MANAGER.getIgniteStopper().stopServerNodesWithService(serviceName);
+    public UUID stopNodeWithService(String serviceName) {
+        return JVM_CLUSTER_MANAGER.getIgniteStopper().stopServerNodesWithService(serviceName);
+    }
+
+    public UUID getNodeIdForService(String serviceName) {
+        return JVM_CLUSTER_MANAGER.getIgniteStopper().getNodeIDForService(serviceName);
     }
 
     public void waitShutdownOneNode() {
-        do {
-            Uninterruptibles.sleepUninterruptibly(IgniteClusterManager.AWAIT_TIME, TimeUnit.MILLISECONDS);
-        } while (FullClusterResource.CLUSTER_SIZE - 1 != JVM_CLUSTER_MANAGER.getCountAliveServerNodes());
+        while (FullClusterResource.CLUSTER_SIZE - 1 != JVM_CLUSTER_MANAGER.getCountAliveServerNodes()) {
+            Uninterruptibles.sleepUninterruptibly(WAIT_SHUTDOWN, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public void awaitStartAllServerNodes() {
+        JVM_CLUSTER_MANAGER.startServerNodes(FullClusterResource.CLUSTER_SIZE);
+        JVM_CLUSTER_MANAGER.waitStartServerNodes();
+        awaitTransactions();
     }
 }

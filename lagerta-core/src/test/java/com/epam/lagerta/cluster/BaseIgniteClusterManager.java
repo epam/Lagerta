@@ -34,11 +34,13 @@ public abstract class BaseIgniteClusterManager implements IgniteClusterManager {
     protected ServiceConfiguration[] serviceConfigs;
 
     protected void stopServicesAndCaches() {
-        cacheConfigs.forEach(config -> clientNode.destroyCache(config.getName()));
-        if (serviceConfigs != null) {
-            clientNode.services().cancelAll();
-        }
-        Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
+        do {
+            cacheConfigs.forEach(config -> clientNode.destroyCache(config.getName()));
+            if (serviceConfigs != null) {
+                clientNode.services().cancelAll();
+            }
+            Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
+        } while (clientNode.cacheNames().size() != 0);
     }
 
     protected void startServicesAndCaches() {
