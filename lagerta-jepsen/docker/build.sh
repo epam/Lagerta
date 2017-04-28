@@ -24,11 +24,11 @@ exists() {
 }
 
 INFO(){
-    /bin/echo $'\e[104m\e[97m[INFO]\e[49m\e[39m' $@
+    /bin/echo '[INFO]' $@
 }
 
 ERROR(){
-    /bin/echo $'\e[101m\e[97m[ERROR]\e[49m\e[39m' $@
+    /bin/echo '[ERROR]' $@
 }
 
 exists ssh-keygen || { ERROR "Please install ssh-keygen"; exit 1; }
@@ -57,7 +57,5 @@ exists docker || { ERROR "Please install docker"; exit 1; }
 exists docker-compose || { ERROR "Please install docker-compose"; exit 1; }
 
 INFO "Building images"
-docker build -t java-base base/.
-docker build -t jepsen-control jepsen-control/.
-#docker build -t subscriber subscriber/.
-#docker build -t publisher publisher/.
+docker build -t java-base --network host base/.
+docker build -t jepsen-control --network host jepsen-control/.
