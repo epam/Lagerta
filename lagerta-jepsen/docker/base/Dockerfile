@@ -21,6 +21,7 @@ FROM openjdk:8
 
 LABEL "base docker image with java 8"
 
+# install initial deps
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y apt-utils
 RUN apt-get update && apt-get -y upgrade && \
@@ -43,7 +44,14 @@ RUN apt-get update && apt-get -y upgrade && \
 
 RUN apt-get remove -y --purge --auto-remove systemd
 
+# configure ssh configs
+RUN mkdir -p /var/run/sshd && \
+    sed -i "s/UsePrivilegeSeparation.*/UsePrivilegeSeparation no/g" /etc/ssh/sshd_config && \
+    sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    touch /root/.Xauthority true
+
+RUN chmod 755 /var/run/sshd
 ARG PASSWORD=root
-RUN echo 'root:${PASSWORD}' | chpasswd
+RUN echo 'root:'${PASSWORD} | chpasswd
 
 EXPOSE 22

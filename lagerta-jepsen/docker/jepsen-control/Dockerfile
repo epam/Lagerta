@@ -19,6 +19,7 @@
 
 FROM java-base
 
+# install clojure and leiningen
 ARG JEPSEN_VERSION=0.1.4
 ENV LEIN_ROOT true
 
@@ -26,11 +27,16 @@ RUN wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
     mv lein /usr/bin && \
     chmod +x /usr/bin/lein
 
+# install jepsen
 ADD https://github.com/jepsen-io/jepsen/archive/${JEPSEN_VERSION}.tar.gz /jepsen
 RUN chmod +x jepsen && tar xfz jepsen && rm -f jepsen
 RUN cd /jepsen-${JEPSEN_VERSION}/jepsen && lein install
 
+# configure ssh
 ADD ./init.sh /init.sh
 RUN chmod +x /init.sh
+
+# test sources
+#ADD ../src /jepsen-${JEPSEN_VERSION}/lagerta/src/
 
 CMD /init.sh

@@ -24,8 +24,12 @@ services:
     image: jepsen-control
     container_name: jepsen-control
     env_file: ./secret/control.env
+    volumes:
+      - ./src:/lagerta/src
     privileged: true
     hostname: control
+    networks:
+      - default
     links:
       - n1
       - n2
@@ -38,9 +42,7 @@ services:
     container_name: jepsen-node
     env_file: ./secret/node.env
     privileged: true
-    volumes:
-      - ./node/init.sh:/init.sh
-    command: bash -c "chmod 755 /init.sh && sh init.sh"
+    command: bash -c "/usr/sbin/sshd -D"
   n1:
     extends: node
     container_name: jepsen-n1
