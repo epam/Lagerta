@@ -32,7 +32,9 @@ ERROR(){
 }
 
 exists ssh-keygen || { ERROR "Please install ssh-keygen"; exit 1; }
-
+if [ ! -f ./secret ]; then
+    mkdir -p -m 755 ./secret
+fi
 if [ ! -f ./secret/node.env ]; then
     INFO "Generating key pair"
     ssh-keygen -t rsa -N "" -f ./secret/id_rsa -C "epam.com"
