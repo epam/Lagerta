@@ -1,7 +1,8 @@
-start jepsen environment
+### start jepsen environment
 
+move into docker folder and 
+run `build.sh` script, then
 ```
-sh build.sh
 docker-compose up -d
 ```
 **stop all containers:**
@@ -21,4 +22,4 @@ docker exec -it jepsen-control bash
 docker exec jepsen-control bin/bash -c "cd /jepsen-0.1.4/jepsen && lein test"
 ```
 
-All tests placed in src/test and witten on [clojure](https://clojure.org/)
+All tests placed in src/test and written on [clojure](https://clojure.org/)
