@@ -45,7 +45,11 @@
           p:cacheConfiguration-ref="caches"
           p:discoverySpi-ref="discovery-spi"
           p:serviceConfiguration-ref="services"
-          p:gridLogger-ref="grid-logger"/>
+          p:gridLogger-ref="grid-logger"
+          p:atomicConfiguration-ref="atomicConfiguration"/>
+
+    <bean name="atomicConfiguration" class="org.apache.ignite.configuration.AtomicConfiguration"
+          p:backups="1"/>
 
     <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
 

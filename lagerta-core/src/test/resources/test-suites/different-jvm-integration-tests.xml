@@ -20,6 +20,7 @@
 <suite name="Different-JVM Integration Tests" time-out="300000">
     <test name="All">
         <classes>
+            <class name="com.epam.lagerta.subscriber.lead.LeadReinitionIntegrationTest"/>
         </classes>
     </test>
 </suite>

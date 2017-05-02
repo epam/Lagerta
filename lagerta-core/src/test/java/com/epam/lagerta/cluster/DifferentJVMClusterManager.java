@@ -46,18 +46,18 @@ public class DifferentJVMClusterManager extends BaseIgniteClusterManager {
         this.clusterSize = clusterSize;
         clientNode = new GenericXmlApplicationContext(CONFIG_XML).getBean(Ignite.class);
         processes = new ArrayList<>(clusterSize);
-        startServerNodes();
+        startServerNodes(clusterSize);
         igniteStopper = new IgniteStopper(clientNode);
         cacheConfigs = getNonSystemCacheConfigs();
         serviceConfigs = clientNode.configuration().getServiceConfiguration();
         return clientNode;
     }
 
-    private void startServerNodes() {
+    public void startServerNodes(int count) {
         processes = processes.stream().filter(Process::isAlive).collect(Collectors.toList());
         try {
-            for (int gridNumber = processes.size(); gridNumber < clusterSize; gridNumber++) {
-                processes.add(startJVM("node-" + gridNumber, IgniteStarter.class));
+            for (int gridNumber = 0; gridNumber < count && processes.size() < clusterSize; gridNumber++) {
+                processes.add(startJVM("node-" + (processes.size() + gridNumber), IgniteStarter.class));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -75,11 +75,8 @@ public class DifferentJVMClusterManager extends BaseIgniteClusterManager {
 
     @Override
     public void reloadCluster() {
-        startServerNodes();
-        IgniteCluster cluster = clientNode.cluster();
-        do {
-            Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
-        } while (cluster.forServers().nodes().size() <= clusterSize);
+        startServerNodes(clusterSize);
+        waitStartServerNodes();
         stopServicesAndCaches();
         startServicesAndCaches();
     }
@@ -124,5 +121,12 @@ public class DifferentJVMClusterManager extends BaseIgniteClusterManager {
             logThread.setDaemon(true);
             logThread.start();
         }
+    }
+
+    public void waitStartServerNodes() {
+        IgniteCluster cluster = clientNode.cluster();
+        do {
+            Uninterruptibles.sleepUninterruptibly(AWAIT_TIME, TimeUnit.MILLISECONDS);
+        } while (cluster.forServers().nodes().size() <= clusterSize);
     }
 }
