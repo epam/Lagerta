@@ -30,12 +30,6 @@ services:
     hostname: control
     networks:
       - default
-    links:
-      - n1
-      - n2
-      - n3
-      - n4
-      - n5
 
   node:
     image: java-base

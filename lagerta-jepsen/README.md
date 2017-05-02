@@ -4,6 +4,10 @@ start jepsen environment
 sh build.sh
 docker-compose up -d
 ```
+on windows
+```
+docker-compose up -v ./jepsen-control/init.sh:/init.sh
+```
 **stop all containers:**
 ```
 docker kill $(docker ps -q)

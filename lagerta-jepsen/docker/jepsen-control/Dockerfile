@@ -34,9 +34,6 @@ RUN cd /jepsen-${JEPSEN_VERSION}/jepsen && lein install
 
 # configure ssh
 ADD ./init.sh /init.sh
-RUN chmod +x /init.sh
+RUN chmod a+x /init.sh
 
-# test sources
-#ADD ../src /jepsen-${JEPSEN_VERSION}/lagerta/src/
-
-CMD /init.sh
+ENTRYPOINT /init.sh ; /bin/bash
