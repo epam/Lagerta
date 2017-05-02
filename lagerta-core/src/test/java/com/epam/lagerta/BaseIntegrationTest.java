@@ -72,12 +72,7 @@ public abstract class BaseIntegrationTest {
     @AfterMethod
     public void cleanupResources() throws SQLException {
         TEST_NUMBER++;
-        //todo issue #232 fix increment topic partition name for tests on milty jvm
-        /* possible solution
-        ignite().compute(ignite().cluster().forRemotes())
-                .broadcast(()-> BaseIntegrationTest.TEST_NUMBER++);
-         */
-
+        //todo issue #232 fix increment topic partition name for tests on multi jvm
         ALL_RESOURCES.cleanUpClusters();
         DB_RESOURCE.executeResource(JDBCUtil.DROP_TABLE_SQL_RESOURCE);
     }

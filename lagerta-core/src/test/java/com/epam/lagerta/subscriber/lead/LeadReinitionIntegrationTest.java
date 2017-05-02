@@ -46,7 +46,7 @@ public class LeadReinitionIntegrationTest extends BaseMultiJVMIntegrationTest {
         writeToCache.stop();
         long expectedLastDenseCommitted = writeToCache.getCount() - 1;
 
-        //wait what lead state saved
+        //wait that lead state was saved
         while (getSavedLeadState() != expectedLastDenseCommitted) {
             awaitTransactions();
         }
@@ -70,15 +70,18 @@ public class LeadReinitionIntegrationTest extends BaseMultiJVMIntegrationTest {
         awaitStartAllServerNodes();
         WriterToCache writeToCache = new WriterToCache();
         writeToCache.run();
+
         UUID oldIdNodeForLead = getNodeIdForService(LeadService.NAME);
         stopNodeWithService(LeadService.NAME);
         waitShutdownOneNode();
         awaitTransactions();
+
         if (oldIdNodeForLead == getNodeIdForService(LeadService.NAME)) {
             fail("Expected what lead is redeployed");
         }
         writeToCache.stop();
         awaitTransactions();
+
         long expectedLastDenseCommitted = writeToCache.getCount() - 1;
         waitAndCheckLeadLastDenseCommitted(expectedLastDenseCommitted);
     }
@@ -118,7 +121,7 @@ public class LeadReinitionIntegrationTest extends BaseMultiJVMIntegrationTest {
             writeTask.interrupt();
         }
 
-        public long getCount() {
+        public int getCount() {
             return count;
         }
     }
