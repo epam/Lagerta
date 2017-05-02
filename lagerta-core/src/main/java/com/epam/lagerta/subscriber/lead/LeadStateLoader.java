@@ -87,6 +87,7 @@ public class LeadStateLoader {
             throw new RuntimeException(e);
         } finally {
             consumerKeepers.forEach(ConsumerKeeper::close);
+            //todo #236
         }
     }
 
