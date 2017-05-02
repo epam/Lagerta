@@ -22,16 +22,13 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.common.TopicPartition;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
@@ -122,17 +119,14 @@ public class LeadStateLoader {
     private void shiftToLastCommitted(Consumer<?, ?> consumer, long commitId) {
         Map<TopicPartition, Long> partitionsAndTimestamps = getTopicPartitionStream(consumer)
                 .collect(Collectors.toMap(identity(), v -> commitId));
-        Map<TopicPartition, OffsetAndMetadata> partitionsAndOffsets = new HashMap<TopicPartition, OffsetAndMetadata>();
-        Set<Map.Entry<TopicPartition, OffsetAndTimestamp>> topicPartitionsAndOffset = consumer
+        Map<TopicPartition, OffsetAndMetadata> partitionsAndOffsets = consumer
                 .offsetsForTimes(partitionsAndTimestamps)
-                .entrySet();
-        for (Map.Entry<TopicPartition, OffsetAndTimestamp> topicOffset : topicPartitionsAndOffset) {
-            if (topicOffset.getValue() != null) {
-                partitionsAndOffsets.put(topicOffset.getKey(), new OffsetAndMetadata(topicOffset.getValue().offset()));
-            } else {
-                partitionsAndOffsets.put(topicOffset.getKey(), new OffsetAndMetadata(0));
-            }
-        }
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        v -> v.getValue() != null ? new OffsetAndMetadata(v.getValue().offset()) : new OffsetAndMetadata(0)
+                ));
         consumer.commitSync(partitionsAndOffsets);
     }
 
