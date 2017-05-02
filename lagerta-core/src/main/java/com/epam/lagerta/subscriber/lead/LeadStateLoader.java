@@ -65,8 +65,7 @@ public class LeadStateLoader {
                     .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
                     .collect(Collectors.toList());
             List<ConsumerKeeper> finalConsumerKeepers = consumerKeepers;
-
-            CommittedTransactions committed = new CommittedTransactions();
+            CommittedTransactions committed = new CommittedTransactions(commitId);
             ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
             pool.submit(() -> {
                 while (true) {
@@ -84,8 +83,11 @@ public class LeadStateLoader {
                 return committed;
             }).join();
             return committed;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             consumerKeepers.forEach(ConsumerKeeper::close);
+            //todo #236
         }
     }
 
@@ -122,7 +124,10 @@ public class LeadStateLoader {
                 .offsetsForTimes(partitionsAndTimestamps)
                 .entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, v -> new OffsetAndMetadata(v.getValue().offset())));
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        v -> v.getValue() != null ? new OffsetAndMetadata(v.getValue().offset()) : new OffsetAndMetadata(0)
+                ));
         consumer.commitSync(partitionsAndOffsets);
     }
 
