@@ -36,4 +36,4 @@ RUN cd /jepsen-${JEPSEN_VERSION}/jepsen && lein install
 ADD ./init.sh /init.sh
 RUN chmod a+x /init.sh
 
-ENTRYPOINT /init.sh ; /bin/bash
+CMD ["sh", "/init.sh"]
