@@ -22,4 +22,6 @@ docker exec -it jepsen-control bash
 docker exec jepsen-control bin/bash -c "cd /jepsen-0.1.4/jepsen && lein test"
 ```
 
-All tests placed in src/test and written on [clojure](https://clojure.org/)
+All tests placed in ./src, on docker container placed in /lagerta/src
+
+written on [clojure](https://clojure.org/)

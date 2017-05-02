@@ -30,6 +30,8 @@ services:
     hostname: control
     networks:
       - default
+    expose:
+      - 8080
 
   node:
     image: java-base

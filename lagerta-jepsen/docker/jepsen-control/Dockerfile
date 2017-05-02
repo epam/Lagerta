@@ -23,14 +23,13 @@ FROM java-base
 ARG JEPSEN_VERSION=0.1.4
 ENV LEIN_ROOT true
 
-RUN wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein && \
-    mv lein /usr/bin && \
-    chmod +x /usr/bin/lein
+ADD https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein /usr/bin
+RUN chmod +x /usr/bin/lein
 
 # install jepsen
 ADD https://github.com/jepsen-io/jepsen/archive/${JEPSEN_VERSION}.tar.gz /jepsen
-RUN chmod +x jepsen && tar xfz jepsen && rm -f jepsen
-RUN cd /jepsen-${JEPSEN_VERSION}/jepsen && lein install
+RUN chmod +x jepsen && tar xfz jepsen && rm -f jepsen && \
+    cd /jepsen-${JEPSEN_VERSION}/jepsen && lein install
 
 # configure ssh
 ADD ./init.sh /init.sh
