@@ -17,15 +17,34 @@
 
 (ns lagerta_jepsen.core
 	(:gen-class)
-	(:require [jepsen.cli :as cli]
-			  [jepsen.tests :as tests]))
+	(:require [clojure.tools.logging :refer :all]
+              [clojure.string :as str]
+              [jepsen [cli :as cli]
+                      [control :as c]
+                      [db :as db]
+                      [tests :as tests]]
+              [jepsen.control.util :as cu]
+              [jepsen.os.debian :as debian]))
 			  
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
-  [opts]
+  [opts]  
   (merge tests/noop-test
+		 {:name "etcd"
+          :os debian/os
+          :db (db "v3.1.5")}
          opts))
+			
+(defn db
+  "Etcd DB for a particular version."
+  [version]
+  (reify db/DB
+    (setup! [_ test node]
+      (info node "installing etcd" version))
 
+    (teardown! [_ test node]
+      (info node "tearing down etcd"))))
+	  
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for browsing results."
   [& args]
