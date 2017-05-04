@@ -26,16 +26,7 @@
               [jepsen.control.util :as cu]
               [jepsen.os.debian :as debian]))
 			  
-(defn etcd-test
-  "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
-  [opts]  
-  (merge tests/noop-test
-		 {:name "etcd"
-          :os debian/os
-          :db (db "v3.1.5")}
-         opts))
-			
-(defn db
+(defn etcd-control
   "Etcd DB for a particular version."
   [version]
   (reify db/DB
@@ -44,6 +35,17 @@
 
     (teardown! [_ test node]
       (info node "tearing down etcd"))))
+
+	  
+(defn etcd-test
+  "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
+  [opts]  
+  (merge tests/noop-test
+		 {:name "etcd"
+          :os debian/os
+          :db (etcd-control "v3.1.5")}
+         opts))			
+
 	  
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for browsing results."
