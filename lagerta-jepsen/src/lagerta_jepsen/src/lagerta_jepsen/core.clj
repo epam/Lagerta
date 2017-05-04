@@ -25,13 +25,22 @@
                       [tests :as tests]]
               [jepsen.control.util :as cu]
               [jepsen.os.debian :as debian]))
-			  
+
+
+(def dir     "/opt/etcd") 
+
+
+
 (defn etcd-control
   "Etcd DB for a particular version."
   [version]
   (reify db/DB
     (setup! [_ test node]
-      (info node "installing etcd" version))
+      (info node "installing etcd" version)
+	  (c/su
+       (let [url (str "https://storage.googleapis.com/etcd/" version
+                  "/etcd-" version "-linux-amd64.tar.gz")]
+        (cu/install-tarball! c/*host* url dir))))
 
     (teardown! [_ test node]
       (info node "tearing down etcd"))))
