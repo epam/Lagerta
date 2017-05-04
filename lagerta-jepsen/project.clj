@@ -14,13 +14,12 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 ;;
-
-(defproject lagerta-jepsen "0.1.0-SNAPSHOT"
-  :description "A project to learn how to use Jepsen"
-  :url "http://"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+(defproject lagerta-jepsen "1.0-SNAPSHOT"
+  :description "Jepsen test of Lagerta"
+  :url "https://github.com/epam/Lagerta/tree/master/lagerta-jepsen"
+  :license {:name "The Apache Software License, Version 2.0"
+            :url "http://www.apache.org/licenses/LICENSE-2.0.txt"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [jepsen "0.1.4"]
                  [verschlimmbesserung "0.1.3"]]
-  :main lagerta_jepsen.core)
+  :main jepsen.lagerta.core)

@@ -14,3 +14,11 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 ;;
+
+(ns jepsen.lagerta.core-test
+  (:require [clojure.test :refer :all]
+            [jepsen.lagerta.core :refer :all]))
+
+(deftest a-test
+  (testing "FIXME, I fail."
+    (is (= 0 1))))

@@ -26,6 +26,8 @@ services:
     env_file: ./secret/control.env
     volumes:
       - ../src:/lagerta/src
+      - ../test:/lagerta/test
+      - ../project.clj:/lagerta/project.clj
     privileged: true
     hostname: control
     networks:
