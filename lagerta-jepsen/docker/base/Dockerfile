@@ -28,6 +28,12 @@ RUN apt-get update && apt-get -y upgrade && \
   apt-get install -y --no-install-recommends \
   libjna-java \
   net-tools \
+  iproute \
+  man-db \
+  rsyslog \
+  ntpdate \
+  libzip2 \
+  sudo \
   sysvinit \
   sysvinit-core \
   sysvinit-utils \

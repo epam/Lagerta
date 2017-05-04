@@ -60,7 +60,8 @@ exists docker || { ERROR "Please install docker"; exit 1; }
 exists docker-compose || { ERROR "Please install docker-compose"; exit 1; }
 
 INFO "Cleaning images"
-docker rmi -f java-base jepsen-control
+docker container prune -f --filter image='java-base' --filter image='jepsen-control'
+docker rmi -f 'java-base' 'jepsen-control'
 INFO "Building images"
-docker build -t java-base --network host ${SCRIPT_FOLDER_PATH}/base/.
-docker build -t jepsen-control --network host ${SCRIPT_FOLDER_PATH}/jepsen-control/.
+docker build -t java-base ${SCRIPT_FOLDER_PATH}/base/.
+docker build -t jepsen-control ${SCRIPT_FOLDER_PATH}/jepsen-control/.
