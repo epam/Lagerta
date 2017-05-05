@@ -24,7 +24,9 @@
              [client :as client]
              [control :as c]
              [db :as db]
-             [tests :as tests]]
+             [generator :as gen]
+             [tests :as tests]
+             [util :as util]]
             [jepsen.control.util :as cu]
             [jepsen.os.debian :as debian]))
 
@@ -114,6 +116,10 @@
       ; close it.
       )))
 
+(defn r   [_ _] {:type :invoke, :f :read, :value nil})
+(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
+(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
   [opts]  
@@ -121,7 +127,11 @@
          {:name "etcd"
           :os debian/os
           :db (etcd-control "v3.1.5")
-          :client (client nil)}
+          :client (client nil)
+          :generator (->> r
+                          (gen/stagger 1)
+                          (gen/clients)
+                          (gen/time-limit 15))}
          opts))			
 
 	  
