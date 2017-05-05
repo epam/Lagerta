@@ -108,7 +108,9 @@
       (client (v/connect (client-url node)
                          {:timeout 5000})))
 
-    (invoke! [this test op])
+    (invoke! [this test op]
+      (case (:f op)
+        :read (assoc op :type :ok, :value (v/get conn "r"))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
