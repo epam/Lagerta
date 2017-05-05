@@ -7,7 +7,9 @@ written on [clojure](https://clojure.org/)
 ### Prerequisites
 Requires any os with bash support and installed docker.
 Ubuntu has some issues with docker networking,
-see on [github](https://github.com/moby/moby/issues/1809)
+see on [github](https://github.com/moby/moby/issues/1809).
+
+In development we use clojure plugin for IDE and Leiningen.
 
 ### Installing
 move into docker folder and 
@@ -35,5 +37,5 @@ docker exec jepsen-control bash -c "cd /jepsen-0.1.4/jepsen && lein test"
 ```
 **to run a lagerta tests:**
 ```
-docker exec jepsen-control bash -c "cd /lagerta/src/test && lein test"
+docker exec jepsen-control bash -c "cd /lagerta && lein run test"
 ```

@@ -15,7 +15,7 @@
 ;; limitations under the License.
 ;;
 
-(ns lagerta_jepsen.core
+(ns jepsen.lagerta.core
 	(:gen-class)
 	(:require [clojure.tools.logging :refer :all]
               [clojure.string :as str]
