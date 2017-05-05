@@ -16,15 +16,17 @@
 ;;
 
 (ns jepsen.lagerta.core
-	(:gen-class)
-	(:require [clojure.tools.logging :refer :all]
-              [clojure.string :as str]
-              [jepsen [cli :as cli]
-                      [control :as c]
-                      [db :as db]
-                      [tests :as tests]]
-              [jepsen.control.util :as cu]
-              [jepsen.os.debian :as debian]))
+  (:gen-class)
+  (:require [clojure.tools.logging :refer :all]
+            [clojure.string :as str]
+            [verschlimmbesserung.core :as v]
+            [jepsen [cli :as cli]
+             [client :as client]
+             [control :as c]
+             [db :as db]
+             [tests :as tests]]
+            [jepsen.control.util :as cu]
+            [jepsen.os.debian :as debian]))
 
 
 (def dir     "/opt/etcd")
@@ -96,14 +98,25 @@
     (log-files [_ test node]
       [logfile])))
 
+(defn client
+  "A client for a single compare-and-set register"
+  []
+  (reify client/Client
+    (setup! [_ test node]
+      (client))
+
+    (invoke! [this test op])
+
+    (teardown! [_ test])))
 	  
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
   [opts]  
   (merge tests/noop-test
-		 {:name "etcd"
+         {:name "etcd"
           :os debian/os
-          :db (etcd-control "v3.1.5")}
+          :db (etcd-control "v3.1.5")
+          :client (client)}
          opts))			
 
 	  
