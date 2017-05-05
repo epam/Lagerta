@@ -130,7 +130,7 @@
           :os debian/os
           :db (etcd-control "v3.1.5")
           :client (client nil)
-          :generator (->> r
+          :generator (->> (gen/mix [r w])
                           (gen/stagger 1)
                           (gen/clients)
                           (gen/time-limit 15))}
