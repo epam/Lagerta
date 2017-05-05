@@ -100,15 +100,20 @@
 
 (defn client
   "A client for a single compare-and-set register"
-  []
+  [conn]
   (reify client/Client
     (setup! [_ test node]
-      (client))
+      (client (v/connect (client-url node)
+                         {:timeout 5000})))
 
     (invoke! [this test op])
 
-    (teardown! [_ test])))
-	  
+    (teardown! [_ test]
+      ; If our connection were stateful, we'd close it here.
+      ; Verschlimmbesserung doesn't hold a connection open, so we don't need to
+      ; close it.
+      )))
+
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
   [opts]  
@@ -116,7 +121,7 @@
          {:name "etcd"
           :os debian/os
           :db (etcd-control "v3.1.5")
-          :client (client)}
+          :client (client nil)}
          opts))			
 
 	  
