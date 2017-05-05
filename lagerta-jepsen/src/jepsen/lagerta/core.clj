@@ -60,7 +60,12 @@
   (->> (:nodes test)
        (map (fn [node]
               (str (name node) "=" (peer-url node))))
-       (str/join ",")))		  
+       (str/join ",")))
+
+(defn parse-long
+  "Parses a string to a Long. Passes through `nil`."
+  [s]
+  (when s (Long/parseLong s)))
 
 
 
@@ -110,7 +115,7 @@
 
     (invoke! [this test op]
       (case (:f op)
-        :read (assoc op :type :ok, :value (v/get conn "r"))
+        :read (assoc op :type :ok, :value (parse-long (v/get conn "r")))
         :write (do (v/reset! conn "r" (:value op))
                    (assoc op :type, :ok))))
 
