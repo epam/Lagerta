@@ -110,7 +110,9 @@
 
     (invoke! [this test op]
       (case (:f op)
-        :read (assoc op :type :ok, :value (v/get conn "r"))))
+        :read (assoc op :type :ok, :value (v/get conn "r"))
+        :write (do (v/reset! conn "r" (:value op))
+                   (assoc op :type, :ok))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
