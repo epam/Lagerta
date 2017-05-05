@@ -35,11 +35,18 @@ public class IgniteStopper {
     }
 
     public void stopAllServerNodes() {
-        localIgnite.compute(localIgnite.cluster().forServers()).withAsync()
+        localIgnite.compute(localIgnite.cluster().forServers().forRemotes()).withAsync()
                 .broadcast(new ServerNodeStopper());
     }
 
-    public void stopServerNodesWithService(String serviceName) {
+    public UUID stopServerNodesWithService(String serviceName) {
+        UUID nodeWithService = getNodeIDForService(serviceName);
+        localIgnite.compute(localIgnite.cluster().forNodeId(nodeWithService)).withAsync()
+                .run(new ServerNodeStopper());
+        return nodeWithService;
+    }
+
+    public UUID getNodeIDForService(String serviceName) {
         ServiceDescriptor descriptor = localIgnite.services().serviceDescriptors().stream()
                 .filter(serviceDescriptor -> serviceDescriptor.name().equalsIgnoreCase(serviceName))
                 .findFirst().orElseThrow(() -> new RuntimeException("Service was not deployed"));
@@ -47,9 +54,8 @@ public class IgniteStopper {
         if (uuidIntegerMap.isEmpty()) {
             throw new RuntimeException("Service was not deployed");
         }
-        UUID nodeWithService = uuidIntegerMap.keySet().iterator().next();
-        localIgnite.compute(localIgnite.cluster().forNodeId(nodeWithService))
-                .run(new ServerNodeStopper());
+
+        return uuidIntegerMap.keySet().iterator().next();
     }
 
     private static class ServerNodeStopper implements IgniteRunnable {

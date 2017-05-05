@@ -14,4 +14,6 @@
 --   limitations under the License.
 --
 
-DROP TABLE cache_information;
+DROP TABLE primitivesTable;
+DROP TABLE primitiveWrappersTable;
+DROP TABLE otherTypesTable;

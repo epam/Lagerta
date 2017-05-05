@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 public enum SimpleValueTransformer implements ValueTransformer {
     DUMMY(null, null),
+    OBJECT(ResultSet::getObject, PreparedStatement::setObject, Object.class),
 
     STRING(ResultSet::getString, (Setter<String>) PreparedStatement::setString, String.class),
     BOOLEAN(ResultSet::getBoolean, (Setter<Boolean>) PreparedStatement::setBoolean, Boolean.class, Boolean.TYPE),
@@ -76,7 +77,7 @@ public enum SimpleValueTransformer implements ValueTransformer {
         setter.set(preparedStatement, index, value);
     }
 
-    public static ValueTransformer get(Class<?> clazz) {
+    public static ValueTransformer of(Class<?> clazz) {
         return MATCH.computeIfAbsent(clazz, FIND);
     }
 

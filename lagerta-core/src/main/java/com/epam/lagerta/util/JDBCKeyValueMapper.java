@@ -15,6 +15,8 @@
  */
 package com.epam.lagerta.util;
 
+import com.epam.lagerta.common.ToMapCollector;
+import com.epam.lagerta.base.EntityDescriptor;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
@@ -26,12 +28,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import static java.util.function.Function.identity;
 
 public final class JDBCKeyValueMapper {
-
-    static final String KEY_FIELD_NAME = "key";
-    static final String VAL_FIELD_NAME = "val";
 
     private static final Map<Class<?>, Class<?>> objectToPrimitiveMap = new HashMap<>();
 
@@ -81,11 +81,11 @@ public final class JDBCKeyValueMapper {
             return Collections.emptyMap();
         }
         Map<String, Object> result = new HashMap<>();
-        result.put(KEY_FIELD_NAME, key);
+        result.put(EntityDescriptor.KEY_FIELD_NAME, key);
         if (value instanceof BinaryObject) {
             result.putAll(mapBinaryObject((BinaryObject)value));
         } else {
-            result.put(VAL_FIELD_NAME, value);
+            result.put(EntityDescriptor.VAL_FIELD_NAME, value);
         }
 
         return result;
@@ -96,7 +96,7 @@ public final class JDBCKeyValueMapper {
         BinaryType type = binaryObject.type();
         Collection<String> fields = type.fieldNames();
         return fields.stream()
-                .collect(Collectors.toMap(field -> field, binaryObject::field));
+                .collect(ToMapCollector.toMap(identity(), binaryObject::field));
     }
 
     /**
@@ -121,8 +121,8 @@ public final class JDBCKeyValueMapper {
 
 
     public static <T> KeyAndValue<T> getObject(Map<String, Object> columnValues, Class<T> targetClass) {
-        Object val = columnValues.get(VAL_FIELD_NAME);
-        Object key = columnValues.get(KEY_FIELD_NAME);
+        Object val = columnValues.get(EntityDescriptor.VAL_FIELD_NAME);
+        Object key = columnValues.get(EntityDescriptor.KEY_FIELD_NAME);
         if (val != null) {
             if (getAsPrimitiveType(targetClass) == getAsPrimitiveType(val.getClass())) {
                 return new KeyAndValue<>(key, (T) val);
@@ -146,7 +146,8 @@ public final class JDBCKeyValueMapper {
             targetObject = constructor.newInstance();
             for (Map.Entry<String, Object> columnNameAndValue : columnValues.entrySet()) {
                 String fieldName = columnNameAndValue.getKey();
-                if (KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName)) {
+                if (EntityDescriptor.KEY_FIELD_NAME.equalsIgnoreCase(fieldName)
+                        || EntityDescriptor.VAL_FIELD_NAME.equalsIgnoreCase(fieldName)) {
                     continue;
                 }
                 Object value = columnNameAndValue.getValue();

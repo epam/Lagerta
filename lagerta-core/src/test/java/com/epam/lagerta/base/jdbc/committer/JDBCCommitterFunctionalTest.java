@@ -15,117 +15,64 @@
  */
 package com.epam.lagerta.base.jdbc.committer;
 
+import com.epam.lagerta.base.EntityDescriptor;
+import com.epam.lagerta.base.jdbc.DataProviders;
 import com.epam.lagerta.base.jdbc.JDBCUtil;
-import com.epam.lagerta.base.jdbc.common.Person;
-import com.epam.lagerta.base.jdbc.common.PersonEntries;
-import org.apache.ignite.binary.BinaryObject;
+import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
+import com.google.common.collect.Iterators;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
+    private JDBCCommitter jdbcCommitter;
 
-    private static final String SELECT_FROM_TEMPLATE = "SELECT * FROM %s";
-
-    @Test(dataProvider = DATA_PROVIDER_VAL_NAME)
-    public void valCommitted(Integer key, Object val, String personName, Integer personId) throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
-        Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
-        expectedResult.put(Person.PERSON_KEY, key);
-        expectedResult.put(Person.PERSON_VAL, val);
-        expectedResult.put(Person.PERSON_NAME, personName);
-        expectedResult.put(Person.PERSON_ID, personId);
-
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
-                Collections.<List>singletonList(Collections.singletonList(key)).iterator(),
-                Collections.<List<?>>singletonList(Collections.singletonList(val)).iterator());
-
-        String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
-        JDBCUtil.applyInConnection(dataSource, connection -> {
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
-                Assert.assertTrue(resultSet.next(), "Return empty result");
-                Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
-            }
-        });
+    @BeforeMethod
+    public void setUpCommitter() {
+        jdbcCommitter = JDBCUtil.getJDBCCommitter(dataSource);
     }
 
-    @Test
-    public void binaryObjectEntityCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
-        int key = 22;
-        Person expectedPerson = new Person(2, "Name2");
+    @Test(dataProvider = DataProviders.KV_META_LIST_PROVIDER)
+    public void commit(List<KeyValueAndMetadata> data) throws SQLException {
+        Map<Integer, Map<String, Object>> expectedResults = data
+                .stream()
+                .collect(Collectors.toMap(KeyValueAndMetadata::getKey, KeyValueAndMetadata::getKeyValueMap));
+        String cache = data.get(0).getCacheName();
+        String table = data.get(0).getTableName();
+        KeyValueAndMetadata.ResultMapGetter resultMapGetter = data.get(0).getResultMapGetter();
+        Iterator<String> caches = Iterators.singletonIterator(cache);
+        Iterator<List> keys = Iterators.singletonIterator(data
+                .stream()
+                .map(KeyValueAndMetadata::getKey)
+                .collect(Collectors.toList()));
+        Iterator<List<?>> values = Iterators.singletonIterator(data
+                .stream()
+                .map(KeyValueAndMetadata::getValue)
+                .collect(Collectors.toList()));
 
-        BinaryObject expectedBinary = ignite.binary().toBinary(expectedPerson);
+        jdbcCommitter.commit(caches, keys, values);
 
-        Map<String, Object> expectedResult = new HashMap<>(PersonEntries.getPersonColumns().size());
-        expectedResult.put(Person.PERSON_KEY, key);
-        expectedResult.put(Person.PERSON_VAL, null);
-        expectedResult.put(Person.PERSON_NAME, expectedPerson.getName());
-        expectedResult.put(Person.PERSON_ID, expectedPerson.getId());
-
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
-                Collections.<List>singletonList(Collections.singletonList(key)).iterator(),
-                Collections.<List<?>>singletonList(Collections.singletonList(expectedBinary)).iterator());
-
-        String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE, Person.PERSON_TABLE);
+        String selectQuery = String.format(JDBCUtil.SELECT_FROM_TEMPLATE, table);
         JDBCUtil.applyInConnection(dataSource, connection -> {
             try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
-                Assert.assertTrue(resultSet.next(), "Return empty result");
-                Assert.assertEquals(PersonEntries.getResultMapForPerson(resultSet), expectedResult, "Return incorrect result");
-            }
-        });
-    }
-
-    @Test
-    public void binaryObjectAndValEntriesCommitted() throws Exception {
-        JDBCCommitter jdbcCommitter = PersonEntries.getPersonOnlyJDBCCommitter(dataSource);
-        int keyVal = 22;
-        int val = 10;
-        int keyPerson = 23;
-        Person expectedPerson = new Person(2, "Name2");
-        BinaryObject expectedBinary = ignite.binary().toBinary(expectedPerson);
-
-        Map<String, Object> expectedResultForVal = new HashMap<>(PersonEntries.getPersonColumns().size());
-        expectedResultForVal.put(Person.PERSON_KEY, keyVal);
-        expectedResultForVal.put(Person.PERSON_VAL, val);
-        expectedResultForVal.put(Person.PERSON_NAME, null);
-        expectedResultForVal.put(Person.PERSON_ID, 0);
-
-        Map<String, Object> expectedResultForPerson = new HashMap<>(PersonEntries.getPersonColumns().size());
-        expectedResultForPerson.put(Person.PERSON_KEY, keyPerson);
-        expectedResultForPerson.put(Person.PERSON_VAL, null);
-        expectedResultForPerson.put(Person.PERSON_NAME, expectedPerson.getName());
-        expectedResultForPerson.put(Person.PERSON_ID, expectedPerson.getId());
-
-        int expectedCountRows = 2;
-
-        jdbcCommitter.commit(Collections.singletonList(Person.PERSON_CACHE).iterator(),
-                Collections.<List>singletonList(Arrays.asList(keyVal, keyPerson)).iterator(),
-                Collections.<List<?>>singletonList(Arrays.asList(val, expectedBinary)).iterator());
-
-        String queryForCheckRate = String.format(SELECT_FROM_TEMPLATE + " ORDER BY KEY ASC", Person.PERSON_TABLE);
-        JDBCUtil.applyInConnection(dataSource, connection -> {
-            List<Map<String, Object>> resultList = null;
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(queryForCheckRate)) {
-                resultList = new ArrayList<>(expectedCountRows);
+                 ResultSet resultSet = statement.executeQuery(selectQuery)) {
                 while (resultSet.next()) {
-                    resultList.add(PersonEntries.getResultMapForPerson(resultSet));
+                    Map<String, Object> map = resultMapGetter.getResultMap(resultSet);
+                    int key = (int) map.get(EntityDescriptor.KEY_FIELD_NAME);
+                    Map<String, Object> expectedMap = expectedResults.get(key);
+
+                    Assert.assertEquals(map.size(), expectedMap.size());
+                    map.forEach((k, v) -> Assert.assertEquals(v, expectedMap.get(k)));
                 }
             }
-            Assert.assertEquals(resultList.size(), expectedCountRows);
-            Assert.assertEquals(resultList.get(0), expectedResultForVal, "Return incorrect result");
-            Assert.assertEquals(resultList.get(1), expectedResultForPerson, "Return incorrect result");
         });
     }
 }

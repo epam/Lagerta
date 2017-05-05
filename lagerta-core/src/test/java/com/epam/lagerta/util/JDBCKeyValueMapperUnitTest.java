@@ -23,6 +23,7 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.AssertJUnit.assertTrue;
 
+import com.epam.lagerta.base.EntityDescriptor;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.testng.annotations.DataProvider;
@@ -123,8 +124,8 @@ public class JDBCKeyValueMapperUnitTest {
         int key = 10;
         Map<String, Object> actualResult = JDBCKeyValueMapper.keyValueMap(key, entryValue);
         Map<String, Object> expectedResult = new HashMap<String, Object>() {{
-            put(JDBCKeyValueMapper.KEY_FIELD_NAME, key);
-            put(JDBCKeyValueMapper.VAL_FIELD_NAME, entryValue);
+            put(EntityDescriptor.KEY_FIELD_NAME, key);
+            put(EntityDescriptor.VAL_FIELD_NAME, entryValue);
         }};
         assertEquals(actualResult, expectedResult);
     }
@@ -141,7 +142,7 @@ public class JDBCKeyValueMapperUnitTest {
         Map<String, Object> expectedValues = new HashMap<>(3);
         expectedValues.put("v1", "v1");
         expectedValues.put("v2", 2);
-        expectedValues.put(JDBCKeyValueMapper.KEY_FIELD_NAME, key);
+        expectedValues.put(EntityDescriptor.KEY_FIELD_NAME, key);
 
         when(binaryValue.field(anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -163,30 +164,30 @@ public class JDBCKeyValueMapperUnitTest {
         Date expectedDate = new Date(System.currentTimeMillis());
         return new Object[][]{
                 {testEntryParams, TestEntry.class, expectedEntry},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, expectedEntry), TestEntry.class, expectedEntry},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), Integer.class, 1},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), int.class, 1},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, (short) 1), Short.class, (short) 1},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, (short) 1), short.class, (short) 1},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1L), Long.class, 1L},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1L), long.class, 1L},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1F), Float.class, 1F},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1F), float.class, 1F},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), Double.class, 1D},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1D), double.class, 1D},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), TimeUnit.class, TimeUnit.DAYS},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "Hello"), String.class, "Hello"},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, expectedDate), Date.class, expectedDate},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, Collections.singletonList(1)),
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, expectedEntry), TestEntry.class, expectedEntry},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1), Integer.class, 1},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1), int.class, 1},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, (short) 1), Short.class, (short) 1},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, (short) 1), short.class, (short) 1},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1L), Long.class, 1L},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1L), long.class, 1L},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1F), Float.class, 1F},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1F), float.class, 1F},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1D), Double.class, 1D},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1D), double.class, 1D},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, TimeUnit.DAYS), TimeUnit.class, TimeUnit.DAYS},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, "Hello"), String.class, "Hello"},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, expectedDate), Date.class, expectedDate},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, Collections.singletonList(1)),
                         List.class, Collections.singletonList(1)},
 
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new ArrayList<>()),
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, new ArrayList<>()),
                         List.class, new ArrayList<>()},
 
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, Collections.singletonMap("Key", 1)),
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, Collections.singletonMap("Key", 1)),
                         Map.class, Collections.singletonMap("Key", 1)},
 
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new HashMap<>()),
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, new HashMap<>()),
                         Map.class, new HashMap<>()}
         };
     }
@@ -207,14 +208,14 @@ public class JDBCKeyValueMapperUnitTest {
         return new Object[][]{
                 {incorrectTestEntryParams, TestEntry.class},
                 {Collections.<String, Object>singletonMap("f", 1), Integer.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 1), TestEntry.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new TestEntry()), String.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new TestEntry()), Date.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, new Date()), TestEntry.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "hello"), TestEntry.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, "1"), Integer.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, TimeUnit.DAYS), Integer.class},
-                {Collections.<String, Object>singletonMap(JDBCKeyValueMapper.VAL_FIELD_NAME, 6), TimeUnit.class}
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 1), TestEntry.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, new TestEntry()), String.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, new TestEntry()), Date.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, new Date()), TestEntry.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, "hello"), TestEntry.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, "1"), Integer.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, TimeUnit.DAYS), Integer.class},
+                {Collections.<String, Object>singletonMap(EntityDescriptor.VAL_FIELD_NAME, 6), TimeUnit.class}
         };
     }
 

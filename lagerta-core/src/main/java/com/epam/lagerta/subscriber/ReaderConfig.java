@@ -16,10 +16,9 @@
 
 package com.epam.lagerta.subscriber;
 
-import com.epam.lagerta.kafka.DataRecoveryConfig;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.KafkaLogCommitter;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.util.Serializer;
 import org.apache.ignite.Ignite;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,12 +47,11 @@ public class ReaderConfig {
     }
 
     @Bean
-    public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
+    public Reader reader(@Qualifier("ignite-bean") Ignite ignite, KafkaFactory kafkaFactory, ClusterConfig config,
                          Serializer serializer, CommitStrategy commitStrategy, @Qualifier("readerId") UUID readerId,
-                         @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition,
-                         DataRecoveryConfig dataRecoveryConfig
+                         @Qualifier("buffer-overflow") Predicate<Map<Long, TransactionData>> bufferOverflowCondition
     ) {
-        return new Reader(ignite, kafkaFactory, config, dataRecoveryConfig, serializer, commitStrategy, readerId,
+        return new Reader(ignite, kafkaFactory, config, serializer, commitStrategy, readerId,
                 bufferOverflowCondition);
     }
 

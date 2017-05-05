@@ -21,6 +21,7 @@ import java.util.List;
 public interface Reconciler {
 
     boolean isReconciliationGoing();
+
     void startReconciliation(List<Long> gaps);
 
 }

@@ -19,7 +19,10 @@ package com.epam.lagerta.subscriber;
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.kafka.KafkaFactory;
 import com.epam.lagerta.kafka.KafkaLogCommitter;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.KafkaLogCommitterImpl;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
+import com.epam.lagerta.kafka.config.ClusterConfig;
+import com.epam.lagerta.kafka.config.KafkaConfig;
 import com.epam.lagerta.mocks.KafkaMockFactory;
 import com.epam.lagerta.util.Serializer;
 import com.epam.lagerta.util.SerializerImpl;
@@ -56,7 +59,8 @@ public class SequentialCommitStrategyUnitTest {
     private static final String CACHE_NAME = "cache";
     private Serializer serializer = new SerializerImpl();
     private KafkaMockFactory kafkaMockFactory;
-    private SubscriberConfig subscriberConfig;
+    private ClusterConfig clusterConfig;
+    private BasicTopicConfig localIndexConfig;
 
     private SequentialCommitStrategy sequentialCommitStrategy;
     private MockProducer producer;
@@ -64,11 +68,12 @@ public class SequentialCommitStrategyUnitTest {
 
     @BeforeClass
     public void init(){
-        subscriberConfig = new SubscriberConfig();
-        subscriberConfig.setRemoteTopic(TOPIC);
-        subscriberConfig.setSubscriberId("1");
-        subscriberConfig.setSuspendAllowed(false);
-        kafkaMockFactory = new KafkaMockFactory(null, null, subscriberConfig, serializer);
+        clusterConfig = new ClusterConfig();
+        clusterConfig.setInputTopic(TOPIC);
+        localIndexConfig = new BasicTopicConfig();
+        localIndexConfig.setTopic(TOPIC);
+        localIndexConfig.setKafkaConfig(mock(KafkaConfig.class));
+        kafkaMockFactory = new KafkaMockFactory(null, null, clusterConfig, serializer);
     }
 
     @BeforeMethod
@@ -77,7 +82,7 @@ public class SequentialCommitStrategyUnitTest {
         KafkaFactory kafkaFactory = mock(KafkaFactory.class);
         when(kafkaFactory.producer(any())).thenReturn(producer);
 
-        KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitter(kafkaFactory, subscriberConfig);
+        KafkaLogCommitter kafkaLogCommitter = new KafkaLogCommitterImpl(kafkaFactory, localIndexConfig);
         statefulCommitter = new StatefulCommitter();
         Ignite ignite = mock(Ignite.class);
         doReturn(mock(IgniteServices.class)).when(ignite).services();

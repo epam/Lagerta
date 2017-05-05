@@ -16,12 +16,10 @@
   -->
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-<!--Per test timeout set to 5 minutes.-->
-<suite name="Integration Tests" time-out="300000">
-    <test name="All">
-        <classes>
-            <class name="com.epam.lagerta.subscriber.SubscriberIntegrationTest"/>
-            <class name="com.epam.lagerta.capturer.JDBCDataCapturerLoaderIntegrationTest"/>
-        </classes>
-    </test>
+<suite name="Integration Tests">
+    <suite-files>
+        <suite-file path="single-jvm-integration-tests.xml"/>
+        <suite-file path="different-jvm-integration-tests.xml"/>
+    </suite-files>
 </suite>
+

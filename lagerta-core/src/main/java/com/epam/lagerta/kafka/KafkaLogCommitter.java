@@ -13,28 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.epam.lagerta.kafka;
 
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.concurrent.Future;
 
-public class KafkaLogCommitter {
-
-    private final String logTopic;
-    private final Producer producer;
-
-    public KafkaLogCommitter(KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
-        this.logTopic = subscriberConfig.getRemoteTopic();
-    }
-
+public interface KafkaLogCommitter {
     @SuppressWarnings("unchecked")
-    public Future<RecordMetadata> commitTransaction(long transactionId) {
-        int partition = 0;
-        ProducerRecord record = new ProducerRecord(logTopic, partition, transactionId, null, null);
-        return producer.send(record);
-    }
+    Future<RecordMetadata> commitTransaction(long transactionId);
+
+    void close();
 }

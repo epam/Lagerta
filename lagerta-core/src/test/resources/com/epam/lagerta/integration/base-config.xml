@@ -40,14 +40,18 @@
     <util:properties id="producer-properties" location="${configBasePath}producer.properties"/>
     <util:properties id="recon-producer-properties" location="${configBasePath}reconciliation_producer.properties"/>
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
+    <bean id="base_ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true"
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="caches"
           p:discoverySpi-ref="discovery-spi"
-          p:serviceConfiguration-ref="services"/>
+          p:serviceConfiguration-ref="services"
+          p:gridLogger-ref="grid-logger"
+          p:atomicConfiguration-ref="atomicConfiguration"/>
 
-    <bean id="ignite-bean" class="org.apache.ignite.IgniteSpringBean"
-          p:configuration-ref="ignite.cfg"/>
+    <bean name="atomicConfiguration" class="org.apache.ignite.configuration.AtomicConfiguration"
+          p:backups="1"/>
+
+    <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
 
     <bean id="stateAssistant" class="com.epam.lagerta.subscriber.lead.LeadStateAssistantImpl" scope="prototype"
           c:ignite-ref="ignite-bean"/>
@@ -60,13 +64,20 @@
 
     <bean id="gapDetector" class="com.epam.lagerta.subscriber.lead.DefaultGapDetectionStrategy"/>
 
-    <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
+    <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"
+          c:hearbeatExpirationThreshold="#{T(com.epam.lagerta.subscriber.lead.RuleTimeouts).DEFAULT_HEARTBEAT_EXPIRATION_THRESHOLD}"
+          c:saveStatePeriod="#{T(com.epam.lagerta.subscriber.lead.RuleTimeouts).SAVE_STATE_PERIOD}"
+          c:gapCheckPeriod="15000"/>
 
-    <bean id="reconciler" class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
-          c:kafkaFactory-ref="kafka-factory"
-          c:dataRecoveryConfig-ref="data-recovery-config"
-          c:subscriberConfig-ref="subscriber-config"
-          c:serializer-ref="serializer"/>
+    <bean id="reconciler" class="com.epam.lagerta.mocks.ProxyReconciler">
+        <constructor-arg>
+            <bean class="com.epam.lagerta.subscriber.lead.ReconcilerImpl"
+                  c:kafkaFactory-ref="kafka-factory"
+                  c:clusterConfig-ref="cluster-config"
+                  c:localLog-ref="local-log"
+                  c:serializer-ref="serializer"/>
+        </constructor-arg>
+    </bean>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.ReaderConfig"/>
@@ -89,8 +100,12 @@
     </util:list>
 
     <util:list id="caches">
-        <ref bean="cache"/>
-        <ref bean="binary-cache"/>
+        <ref bean="primitives-cache"/>
+        <ref bean="binary-primitives-cache"/>
+        <ref bean="primitive-wrappers-cache"/>
+        <ref bean="binary-primitive-wrappers-cache"/>
+        <ref bean="other-types-cache"/>
+        <ref bean="binary-other-types-cache"/>
         <ref bean="atomicCache"/>
     </util:list>
 
@@ -108,39 +123,48 @@
 
     <bean id="serviceFilter" class="com.epam.lagerta.ServiceFilterPredicate"/>
 
-    <bean id="cache-loader" class="com.epam.lagerta.BaseIntegrationTest"
-          factory-method="personJDBCDataCapturerLoader"/>
+    <bean id="cache-loader" class="com.epam.lagerta.resources.DBResourceFactory"
+          factory-method="getJDBCDataCapturerLoader"/>
 
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="remoteTopic"
+    <bean id="kafka-config" class="com.epam.lagerta.kafka.config.KafkaConfig"
           p:consumerConfig-ref="consumer-properties"
           p:producerConfig-ref="producer-properties"/>
-    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
+
+    <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
+          p:inputTopic="inputTopic"
           p:reconciliationTopic="reconciliation"
-          p:consumerConfig-ref="recon-consumer-properties"
-          p:producerConfig-ref="recon-producer-properties"/>
+          p:gapTopic="gap"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="local-log" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="txIdTopic"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="id-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="txIdTopic"
+          p:kafkaConfig-ref="kafka-config"/>
 
     <bean id="id-sequencer" class="com.epam.lagerta.kafka.KafkaIdSequencer"
-          c:topic="txIdTopic"
           c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"/>
+          c:idConfig-ref="id-config"
+          destroy-method="close"/>
 
     <bean id="key-transformer" class="com.epam.lagerta.capturer.DefaultKeyTransformer"/>
+
     <bean id="value-transformer" class="com.epam.lagerta.capturer.DefaultValueTransformer"/>
+
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
-    <bean id="committer" class="com.epam.lagerta.BaseIntegrationTest"
-          factory-method="personJDBCCommitter"/>
+    <bean id="committer" class="com.epam.lagerta.resources.DBResourceFactory"
+          factory-method="getJDBCCommitter"/>
 
-    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitter">
-        <constructor-arg index="0" ref="kafka-factory"/>
-        <constructor-arg index="1">
-            <bean class="com.epam.lagerta.kafka.SubscriberConfig"
-                  p:remoteTopic="local-index-topic"
-                  p:consumerConfig-ref="consumer-properties"
-                  p:producerConfig-ref="producer-properties"/>
-        </constructor-arg>
-    </bean>
+    <bean id="local-index-config" class="com.epam.lagerta.kafka.config.BasicTopicConfig"
+          p:topic="local-index-topic"
+          p:kafkaConfig-ref="kafka-config"/>
+
+    <bean id="kafka-log-committer" class="com.epam.lagerta.kafka.KafkaLogCommitterImpl"
+          c:kafkaFactory-ref="kafka-factory"
+          c:localIndexConfig-ref="local-index-config"/>
 
     <bean id="kafka-factory" class="com.epam.lagerta.kafka.KafkaFactoryForTests">
         <constructor-arg index="0">
@@ -149,8 +173,13 @@
         <constructor-arg index="1" ref="producer-properties"/>
     </bean>
 
+    <bean id="local-log-config" class="com.epam.lagerta.kafka.config.SubscriberConfig" factory-bean="cluster-config"
+          factory-method="build"
+          c:subscriberId="-"
+          c:suspendAllowed="false"/>
+
     <util:list id="subscriber-configs">
-        <ref bean="subscriber-config"/>
+        <ref bean="local-log-config"/>
     </util:list>
 
     <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
@@ -158,7 +187,8 @@
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriber-configs"
-          c:serializer-ref="serializer"/>
+          c:serializer-ref="serializer"
+          destroy-method="close"/>
 
     <util:list id="key-value-listeners">
         <bean class="com.epam.lagerta.capturer.SynchronousPublisher"
@@ -171,8 +201,7 @@
           c:limit="10000"/>
 
     <!-- Caches configuration -->
-    <bean id="cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.BaseIntegrationTest).CACHE_NAME}"
+    <bean id="cache-base" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true"
           p:readThrough="true"
           p:writeThrough="true"
           p:cacheMode="PARTITIONED"
@@ -180,15 +209,26 @@
           p:backups="2"
           p:cacheStoreFactory-ref="cache-store-factory"/>
 
-    <bean id="binary-cache" class="org.apache.ignite.configuration.CacheConfiguration"
-          p:name="#{T(com.epam.lagerta.BaseIntegrationTest).BINARY_KEEPING_CACHE_NAME}"
-          p:readThrough="true"
-          p:writeThrough="true"
-          p:cacheMode="PARTITIONED"
-          p:atomicityMode="TRANSACTIONAL"
-          p:backups="2"
-          p:storeKeepBinary="true"
-          p:cacheStoreFactory-ref="cache-store-factory"/>
+    <bean id="primitives-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).CACHE}"/>
+
+    <bean id="binary-primitives-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitivesHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
+
+    <bean id="primitive-wrappers-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).CACHE}"/>
+
+    <bean id="binary-primitive-wrappers-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
+
+    <bean id="other-types-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).CACHE}"/>
+
+    <bean id="binary-other-types-cache" parent="cache-base"
+          p:name="#{T(com.epam.lagerta.base.jdbc.common.OtherTypesHolder).BINARY_KEEPING_CACHE}"
+          p:storeKeepBinary="true"/>
 
     <bean id="atomicCache" class="com.epam.lagerta.util.AtomicsHelper" factory-method="getConfig"/>
 </beans>

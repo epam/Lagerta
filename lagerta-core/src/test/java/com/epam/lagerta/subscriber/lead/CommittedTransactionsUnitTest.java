@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.list;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;

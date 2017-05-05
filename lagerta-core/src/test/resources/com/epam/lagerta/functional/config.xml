@@ -63,7 +63,10 @@ limitations under the License.
           p:gridName="#{T(java.util.UUID).randomUUID().toString()}"
           p:cacheConfiguration-ref="cacheConfig"
           p:discoverySpi-ref="discoverySpi"
-          p:serviceConfiguration-ref="services"/>
+          p:serviceConfiguration-ref="services"
+          p:gridLogger-ref="grid-logger"/>
+
+    <bean id="grid-logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>
 
     <!-- Caches configuration -->
     <util:list id="cacheConfig">
@@ -105,7 +108,7 @@ limitations under the License.
 
     <bean id="leadTimeouts" class="com.epam.lagerta.subscriber.lead.RuleTimeouts"/>
 
-    <bean id="reconciler" class="com.epam.lagerta.mocks.ReconcilerStub"/>
+    <bean id="reconciler" class="com.epam.lagerta.mocks.ProxyReconciler"/>
 
     <bean id="reader-config" class="java.lang.Class" factory-method="forName">
         <constructor-arg value="com.epam.lagerta.subscriber.TestReaderConfig"/>
@@ -120,8 +123,6 @@ limitations under the License.
           c:iterationPeriod="1"/>
 
     <bean id="InCacheKafkaLogCommitter" class="com.epam.lagerta.subscriber.InCacheKafkaLogCommitter" scope="prototype"
-          c:kafkaFactory-ref="kafka-factory"
-          c:subscriberConfig-ref="subscriber-config"
           c:ignite-ref="ignite-bean"/>
 
     <bean id="id-sequencer" class="com.epam.lagerta.mocks.InMemoryIdSequencer"/>
@@ -134,18 +135,22 @@ limitations under the License.
             </props>
         </property>
     </bean>
-    <bean id="subscriber-config" class="com.epam.lagerta.kafka.SubscriberConfig"
-          p:remoteTopic="testTopic"
-          p:consumerConfig-ref="consumer-props"
-    />
-    <bean id="data-recovery-config" class="com.epam.lagerta.kafka.DataRecoveryConfig"
-          p:reconciliationTopic="reconciliation"/>
+
+    <bean id="kafka-config" class="com.epam.lagerta.kafka.config.KafkaConfig"
+          p:consumerConfig-ref="consumer-props"/>
+
+    <bean id="cluster-config" class="com.epam.lagerta.kafka.config.ClusterConfig"
+          p:inputTopic="testTopic"
+          p:reconciliationTopic="reconciliation"
+          p:gapTopic="gap"
+          p:kafkaConfig-ref="kafka-config"/>
+
     <bean id="serializer" class="com.epam.lagerta.util.SerializerImpl"/>
 
     <bean id="kafka-factory" class="com.epam.lagerta.mocks.KafkaMockFactory"
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
-          c:config-ref="subscriber-config"
+          c:config-ref="cluster-config"
           c:serializer-ref="serializer"/>
 
     <bean id="producers-manager" class="com.epam.lagerta.kafka.ProducersManager"
@@ -153,10 +158,16 @@ limitations under the License.
           c:keyTransformer-ref="key-transformer"
           c:valueTransformer-ref="value-transformer"
           c:configs-ref="subscriberConfigs"
-          c:serializer-ref="serializer"/>
+          c:serializer-ref="serializer"
+          destroy-method="close"/>
+
+    <bean id="local-log-config" class="com.epam.lagerta.kafka.config.SubscriberConfig" factory-bean="cluster-config"
+          factory-method="build"
+          c:subscriberId="-"
+          c:suspendAllowed="false"/>
 
     <util:list id="subscriberConfigs">
-        <ref bean="subscriber-config"/>
+        <ref bean="local-log-config"/>
     </util:list>
 
     <util:list id="key-value-listeners">

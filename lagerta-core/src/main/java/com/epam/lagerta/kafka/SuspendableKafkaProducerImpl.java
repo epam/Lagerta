@@ -64,4 +64,9 @@ public class SuspendableKafkaProducerImpl implements SuspendableProducer {
     public Exception getException() {
         return exception;
     }
+
+    @Override
+    public void close() {
+        producer.close();
+    }
 }

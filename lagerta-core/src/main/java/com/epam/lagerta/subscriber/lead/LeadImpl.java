@@ -19,7 +19,7 @@ import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.common.CallableKeyListTask;
 import com.epam.lagerta.common.CallableKeyTask;
 import com.epam.lagerta.common.Scheduler;
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.epam.lagerta.subscriber.util.PlannerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,14 +146,14 @@ public class LeadImpl extends Scheduler implements Lead {
     }
 
     private void plan() {
-        List<ConsumerTxScope> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
+        List<ReaderTxScope> ready = PlannerUtil.plan(readTransactions, committed, inProgress, lostReaders);
         if (!ready.isEmpty()) {
             LOGGER.trace("[L] Planned {}", ready);
         }
         ready.stream()
-                .peek(ConsumerTxScope::markInProgress)
+                .peek(ReaderTxScope::markInProgress)
                 .peek(scope -> inProgress.add(scope.getTransactionId()))
-                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .collect(groupingBy(ReaderTxScope::getReaderId, toList()))
                 .forEach((key, value) -> toCommit.append(key,
                         value.stream().map(TransactionScope::getTransactionId).collect(toList())));
     }
@@ -162,6 +162,7 @@ public class LeadImpl extends Scheduler implements Lead {
                                  GapDetectionStrategy gapDetectionStrategy) {
         List<Long> gaps = gapDetectionStrategy.gapDetected(committed, readTransactions);
         if (!gaps.isEmpty() && !isReconciliationGoing()) {
+            LOGGER.debug("[L] Gaps were found. Starting gap fixing");
             reconciler.startReconciliation(gaps);
         }
     }

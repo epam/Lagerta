@@ -17,9 +17,8 @@ package com.epam.lagerta.subscriber;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.common.Scheduler;
-import com.epam.lagerta.kafka.DataRecoveryConfig;
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.ClusterConfig;
 import com.epam.lagerta.services.LeadService;
 import com.epam.lagerta.util.Serializer;
 import org.apache.ignite.Ignite;
@@ -61,8 +60,7 @@ public class Reader extends Scheduler {
 
     private final KafkaFactory kafkaFactory;
     private final LeadService lead;
-    private final SubscriberConfig config;
-    private final String reconciliationTopic;
+    private final ClusterConfig config;
     private final Serializer serializer;
     private final CommitStrategy commitStrategy;
     private final UUID readerId;
@@ -75,22 +73,21 @@ public class Reader extends Scheduler {
     private final Map<TopicPartition, CommittedOffset> committedOffsetMap = new HashMap<>();
     private final AtomicBoolean suspended = new AtomicBoolean(false);
 
-    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
-                  DataRecoveryConfig dataRecoveryConfig, Serializer serializer, CommitStrategy commitStrategy,
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, ClusterConfig config,
+                  Serializer serializer, CommitStrategy commitStrategy,
                   UUID readerId, Predicate<Map<Long, TransactionData>> bufferOverflowCondition) {
-        this(ignite, kafkaFactory, config, dataRecoveryConfig, serializer, commitStrategy,
+        this(ignite, kafkaFactory, config, serializer, commitStrategy,
                 new PeriodicIterationCondition(DEFAULT_COMMIT_ITERATION_PERIOD), DEFAULT_BUFFER_CLEAR_PERIOD,
                 readerId, bufferOverflowCondition, DEFAULT_BUFFER_CHECK_PERIOD);
     }
 
-    public Reader(Ignite ignite, KafkaFactory kafkaFactory, SubscriberConfig config,
-                  DataRecoveryConfig dataRecoveryConfig, Serializer serializer, CommitStrategy commitStrategy,
+    public Reader(Ignite ignite, KafkaFactory kafkaFactory, ClusterConfig config,
+                  Serializer serializer, CommitStrategy commitStrategy,
                   BooleanSupplier needToCommitToKafka, long bufferClearPeriod, UUID readerId,
                   Predicate<Map<Long, TransactionData>> bufferOverflowCondition, long bufferCheckPeriod) {
         this.kafkaFactory = kafkaFactory;
         lead = ignite.services().serviceProxy(LeadService.NAME, LeadService.class, false);
         this.config = config;
-        this.reconciliationTopic = dataRecoveryConfig.getReconciliationTopic();
         this.serializer = serializer;
         this.commitStrategy = commitStrategy;
         this.readerId = readerId;
@@ -161,8 +158,8 @@ public class Reader extends Scheduler {
         private final Consumer<ByteBuffer, ByteBuffer> consumer;
 
         ConsumerReader() {
-            consumer = kafkaFactory.consumer(config.getConsumerConfig());
-            consumer.subscribe(Arrays.asList(config.getRemoteTopic(), reconciliationTopic),
+            consumer = kafkaFactory.consumer(config.getKafkaConfig().getConsumerConfig());
+            consumer.subscribe(Arrays.asList(config.getInputTopic(), config.getReconciliationTopic(), config.getGapTopic()),
                     new ReaderRebalanceListener(this, committedOffsetMap));
         }
 
@@ -171,6 +168,9 @@ public class Reader extends Scheduler {
             List<TransactionScope> scopes = new ArrayList<>(records.count());
             for (ConsumerRecord<ByteBuffer, ByteBuffer> record : records) {
                 TransactionScope transactionScope = serializer.deserialize(record.key());
+                if (transactionScope.getScope().isEmpty()) {
+                    LOGGER.warn("[R] {} polled empty transaction {}", readerId, transactionScope.getTransactionId());
+                }
                 TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
                 buffer.put(transactionScope.getTransactionId(),
                         new TransactionData(transactionScope, record.value(), topicPartition, record.offset()));
@@ -208,9 +208,9 @@ public class Reader extends Scheduler {
         }
 
         private List<TopicPartition> getMainTopicPartitions() {
-            String remoteTopic = config.getRemoteTopic();
+            String inputTopic = config.getInputTopic();
             return consumer.assignment().stream()
-                    .filter(topicPartition -> remoteTopic.equals(topicPartition.topic()))
+                    .filter(topicPartition -> inputTopic.equals(topicPartition.topic()))
                     .collect(Collectors.toList());
         }
 

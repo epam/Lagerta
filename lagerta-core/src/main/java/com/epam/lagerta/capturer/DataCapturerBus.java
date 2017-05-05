@@ -59,9 +59,6 @@ public class DataCapturerBus<K, V> implements CacheStore<K, V> {
      */
     private static final String BUFFER_PROPERTY_NAME = "BUFFER_PROPERTY_NAME";
 
-    /** */
-    private static final String ON_DR_FLAG_PROPERTY_NAME = "ON_DR_FLAG_PROPERTY_NAME";
-
     /**
      * Auto-injected store session.
      */

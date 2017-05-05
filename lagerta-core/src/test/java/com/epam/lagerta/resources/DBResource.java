@@ -46,11 +46,7 @@ public class DBResource implements Resource {
         dataSource.close();
     }
 
-    public void initState(String resourceName) throws SQLException {
-        JDBCUtil.executeUpdateQueryFromResource(dataSource.getConnection(), resourceName);
-    }
-
-    public void clearState(String resourceName) throws SQLException {
+    public void executeResource(String resourceName) throws SQLException {
         JDBCUtil.executeUpdateQueryFromResource(dataSource.getConnection(), resourceName);
     }
 }

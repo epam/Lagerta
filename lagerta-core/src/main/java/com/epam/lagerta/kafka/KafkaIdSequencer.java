@@ -16,6 +16,7 @@
 package com.epam.lagerta.kafka;
 
 import com.epam.lagerta.capturer.IdSequencer;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -28,9 +29,9 @@ public class KafkaIdSequencer implements IdSequencer {
     private final String topic;
     private final Producer producer;
 
-    public KafkaIdSequencer(String topic, KafkaFactory kafkaFactory, SubscriberConfig subscriberConfig) {
-        this.topic = topic;
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
+    public KafkaIdSequencer(KafkaFactory kafkaFactory, BasicTopicConfig idConfig) {
+        topic = idConfig.getTopic();
+        producer = kafkaFactory.producer(idConfig.getKafkaConfig().getProducerConfig());
     }
 
     @SuppressWarnings("unchecked")
@@ -41,5 +42,9 @@ public class KafkaIdSequencer implements IdSequencer {
         } catch (ExecutionException | InterruptedException e) {
             throw new CacheWriterException(e);
         }
+    }
+
+    public void close() {
+        producer.close();
     }
 }

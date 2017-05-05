@@ -16,7 +16,7 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import com.epam.lagerta.services.ReaderService;
 import com.epam.lagerta.util.Atomic;
 import com.epam.lagerta.util.AtomicsHelper;
@@ -29,7 +29,7 @@ import org.apache.ignite.resources.SpringResource;
 
 public class LeadStateAssistantImpl implements LeadStateAssistant {
 
-    private static final String LEAD_STATE_CACHE = "leadStateCache";
+    static final String LEAD_STATE_CACHE = "leadStateCache";
     private static final String LOADER_GROUP_ID = "loaderGroupId";
 
     private final Ignite ignite;
@@ -42,7 +42,9 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
     }
 
     public void saveState(Lead lead) {
-        commitState.set(lead.getLastDenseCommitted());
+        if (lead.getLastDenseCommitted() != CommittedTransactions.INITIAL_COMMIT_ID) {
+            commitState.set(lead.getLastDenseCommitted());
+        }
     }
 
     public void load(Lead lead) {
@@ -61,8 +63,8 @@ public class LeadStateAssistantImpl implements LeadStateAssistant {
         @SpringResource(resourceClass = KafkaFactory.class)
         private transient KafkaFactory kafkaFactory;
 
-        @SpringResource(resourceClass = SubscriberConfig.class)
-        private transient SubscriberConfig config;
+        @SpringResource(resourceName = "local-index-config")
+        private transient BasicTopicConfig config;
 
         @IgniteInstanceResource
         private transient Ignite ignite;

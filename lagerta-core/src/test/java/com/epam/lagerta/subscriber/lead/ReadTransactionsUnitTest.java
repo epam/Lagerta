@@ -17,7 +17,7 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.google.common.collect.Lists;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static com.epam.lagerta.util.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.util.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.txScope;
 import static org.testng.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
@@ -73,10 +73,10 @@ public class ReadTransactionsUnitTest {
 
     @DataProvider(name = LIST_OF_TRANSACTIONS)
     private Object[][] provideListsOfTransactions() {
-        List<ConsumerTxScope> denseRead = list(
-                consumerTxScope(2),
-                consumerTxScope(3),
-                consumerTxScope(4));
+        List<ReaderTxScope> denseRead = list(
+                readerTxScope(2),
+                readerTxScope(3),
+                readerTxScope(4));
         return new Object[][]{
                 {commonSizeLists(), denseRead},
                 {diffSizeLists(), denseRead}};
@@ -130,11 +130,11 @@ public class ReadTransactionsUnitTest {
         );
         // Expected: A reader died, tx 0 stopped being in progress. Orphan duplicate
         // of tx 0 is pruned.
-        ConsumerTxScope b0 = consumerTxScope(B, 0, false);
-        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        ReaderTxScope b0 = readerTxScope(B, 0, false);
+        ReaderTxScope b1 = readerTxScope(B, 1, false);
         Set<Long> expectedInProgress = Collections.emptySet();
         Set<UUID> expectedLostReaders = Collections.emptySet();
-        List<ConsumerTxScope> expectedReadTxs = list(b0, b1);
+        List<ReaderTxScope> expectedReadTxs = list(b0, b1);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -157,12 +157,12 @@ public class ReadTransactionsUnitTest {
         );
         // Expected: A reader remains lost, as there was no txs sent by B
         // which are also owned by sent after the A became lost.
-        ConsumerTxScope a0 = consumerTxScope(B, 0, false);
-        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
-        ConsumerTxScope b2 = consumerTxScope(B, 2, false);
+        ReaderTxScope a0 = readerTxScope(B, 0, false);
+        ReaderTxScope b1 = readerTxScope(B, 1, false);
+        ReaderTxScope b2 = readerTxScope(B, 2, false);
         Set<Long> expectedInProgress = Collections.singleton(0L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
-        List<ConsumerTxScope> expectedReadTxs = list(a0, b1, b2);
+        List<ReaderTxScope> expectedReadTxs = list(a0, b1, b2);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -185,12 +185,12 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(B, list(tx0))
         );
         // Expected. A claimed dead, tx 2 orphan, tx 0 stopped being in progress.
-        ConsumerTxScope b0 = consumerTxScope(B, 0, false);
-        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
-        ConsumerTxScope a2 = consumerTxScope(A, 2, true);
+        ReaderTxScope b0 = readerTxScope(B, 0, false);
+        ReaderTxScope b1 = readerTxScope(B, 1, false);
+        ReaderTxScope a2 = readerTxScope(A, 2, true);
         Set<Long> expectedInProgress = Collections.emptySet();
         Set<UUID> expectedLostReaders = Collections.emptySet();
-        List<ConsumerTxScope> expectedReadTxs = list(b0, b1, a2);
+        List<ReaderTxScope> expectedReadTxs = list(b0, b1, a2);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -210,11 +210,11 @@ public class ReadTransactionsUnitTest {
             () -> read.addAllOnNode(C, list(tx0))
         );
         // Expected: A claimed dead, B remains lost.
-        ConsumerTxScope c0 = consumerTxScope(C, 0, false);
-        ConsumerTxScope b1 = consumerTxScope(B, 1, false);
+        ReaderTxScope c0 = readerTxScope(C, 0, false);
+        ReaderTxScope b1 = readerTxScope(B, 1, false);
         Set<Long> expectedInProgress = Collections.emptySet();
         Set<UUID> expectedLostReaders = Collections.singleton(B);
-        List<ConsumerTxScope> expectedReadTxs = list(c0, b1);
+        List<ReaderTxScope> expectedReadTxs = list(c0, b1);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -241,12 +241,12 @@ public class ReadTransactionsUnitTest {
         // Note: no knowledge which node progresses a txs at a moment - it can be any of them
         // as the ordering of merge procedure is not defined, though it places new duplicates after
         // the existing ones.
-        ConsumerTxScope a0 = consumerTxScope(A, 0, false);
-        ConsumerTxScope c1 = consumerTxScope(C, 1, false);
-        ConsumerTxScope c2 = consumerTxScope(C, 2, false);
+        ReaderTxScope a0 = readerTxScope(A, 0, false);
+        ReaderTxScope c1 = readerTxScope(C, 1, false);
+        ReaderTxScope c2 = readerTxScope(C, 2, false);
         Set<Long> expectedInProgress = set(0L, 2L);
         Set<UUID> expectedLostReaders = Collections.singleton(A);
-        List<ConsumerTxScope> expectedReadTxs = list(a0, c1, c2);
+        List<ReaderTxScope> expectedReadTxs = list(a0, c1, c2);
         return new Object[] {
             happenedActions, lostReaders, inProgress, expectedInProgress,
             expectedLostReaders, expectedReadTxs
@@ -260,7 +260,7 @@ public class ReadTransactionsUnitTest {
         Set<Long> inProgress,
         Set<Long> expectedInProgress,
         Set<UUID> expectedLostReaders,
-        List<ConsumerTxScope> expectedReadTxs
+        List<ReaderTxScope> expectedReadTxs
     ) {
         Mockito.doReturn(CommittedTransactions.INITIAL_READY_COMMIT_ID).when(COMMITTED).getLastDenseCommit();
         happenedActions.forEach(Runnable::run);
@@ -270,12 +270,12 @@ public class ReadTransactionsUnitTest {
         assertEquals(expectedInProgress, inProgress);
         assertEquals(expectedLostReaders, lostReaders);
 
-        Iterator<ConsumerTxScope> it = read.iterator();
+        Iterator<ReaderTxScope> it = read.iterator();
 
-        for (ConsumerTxScope scope : expectedReadTxs) {
-            ConsumerTxScope actualScope = it.next();
+        for (ReaderTxScope scope : expectedReadTxs) {
+            ReaderTxScope actualScope = it.next();
 
-            assertEquals(actualScope.getConsumerId(), scope.getConsumerId());
+            assertEquals(actualScope.getReaderId(), scope.getReaderId());
             assertEquals(actualScope.getTransactionId(), scope.getTransactionId());
             assertEquals(actualScope.isOrphan(), scope.isOrphan());
         }
@@ -284,7 +284,7 @@ public class ReadTransactionsUnitTest {
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
     public void pruningWorksWithAddManyLists(
             List<List<TransactionScope>> transactions,
-            List<ConsumerTxScope> expectedDenseRead) {
+            List<ReaderTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
         read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         long commitAfterCompress = read.getLastDenseRead();
@@ -294,14 +294,14 @@ public class ReadTransactionsUnitTest {
     @Test(dataProvider = LIST_OF_TRANSACTIONS)
     public void iteratorReturnsReadDenseTransactions(
             List<List<TransactionScope>> transactions,
-            List<ConsumerTxScope> expectedDenseRead) {
+            List<ReaderTxScope> expectedDenseRead) {
         transactions.forEach(tx -> read.addAllOnNode(NODE, tx));
         read.pruneCommitted(COMMITTED, heartbeats, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
         List<Long> actual = Lists.newArrayList(read.iterator()).stream()
-                .map(ConsumerTxScope::getTransactionId)
+                .map(ReaderTxScope::getTransactionId)
                 .collect(Collectors.toList());
         List<Long> expected = expectedDenseRead.stream()
-                .map(ConsumerTxScope::getTransactionId)
+                .map(ReaderTxScope::getTransactionId)
                 .collect(Collectors.toList());
         assertEquals(actual, expected);
     }
@@ -321,15 +321,15 @@ public class ReadTransactionsUnitTest {
     private void markInProgress(Long... txIds) {
         Set<Long> ids = set(txIds);
 
-        for (ConsumerTxScope scope : read) {
+        for (ReaderTxScope scope : read) {
             if (ids.contains(scope.getTransactionId())) {
                 scope.markInProgress();
             }
         }
     }
 
-    private static ConsumerTxScope consumerTxScope(UUID readerId, long transactionId, boolean isOrphan) {
-        ConsumerTxScope result = new ConsumerTxScope(readerId, transactionId, CACHE_SCOPE);
+    private static ReaderTxScope readerTxScope(UUID readerId, long transactionId, boolean isOrphan) {
+        ReaderTxScope result = new ReaderTxScope(readerId, transactionId, CACHE_SCOPE);
 
         if (isOrphan) {
             result.markOrphan();
@@ -337,8 +337,8 @@ public class ReadTransactionsUnitTest {
         return result;
     }
 
-    private static ConsumerTxScope consumerTxScope(long transactionId) {
-        return consumerTxScope(NODE, transactionId, false);
+    private static ReaderTxScope readerTxScope(long transactionId) {
+        return readerTxScope(NODE, transactionId, false);
     }
 
     @SafeVarargs

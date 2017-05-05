@@ -18,7 +18,7 @@ package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.mocks.LeadStateAssistantMock;
-import com.epam.lagerta.mocks.ReconcilerStub;
+import com.epam.lagerta.mocks.ProxyReconciler;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
@@ -31,9 +31,9 @@ import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static com.epam.lagerta.util.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.util.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.txScope;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -50,6 +50,7 @@ public class LeadImplFatUnitTest {
     private static final String CACHE2 = "cache2";
 
     private Lead lead;
+    private ProxyReconciler proxyReconciler;
 
     private void startDefaultLead() {
         startConfiguredLead(MOCK_STATE_ASSISTANT);
@@ -65,8 +66,9 @@ public class LeadImplFatUnitTest {
         RuleTimeouts ruleTimeouts = new RuleTimeouts();
         Heartbeats heartbeats = new Heartbeats(ruleTimeouts.getHearbeatExpirationThreshold());
 
+        proxyReconciler = new ProxyReconciler();
         lead = new LeadImpl(assistant, new ReadTransactions(), CommittedTransactions.createNotReady(), heartbeats,
-                gapDetectionStrategy, new ReconcilerStub(), ruleTimeouts);
+                gapDetectionStrategy, proxyReconciler, ruleTimeouts);
         ForkJoinPool.commonPool().submit(() -> lead.execute());
     }
 
@@ -189,10 +191,11 @@ public class LeadImplFatUnitTest {
     @Test
     public void reconciliationStartsOnFoundGap() {
         GapDetectionStrategy gapDetectionStrategy = mock(GapDetectionStrategy.class);
-        doReturn(Collections.singletonList(1)).when(gapDetectionStrategy).gapDetected(any(), any());
+        long missedTx = 1;
+        doReturn(Collections.singletonList(missedTx)).when(gapDetectionStrategy).gapDetected(any(), any());
         startConfiguredLead(MOCK_STATE_ASSISTANT, gapDetectionStrategy);
 
-        waitForReconciliationStart();
+        waitForReconciliationStart(missedTx);
     }
 
     private void assertPlanned(UUID uuid, List<Long> nonEmptyExpected) {
@@ -220,10 +223,10 @@ public class LeadImplFatUnitTest {
         } while (actual != expected);
     }
 
-    private void waitForReconciliationStart() {
+    private void waitForReconciliationStart(long txId) {
         do {
             Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-        } while (!lead.isReconciliationGoing());
+        } while (!proxyReconciler.wasReconciliationCalled(txId));
     }
 
     private static void assertEquals(List<Long> actual, List<Long> expected) {

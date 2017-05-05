@@ -17,9 +17,8 @@
 package com.epam.lagerta.subscriber.lead;
 
 import com.epam.lagerta.kafka.KafkaFactory;
-import com.epam.lagerta.kafka.SubscriberConfig;
+import com.epam.lagerta.kafka.config.BasicTopicConfig;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -30,12 +29,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static java.util.function.Function.identity;
 
 public class LeadStateLoader {
 
@@ -43,10 +43,10 @@ public class LeadStateLoader {
     private static final int PAGE_SIZE = 4;
 
     private final KafkaFactory kafkaFactory;
-    private final SubscriberConfig config;
+    private final BasicTopicConfig config;
     private final String groupId;
 
-    public LeadStateLoader(KafkaFactory kafkaFactory, SubscriberConfig config, String groupId) {
+    public LeadStateLoader(KafkaFactory kafkaFactory, BasicTopicConfig config, String groupId) {
         this.kafkaFactory = kafkaFactory;
         this.config = config;
         this.groupId = groupId + UUID.randomUUID();
@@ -58,29 +58,37 @@ public class LeadStateLoader {
             shiftToLastCommitted(consumer, commitId);
             partitionStream = getTopicPartitionStream(consumer);
         }
-        List<ConsumerKeeper> consumerKeepers = partitionStream
-                .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
-                .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
-                .collect(Collectors.toList());
-        CommittedTransactions committed = new CommittedTransactions();
-        ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
-        pool.submit(() -> {
-            while (true) {
-                List<List<List<Long>>> collect = consumerKeepers
-                        .parallelStream()
-                        .filter(ConsumerKeeper::isAlive)
-                        .map(this::consumePartitionUntilOffset)
-                        .collect(Collectors.toList());
-                collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
-                committed.compress();
-                if (collect.isEmpty()) {
-                    break;
+        List<ConsumerKeeper> consumerKeepers = Collections.emptyList();
+        try {
+            consumerKeepers = partitionStream
+                    .map(tp -> new ConsumerKeeper(createAndSubscribeConsumer()))
+                    .peek(consumerKeeper -> consumerKeeper.consumer().poll(0))
+                    .collect(Collectors.toList());
+            List<ConsumerKeeper> finalConsumerKeepers = consumerKeepers;
+            CommittedTransactions committed = new CommittedTransactions(commitId);
+            ForkJoinPool pool = new ForkJoinPool(consumerKeepers.size());
+            pool.submit(() -> {
+                while (true) {
+                    List<List<List<Long>>> collect = finalConsumerKeepers
+                            .parallelStream()
+                            .filter(ConsumerKeeper::isAlive)
+                            .map(this::consumePartitionUntilOffset)
+                            .collect(Collectors.toList());
+                    collect.stream().flatMap(Collection::stream).forEach(committed::addAll);
+                    committed.compress();
+                    if (collect.isEmpty()) {
+                        break;
+                    }
                 }
-            }
+                return committed;
+            }).join();
             return committed;
-        }).join();
-        consumerKeepers.forEach(ConsumerKeeper::close);
-        return committed;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            consumerKeepers.forEach(ConsumerKeeper::close);
+            //todo #236
+        }
     }
 
     private List<List<Long>> consumePartitionUntilOffset(ConsumerKeeper consumerKeeper) {
@@ -101,29 +109,30 @@ public class LeadStateLoader {
 
     private Consumer<?, ?> createAndSubscribeConsumer() {
         Consumer<?, ?> consumer = createConsumer();
-        consumer.subscribe(Collections.singleton(config.getRemoteTopic()));
+        consumer.subscribe(Collections.singleton(config.getTopic()));
         return consumer;
     }
 
     private Consumer<?, ?> createConsumer() {
-        Properties properties = config.getConsumerConfig();
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        return kafkaFactory.consumer(properties);
+        return kafkaFactory.consumer(config.getKafkaConfig().getConsumerConfig(groupId));
     }
 
     private void shiftToLastCommitted(Consumer<?, ?> consumer, long commitId) {
         Map<TopicPartition, Long> partitionsAndTimestamps = getTopicPartitionStream(consumer)
-                .collect(Collectors.toMap(k -> k, v -> commitId));
+                .collect(Collectors.toMap(identity(), v -> commitId));
         Map<TopicPartition, OffsetAndMetadata> partitionsAndOffsets = consumer
                 .offsetsForTimes(partitionsAndTimestamps)
                 .entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, v -> new OffsetAndMetadata(v.getValue().offset())));
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        v -> v.getValue() != null ? new OffsetAndMetadata(v.getValue().offset()) : new OffsetAndMetadata(0)
+                ));
         consumer.commitSync(partitionsAndOffsets);
     }
 
     private Stream<TopicPartition> getTopicPartitionStream(Consumer<?, ?> consumer) {
-        String topic = config.getRemoteTopic();
+        String topic = config.getTopic();
         return consumer.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(topic, partitionInfo.partition()));
     }

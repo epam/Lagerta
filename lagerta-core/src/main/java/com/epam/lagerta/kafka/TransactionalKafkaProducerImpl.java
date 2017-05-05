@@ -19,6 +19,7 @@ import com.epam.lagerta.capturer.KeyTransformer;
 import com.epam.lagerta.capturer.TransactionScope;
 import com.epam.lagerta.capturer.TransactionalProducer;
 import com.epam.lagerta.capturer.ValueTransformer;
+import com.epam.lagerta.kafka.config.SubscriberConfig;
 import com.epam.lagerta.util.Serializer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -43,10 +44,10 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
 
     public TransactionalKafkaProducerImpl(SubscriberConfig subscriberConfig, KafkaFactory kafkaFactory,
                                           KeyTransformer keyTransformer, ValueTransformer valueTransformer, Serializer serializer) {
-        this.dataTopic = subscriberConfig.getRemoteTopic();
+        dataTopic = subscriberConfig.getInputTopic();
         this.keyTransformer = keyTransformer;
         this.valueTransformer = valueTransformer;
-        this.producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
+        producer = kafkaFactory.producer(subscriberConfig.getProducerConfig());
         this.serializer = serializer;
         partitions = producer.partitionsFor(dataTopic).size();
     }
@@ -66,5 +67,10 @@ public class TransactionalKafkaProducerImpl implements TransactionalProducer {
         catch (Exception e) {
             throw new CacheWriterException(e);
         }
+    }
+
+    @Override
+    public void close() {
+        producer.close();
     }
 }

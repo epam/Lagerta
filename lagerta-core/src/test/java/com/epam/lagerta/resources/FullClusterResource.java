@@ -16,7 +16,6 @@
 
 package com.epam.lagerta.resources;
 
-import com.epam.lagerta.cluster.AppContextOneProcessClusterManager;
 import com.epam.lagerta.cluster.IgniteClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +24,13 @@ import java.sql.SQLException;
 
 public class FullClusterResource implements Resource {
     private static final Logger LOG = LoggerFactory.getLogger(FullClusterResource.class);
-    public static final String CONFIG_XML = "com/epam/lagerta/integration/config.xml";
-    private static final int CLUSTER_SIZE = 2;
+    public static final String CONFIG_XML = "com/epam/lagerta/integration/server-config.xml";
+    public static final int CLUSTER_SIZE = 2;
 
     private final DBResource dbResource;
-
+    private final H2DataBaseServer h2DataBaseServer = new H2DataBaseServer();
     private final TemporaryDirectory tmpDir = new TemporaryDirectory();
-    private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE, 2181, 9092);
+    private final EmbeddedKafka kafka = new EmbeddedKafka(tmpDir, CLUSTER_SIZE);
     private final IgniteClusterResource cluster = new IgniteClusterResource(CLUSTER_SIZE);
 
     public FullClusterResource(DBResource dbResource) {
@@ -52,17 +51,16 @@ public class FullClusterResource implements Resource {
 
     @Override
     public void setUp() throws Exception {
-        setUpResources(tmpDir, kafka, dbResource, cluster);
+        setUpResources(tmpDir, kafka, h2DataBaseServer, dbResource, cluster);
     }
 
     @Override
     public void tearDown() {
-        tearDownResources(cluster, kafka, dbResource, tmpDir);
+        tearDownResources(cluster, kafka, dbResource, h2DataBaseServer, tmpDir);
     }
 
     public void cleanUpClusters() throws SQLException {
-        cluster.stopACSServicesAndCaches();
-        cluster.startACSServicesAndCaches();
+        cluster.clearCluster();
     }
 
     private static void setUpResources(Resource... resources) throws Exception {

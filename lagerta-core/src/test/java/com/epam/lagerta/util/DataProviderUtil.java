@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.lagerta.subscriber;
+package com.epam.lagerta.util;
 
 import com.epam.lagerta.capturer.TransactionScope;
 import com.google.common.collect.Lists;

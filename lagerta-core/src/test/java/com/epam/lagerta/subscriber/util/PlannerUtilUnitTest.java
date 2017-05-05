@@ -16,7 +16,7 @@
 package com.epam.lagerta.subscriber.util;
 
 import com.epam.lagerta.capturer.TransactionScope;
-import com.epam.lagerta.subscriber.ConsumerTxScope;
+import com.epam.lagerta.subscriber.ReaderTxScope;
 import com.epam.lagerta.subscriber.lead.CommittedTransactions;
 import com.epam.lagerta.subscriber.lead.Heartbeats;
 import com.epam.lagerta.subscriber.lead.ReadTransactions;
@@ -34,10 +34,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.epam.lagerta.subscriber.DataProviderUtil.NodeTransactionsBuilder;
-import static com.epam.lagerta.subscriber.DataProviderUtil.cacheScope;
-import static com.epam.lagerta.subscriber.DataProviderUtil.list;
-import static com.epam.lagerta.subscriber.DataProviderUtil.txScope;
+import static com.epam.lagerta.util.DataProviderUtil.NodeTransactionsBuilder;
+import static com.epam.lagerta.util.DataProviderUtil.cacheScope;
+import static com.epam.lagerta.util.DataProviderUtil.list;
+import static com.epam.lagerta.util.DataProviderUtil.txScope;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
@@ -67,9 +67,9 @@ public class PlannerUtilUnitTest {
             Map<UUID, List<Long>> expected) {
         transactions.makeReady();
         transactions.pruneCommitted(EMPTY_COMMITTED, HEARTBEATS, EMPTY_LOST_READERS, EMPTY_IN_PROGRESS);
-        List<ConsumerTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
+        List<ReaderTxScope> ready = PlannerUtil.plan(transactions, committed, inProgress, EMPTY_LOST_READERS);
         Map<UUID, List<Long>> plan = ready.stream()
-                .collect(groupingBy(ConsumerTxScope::getConsumerId, toList()))
+                .collect(groupingBy(ReaderTxScope::getReaderId, toList()))
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,

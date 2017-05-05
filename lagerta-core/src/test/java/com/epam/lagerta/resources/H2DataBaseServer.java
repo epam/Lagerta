@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 EPAM Systems.
+ * Copyright (c) 2017. EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package com.epam.lagerta.mocks;
+package com.epam.lagerta.resources;
 
-import com.epam.lagerta.subscriber.lead.Reconciler;
+import org.h2.tools.Server;
 
-import java.util.List;
+public class H2DataBaseServer implements Resource {
 
-public class ReconcilerStub implements Reconciler {
+    public static final String PORT = "9123";
+    public static final String HOST = "localhost";
 
-    private boolean reconciliationWasCalled;
+    private Server server;
 
     @Override
-    public boolean isReconciliationGoing() {
-        return reconciliationWasCalled;
+    public void setUp() throws Exception {
+        server = Server.createTcpServer(
+                "-tcpPort", PORT, "-tcpAllowOthers", "-tcpDaemon");
+        server.start();
     }
 
     @Override
-    public void startReconciliation(List<Long> gaps) {
-        reconciliationWasCalled = true;
+    public void tearDown() throws Exception {
+        server.stop();
     }
-
 }
