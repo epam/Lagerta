@@ -16,15 +16,20 @@
 ;;
 
 (ns jepsen.lagerta.core
-	(:gen-class)
-	(:require [clojure.tools.logging :refer :all]
-              [clojure.string :as str]
-              [jepsen [cli :as cli]
-                      [control :as c]
-                      [db :as db]
-                      [tests :as tests]]
-              [jepsen.control.util :as cu]
-              [jepsen.os.debian :as debian]))
+  (:gen-class)
+  (:require [clojure.tools.logging :refer :all]
+            [clojure.string :as str]
+            [verschlimmbesserung.core :as v]
+            [slingshot.slingshot :refer [try+]]
+            [jepsen [cli :as cli]
+             [client :as client]
+             [control :as c]
+             [db :as db]
+             [generator :as gen]
+             [tests :as tests]
+             [util :as util]]
+            [jepsen.control.util :as cu]
+            [jepsen.os.debian :as debian]))
 
 
 (def dir     "/opt/etcd")
@@ -56,7 +61,12 @@
   (->> (:nodes test)
        (map (fn [node]
               (str (name node) "=" (peer-url node))))
-       (str/join ",")))		  
+       (str/join ",")))
+
+(defn parse-long
+  "Parses a string to a Long. Passes through `nil`."
+  [s]
+  (when s (Long/parseLong s)))
 
 
 
@@ -96,14 +106,50 @@
     (log-files [_ test node]
       [logfile])))
 
-	  
+(defn client
+  "A client for a single compare-and-set register"
+  [conn]
+  (reify client/Client
+    (setup! [_ test node]
+      (client (v/connect (client-url node)
+                         {:timeout 5000})))
+
+    (invoke! [this test op]
+      (case (:f op)
+        :read (assoc op :type :ok, :value (parse-long (v/get conn "r")))
+        :write (do (v/reset! conn "r" (:value op))
+                   (assoc op :type, :ok))
+        :cas (try+
+               (let [[value value'] (:value op)]
+                 (assoc op :type (if (v/cas! conn "r" value value'
+                                             {:prev-exist? true})
+                                   :ok
+                                   :fail)))
+               (catch [:errorCode 100] _
+                 (assoc op :type :fail, :error :not-found)))))
+
+    (teardown! [_ test]
+      ; If our connection were stateful, we'd close it here.
+      ; Verschlimmbesserung doesn't hold a connection open, so we don't need to
+      ; close it.
+      )))
+
+(defn r   [_ _] {:type :invoke, :f :read, :value nil})
+(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
+(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh, :concurrency, ...), constructs a test map."
   [opts]  
   (merge tests/noop-test
-		 {:name "etcd"
+         {:name "etcd"
           :os debian/os
-          :db (etcd-control "v3.1.5")}
+          :db (etcd-control "v3.1.5")
+          :client (client nil)
+          :generator (->> (gen/mix [r w cas])
+                          (gen/stagger 1)
+                          (gen/clients)
+                          (gen/time-limit 15))}
          opts))			
 
 	  
