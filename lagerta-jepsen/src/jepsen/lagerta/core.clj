@@ -164,7 +164,7 @@
                                              {:type :info, :f :start}
                                              (gen/sleep 5)
                                              {:type :info, :f :stop}])))
-                          (gen/time-limit 15))}
+                          (gen/time-limit (:time-limit opts)))}
          opts))
 
 	  
