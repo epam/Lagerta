@@ -21,13 +21,17 @@
             [clojure.string :as str]
             [verschlimmbesserung.core :as v]
             [slingshot.slingshot :refer [try+]]
-            [jepsen [cli :as cli]
+            [knossos.model :as model]
+            [jepsen
+             [checker :as checker]
+             [cli :as cli]
              [client :as client]
              [control :as c]
              [db :as db]
              [generator :as gen]
              [tests :as tests]
-             [util :as util]]
+             [util :as util :refer [timeout]]]
+            [jepsen.checker.timeline :as timeline]
             [jepsen.control.util :as cu]
             [jepsen.os.debian :as debian]))
 
@@ -146,6 +150,11 @@
           :os debian/os
           :db (etcd-control "v3.1.5")
           :client (client nil)
+          :model  (model/cas-register)
+          :checker (checker/compose
+                     {:perf   (checker/perf)
+                      :timeline (timeline/html)
+                      :linear checker/linearizable})
           :generator (->> (gen/mix [r w cas])
                           (gen/stagger 1)
                           (gen/clients)
