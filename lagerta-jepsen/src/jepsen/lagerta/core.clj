@@ -158,7 +158,7 @@
                       :timeline (timeline/html)
                       :linear   checker/linearizable})
           :generator (->> (gen/mix [r w cas])
-                          (gen/stagger 1)
+                          (gen/stagger 1/10)
                           (gen/nemesis
                             (gen/seq (cycle [(gen/sleep 5)
                                              {:type :info, :f :start}
