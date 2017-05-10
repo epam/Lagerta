@@ -19,8 +19,10 @@
 #
 ################################################################################
 
-OLD="0.5.0.0"
-NEW="0.6.0.0-SNAPSHOT"
+# example `sh update_version.sh 0.5.0.0 0.6.0.0-SNAPSHOT`
+
+OLD=$1 # "0.5.0.0"
+NEW=$2 # "0.6.0.0-SNAPSHOT"
 
 HERE=` basename $PWD`
 if [[ ${HERE} != "tools" ]]; then
@@ -30,5 +32,6 @@ fi
 
 echo Updating version from ${OLD} to ${NEW}
 
-find .. -name 'pom.xml' -type f -exec perl -pi -e 's#<version>'${OLD}'</version>#<version>'${NEW}'</version>#' {} \;
-find .. -name 'project.clj' -type f -exec perl -pi -e 's/lagerta-jepsen "'${OLD}'"/lagerta-jepsen "'${NEW}'"/g' {} \;
+find .. -name 'pom.xml' -type f -exec sed -i '/<parent>/,/<\/parent>/ s|<version>'${OLD}'</version>|<version>'${NEW}'</version>|g' {} \;
+sed -i 's|<version>'${OLD}'</version>|<version>'${NEW}'</version>|g' ../pom.xml
+find .. -name 'project.clj' -type f -exec sed -i 's|lagerta-jepsen "'${OLD}'"|lagerta-jepsen "'${NEW}'"|g' {} \;
