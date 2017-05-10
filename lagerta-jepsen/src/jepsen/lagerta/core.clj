@@ -15,19 +15,22 @@
 ;; limitations under the License.
 ;;
 
-(ns jepsen.lagerta.core
+(ns jepsen.etcdemo
   (:gen-class)
   (:require [clojure.tools.logging :refer :all]
             [clojure.string :as str]
             [verschlimmbesserung.core :as v]
             [slingshot.slingshot :refer [try+]]
-            [jepsen [cli :as cli]
+            [knossos.model :as model]
+            [jepsen
+             [checker :as checker]
+             [cli :as cli]
              [client :as client]
              [control :as c]
              [db :as db]
              [generator :as gen]
              [tests :as tests]
-             [util :as util]]
+             [util :as util :refer [timeout]]]
             [jepsen.control.util :as cu]
             [jepsen.os.debian :as debian]))
 
