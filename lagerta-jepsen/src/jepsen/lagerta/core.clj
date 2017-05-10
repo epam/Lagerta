@@ -15,7 +15,7 @@
 ;; limitations under the License.
 ;;
 
-(ns jepsen.etcdemo
+(ns jepsen.lagerta.core
   (:gen-class)
   (:require [clojure.tools.logging :refer :all]
             [clojure.string :as str]
@@ -149,6 +149,8 @@
           :os debian/os
           :db (etcd-control "v3.1.5")
           :client (client nil)
+          :model  (model/cas-register)
+          :checker checker/linearizable
           :generator (->> (gen/mix [r w cas])
                           (gen/stagger 1)
                           (gen/clients)
