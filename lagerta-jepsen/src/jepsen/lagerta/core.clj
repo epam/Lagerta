@@ -150,7 +150,9 @@
           :db (etcd-control "v3.1.5")
           :client (client nil)
           :model  (model/cas-register)
-          :checker checker/linearizable
+          :checker (checker/compose
+                     {:perf   (checker/perf)
+                      :linear checker/linearizable})
           :generator (->> (gen/mix [r w cas])
                           (gen/stagger 1)
                           (gen/clients)
