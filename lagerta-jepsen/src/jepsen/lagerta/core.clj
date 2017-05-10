@@ -31,6 +31,7 @@
              [generator :as gen]
              [tests :as tests]
              [util :as util :refer [timeout]]]
+            [jepsen.checker.timeline :as timeline]
             [jepsen.control.util :as cu]
             [jepsen.os.debian :as debian]))
 
@@ -152,6 +153,7 @@
           :model  (model/cas-register)
           :checker (checker/compose
                      {:perf   (checker/perf)
+                      :timeline (timeline/html)
                       :linear checker/linearizable})
           :generator (->> (gen/mix [r w cas])
                           (gen/stagger 1)
