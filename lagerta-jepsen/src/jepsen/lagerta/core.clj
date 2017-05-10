@@ -20,6 +20,7 @@
   (:require [clojure.tools.logging :refer :all]
             [clojure.string :as str]
             [verschlimmbesserung.core :as v]
+            [slingshot.slingshot :refer [try+]]
             [jepsen [cli :as cli]
              [client :as client]
              [control :as c]
@@ -118,10 +119,14 @@
         :read (assoc op :type :ok, :value (parse-long (v/get conn "r")))
         :write (do (v/reset! conn "r" (:value op))
                    (assoc op :type, :ok))
-        :cas (let [[value value'] (:value op)]
-               (assoc op :type (if (v/cas! conn "r" value value')
-                             :ok
-                             :fail)))))
+        :cas (try+
+               (let [[value value'] (:value op)]
+                 (assoc op :type (if (v/cas! conn "r" value value'
+                                             {:prev-exist? true})
+                                   :ok
+                                   :fail)))
+               (catch [:errorCode 100] _
+                 (assoc op :type :fail, :error :not-found)))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
