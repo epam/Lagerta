@@ -117,7 +117,11 @@
       (case (:f op)
         :read (assoc op :type :ok, :value (parse-long (v/get conn "r")))
         :write (do (v/reset! conn "r" (:value op))
-                   (assoc op :type, :ok))))
+                   (assoc op :type, :ok))
+        :cas (let [[value value'] (:value op)]
+               (assoc op :type (if (v/cas! conn "r" value value')
+                             :ok
+                             :fail)))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
@@ -137,7 +141,7 @@
           :os debian/os
           :db (etcd-control "v3.1.5")
           :client (client nil)
-          :generator (->> (gen/mix [r w])
+          :generator (->> (gen/mix [r w cas])
                           (gen/stagger 1)
                           (gen/clients)
                           (gen/time-limit 15))}
