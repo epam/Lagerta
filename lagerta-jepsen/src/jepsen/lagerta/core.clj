@@ -120,23 +120,29 @@
                          {:timeout 5000})))
 
     (invoke! [this test op]
-      (case (:f op)
-        :read (try (let [value (-> conn
-                                   (v/get "r" {:quorum? true})
-                                   parse-long)]
-                     (assoc op :type :ok, :value value))
-                   (catch java.net.SocketTimeoutException e
-                     (assoc op :type :fail, :error :timeout)))
-        :write (do (v/reset! conn "r" (:value op))
-                   (assoc op :type, :ok))
-        :cas (try+
-               (let [[value value'] (:value op)]
+      (try+
+        (case (:f op)
+          :read (let [value (-> conn
+                                (v/get "r" {:quorum? true})
+                                parse-long)]
+                  (assoc op :type :ok, :value value))
+
+          :write (do (v/reset! conn "r" (:value op))
+                     (assoc op :type, :ok))
+
+          :cas (let [[value value'] (:value op)]
                  (assoc op :type (if (v/cas! conn "r" value value'
                                              {:prev-exist? true})
                                    :ok
-                                   :fail)))
-               (catch [:errorCode 100] _
-                 (assoc op :type :fail, :error :not-found)))))
+                                   :fail))))
+
+        (catch java.net.SocketTimeoutException e
+          (assoc op
+            :type (if (= :read (:f op)) :fail :info)
+            :error :timeout))
+
+        (catch [:errorCode 100] e
+          (assoc op :type :fail, :error :not-found))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
