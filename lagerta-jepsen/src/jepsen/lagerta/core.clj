@@ -29,6 +29,7 @@
              [control :as c]
              [db :as db]
              [generator :as gen]
+             [nemesis :as nemesis]
              [tests :as tests]
              [util :as util :refer [timeout]]]
             [jepsen.checker.timeline :as timeline]
@@ -120,7 +121,10 @@
 
     (invoke! [this test op]
       (case (:f op)
-        :read (assoc op :type :ok, :value (parse-long (v/get conn "r")))
+        :read (let [value (-> conn
+                              (v/get "r" {:quorum? true})
+                              parse-long)]
+                (assoc op :type :ok, :value value))
         :write (do (v/reset! conn "r" (:value op))
                    (assoc op :type, :ok))
         :cas (try+
@@ -150,16 +154,21 @@
           :os debian/os
           :db (etcd-control "v3.1.5")
           :client (client nil)
+          :nemesis (nemesis/partition-random-halves)
           :model  (model/cas-register)
           :checker (checker/compose
-                     {:perf   (checker/perf)
+                     {:perf     (checker/perf)
                       :timeline (timeline/html)
-                      :linear checker/linearizable})
+                      :linear   checker/linearizable})
           :generator (->> (gen/mix [r w cas])
-                          (gen/stagger 1)
-                          (gen/clients)
-                          (gen/time-limit 15))}
-         opts))			
+                          (gen/stagger 1/10)
+                          (gen/nemesis
+                            (gen/seq (cycle [(gen/sleep 5)
+                                             {:type :info, :f :start}
+                                             (gen/sleep 5)
+                                             {:type :info, :f :stop}])))
+                          (gen/time-limit (:time-limit opts)))}
+         opts))
 
 	  
 (defn -main
