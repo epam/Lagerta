@@ -121,10 +121,12 @@
 
     (invoke! [this test op]
       (case (:f op)
-        :read (let [value (-> conn
-                              (v/get "r" {:quorum? true})
-                              parse-long)]
-                (assoc op :type :ok, :value value))
+        :read (try (let [value (-> conn
+                                   (v/get "r" {:quorum? true})
+                                   parse-long)]
+                     (assoc op :type :ok, :value value))
+                   (catch java.net.SocketTimeoutException e
+                     (assoc op :type :fail, :error :timeout)))
         :write (do (v/reset! conn "r" (:value op))
                    (assoc op :type, :ok))
         :cas (try+
