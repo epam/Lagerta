@@ -23,8 +23,13 @@ LABEL "base docker image with java 8"
 
 # install initial deps
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y apt-utils
-RUN apt-get update && apt-get -y upgrade && \
+
+RUN apt-get -y update && apt-get -y upgrade && \
+  apt-get -y install python-software-properties  \
+  apt-utils \
+  apt-file
+
+RUN apt-file -y update && \
   apt-get install -y --no-install-recommends \
   libjna-java \
   net-tools \
