@@ -29,6 +29,7 @@
              [control :as c]
              [db :as db]
              [generator :as gen]
+             [independent :as independent]
              [nemesis :as nemesis]
              [tests :as tests]
              [util :as util :refer [timeout]]]
@@ -168,8 +169,13 @@
                      {:perf     (checker/perf)
                       :timeline (timeline/html)
                       :linear   checker/linearizable})
-          :generator (->> (gen/mix [r w cas])
-                          (gen/stagger 1/10)
+          :generator (->> (independent/concurrent-generator
+                            10
+                            (range)
+                            (fn [k]
+                              (->> (gen/mix [r w cas])
+                                   (gen/stagger 1/10)
+                                   (gen/limit 100))))
                           (gen/nemesis
                             (gen/seq (cycle [(gen/sleep 5)
                                              {:type :info, :f :start}
