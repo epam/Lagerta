@@ -121,29 +121,30 @@
                          {:timeout 5000})))
 
     (invoke! [this test op]
-      (try+
-        (case (:f op)
-          :read (let [value (-> conn
-                                (v/get "r" {:quorum? true})
-                                parse-long)]
-                  (assoc op :type :ok, :value value))
+      (let [[k v] (:value op)]
+        (try+
+          (case (:f op)
+            :read (let [value (-> conn
+                                  (v/get k {:quorum? true})
+                                  parse-long)]
+                    (assoc op :type :ok, :value (independent/tuple k value)))
 
-          :write (do (v/reset! conn "r" (:value op))
-                     (assoc op :type, :ok))
+            :write (do (v/reset! conn k v)
+                       (assoc op :type, :ok))
 
-          :cas (let [[value value'] (:value op)]
-                 (assoc op :type (if (v/cas! conn "r" value value'
-                                             {:prev-exist? true})
-                                   :ok
-                                   :fail))))
+            :cas (let [[value value'] v]
+                   (assoc op :type (if (v/cas! conn k value value'
+                                               {:prev-exist? true})
+                                     :ok
+                                     :fail))))
 
-        (catch java.net.SocketTimeoutException e
-          (assoc op
-            :type (if (= :read (:f op)) :fail :info)
-            :error :timeout))
+          (catch java.net.SocketTimeoutException e
+            (assoc op
+              :type (if (= :read (:f op)) :fail :info)
+              :error :timeout))
 
-        (catch [:errorCode 100] e
-          (assoc op :type :fail, :error :not-found))))
+          (catch [:errorCode 100] e
+            (assoc op :type :fail, :error :not-found)))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
