@@ -29,6 +29,7 @@
              [control :as c]
              [db :as db]
              [generator :as gen]
+             [independent :as independent]
              [nemesis :as nemesis]
              [tests :as tests]
              [util :as util :refer [timeout]]]
@@ -120,21 +121,30 @@
                          {:timeout 5000})))
 
     (invoke! [this test op]
-      (case (:f op)
-        :read (let [value (-> conn
-                              (v/get "r" {:quorum? true})
-                              parse-long)]
-                (assoc op :type :ok, :value value))
-        :write (do (v/reset! conn "r" (:value op))
-                   (assoc op :type, :ok))
-        :cas (try+
-               (let [[value value'] (:value op)]
-                 (assoc op :type (if (v/cas! conn "r" value value'
-                                             {:prev-exist? true})
-                                   :ok
-                                   :fail)))
-               (catch [:errorCode 100] _
-                 (assoc op :type :fail, :error :not-found)))))
+      (let [[k v] (:value op)]
+        (try+
+          (case (:f op)
+            :read (let [value (-> conn
+                                  (v/get k {:quorum? true})
+                                  parse-long)]
+                    (assoc op :type :ok, :value (independent/tuple k value)))
+
+            :write (do (v/reset! conn k v)
+                       (assoc op :type, :ok))
+
+            :cas (let [[value value'] v]
+                   (assoc op :type (if (v/cas! conn k value value'
+                                               {:prev-exist? true})
+                                     :ok
+                                     :fail))))
+
+          (catch java.net.SocketTimeoutException e
+            (assoc op
+              :type (if (= :read (:f op)) :fail :info)
+              :error :timeout))
+
+          (catch [:errorCode 100] e
+            (assoc op :type :fail, :error :not-found)))))
 
     (teardown! [_ test]
       ; If our connection were stateful, we'd close it here.
@@ -159,9 +169,14 @@
           :checker (checker/compose
                      {:perf     (checker/perf)
                       :timeline (timeline/html)
-                      :linear   checker/linearizable})
-          :generator (->> (gen/mix [r w cas])
-                          (gen/stagger 1/10)
+                      :linear   (independent/checker checker/linearizable)})
+          :generator (->> (independent/concurrent-generator
+                            10
+                            (range)
+                            (fn [k]
+                              (->> (gen/mix [r w cas])
+                                   (gen/stagger 1/10)
+                                   (gen/limit 100))))
                           (gen/nemesis
                             (gen/seq (cycle [(gen/sleep 5)
                                              {:type :info, :f :start}
