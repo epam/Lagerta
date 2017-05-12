@@ -169,7 +169,7 @@
           :checker (checker/compose
                      {:perf     (checker/perf)
                       :timeline (timeline/html)
-                      :linear   checker/linearizable})
+                      :linear   (independent/checker checker/linearizable)})
           :generator (->> (independent/concurrent-generator
                             10
                             (range)
