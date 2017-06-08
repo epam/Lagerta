@@ -23,7 +23,6 @@ import com.epam.lagerta.base.jdbc.committer.JDBCBaseFunctionalTest;
 import com.epam.lagerta.base.jdbc.common.KeyValueAndMetadata;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
 import com.epam.lagerta.base.util.FieldDescriptorHelper;
-import com.epam.lagerta.util.SerializerImpl;
 import org.apache.ignite.binary.BinaryObject;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -35,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.epam.lagerta.base.jdbc.DataProviders.combineProviders;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideDBModes;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideKVMeta;
 import static com.epam.lagerta.base.jdbc.JDBCUtil.SERIALIZER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -42,8 +44,8 @@ import static org.testng.Assert.assertNull;
 public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest {
 
     @DataProvider(name = DataProviders.KV_META_PROVIDER)
-    public static Object[][] provideKVMeta() {
-        return DataProviders.provideKVMeta(ignite);
+    public static Object[][] provideKVMetaForDataCapturer() {
+        return combineProviders(provideKVMeta(ignite), provideDBModes());
     }
 
     private JDBCDataCapturerLoader jdbcDataCapturerLoader;
@@ -69,14 +71,16 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
-    public void load(KeyValueAndMetadata kvMeta) throws SQLException {
+    public void load(KeyValueAndMetadata kvMeta, String dbMode) throws SQLException {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
         Object actual = jdbcDataCapturerLoader.load(kvMeta.getCacheName(), kvMeta.getKey());
         assertEquals(actual, kvMeta.getUnwrappedValue());
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
-    public void loadWithDefaultEntityDescriptor(KeyValueAndMetadata kvMeta) {
+    public void loadWithDefaultEntityDescriptor(KeyValueAndMetadata kvMeta, String dbMode) {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
         String cacheName = kvMeta.getCacheName();
         FieldDescriptorHelper helper = new FieldDescriptorHelper(SERIALIZER);
@@ -93,7 +97,8 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
-    public void loadWithParsedEntityDescriptor(KeyValueAndMetadata kvMeta) {
+    public void loadWithParsedEntityDescriptor(KeyValueAndMetadata kvMeta, String dbMode) {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
         String cacheName = kvMeta.getCacheName();
         Class<?> clazz = kvMeta.getUnwrappedValue().getClass();
@@ -107,7 +112,8 @@ public class JDBCDataCapturerLoaderFunctionalTest extends JDBCBaseFunctionalTest
     }
 
     @Test(dataProvider = DataProviders.KV_META_LIST_PROVIDER)
-    public void loadAll(List<KeyValueAndMetadata> kvMetas) {
+    public void loadAll(List<KeyValueAndMetadata> kvMetas, String dbMode) {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         Map<Integer, Object> expectedResult = kvMetas
                 .stream()
                 .collect(Collectors.toMap(KeyValueAndMetadata::getKey,

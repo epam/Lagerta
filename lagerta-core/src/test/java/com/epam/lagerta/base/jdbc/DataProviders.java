@@ -20,12 +20,15 @@ import com.epam.lagerta.base.jdbc.common.OtherTypesHolder;
 import com.epam.lagerta.base.jdbc.common.PrimitiveWrappersHolder;
 import com.epam.lagerta.base.jdbc.common.PrimitivesHolder;
 import com.google.common.collect.Sets;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 
@@ -36,13 +39,13 @@ public class DataProviders {
     public static final Set<Integer> KEYS = Sets.newHashSet(1, 2, 3);
 
     public static final PrimitivesHolder PH_1 =
-            new PrimitivesHolder(false, (byte)0, (short)0, 0, 0, 0, 0);
+            new PrimitivesHolder(false, (byte) 0, (short) 0, 0, 0, 0, 0);
     public static final PrimitivesHolder PH_2 =
-            new PrimitivesHolder(true, (byte)1, (short)1, 1, 1, 1, 1);
+            new PrimitivesHolder(true, (byte) 1, (short) 1, 1, 1, 1, 1);
     public static final PrimitiveWrappersHolder PWH_1 =
-            new PrimitiveWrappersHolder(false, (byte)0, (short)0, 0, 0L, 0F, 0D);
+            new PrimitiveWrappersHolder(false, (byte) 0, (short) 0, 0, 0L, 0F, 0D);
     public static final PrimitiveWrappersHolder PWH_2 =
-            new PrimitiveWrappersHolder(true, (byte)1, (short)1, 1, 1L, 1F, 1D);
+            new PrimitiveWrappersHolder(true, (byte) 1, (short) 1, 1, 1L, 1F, 1D);
     public static final PrimitiveWrappersHolder PWH_3 =
             new PrimitiveWrappersHolder(null, null, null, null, null, null, null);
     public static final OtherTypesHolder OTH_1 =
@@ -52,7 +55,7 @@ public class DataProviders {
 
     // ToDo: Uncomment all commented out cases after fixes to issue #180.
     public static Object[][] provideKVMeta(Ignite ignite) {
-        return new Object[][] {
+        return new Object[][]{
                 {PrimitivesHolder.withMetaData(1, PH_1)},
                 {PrimitivesHolder.withMetaData(1, PH_2)},
                 {PrimitivesHolder.withMetaData(1, binary(ignite, PH_1))},
@@ -71,7 +74,7 @@ public class DataProviders {
     }
 
     public static Object[][] provideKVMetaList(Ignite ignite) {
-        return new Object[][] {
+        return new Object[][]{
                 {asList(PrimitivesHolder.withMetaData(1, PH_1),
                         PrimitivesHolder.withMetaData(2, PH_2))},
                 {asList(PrimitivesHolder.withMetaData(1, binary(ignite, PH_1)),
@@ -87,6 +90,32 @@ public class DataProviders {
                 {asList(//OtherTypesHolder.withMetaData(1, binary(ignite, OTH_1)),
                         OtherTypesHolder.withMetaData(2, binary(ignite, OTH_2)))}
         };
+    }
+
+    public static Object[][] provideDBModes() {
+        return new Object[][]{{"REGULAR"}, {"POSTGRESQL"}};
+    }
+
+    public static Object[][] combineProviders(Object[][] leftProvider, Object[][] rightProvider) {
+        List<Object[]> combination = new LinkedList<>();
+        Arrays.stream(leftProvider)
+                .forEach(objects1 -> Arrays.stream(rightProvider)
+                        .forEach(objects2 -> combination.add(concatAll(objects1, objects2))));
+        return combination.toArray(new Object[][]{});
+    }
+
+    @SafeVarargs
+    private static <T> T[] concatAll(T[] first, T[]... rest) {
+        Integer totalLenght = Arrays.stream(rest)
+                .map(array -> array.length)
+                .reduce(first.length, (left, right) -> left + right);
+        T[] result = Arrays.copyOf(first, totalLenght);
+        int offset = first.length;
+        for (T[] array : rest) {
+            System.arraycopy(array, 0, result, offset, array.length);
+            offset += array.length;
+        }
+        return result;
     }
 
     private DataProviders() {
