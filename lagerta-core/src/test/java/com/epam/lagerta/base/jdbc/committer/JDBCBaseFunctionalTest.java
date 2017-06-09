@@ -30,12 +30,16 @@ import org.testng.annotations.DataProvider;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
+import static com.epam.lagerta.base.jdbc.DataProviders.combineProviders;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideDBModes;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideKVMetaList;
+
 public abstract class JDBCBaseFunctionalTest extends BaseFunctionalTest {
     private static final String DATA_BASE_NAME = "h2_functional_test";
 
     @DataProvider(name = DataProviders.KV_META_LIST_PROVIDER)
-    public static Object[][] provideKVMetaList() {
-        return DataProviders.provideKVMetaList(ignite);
+    public static Object[][] provideKVMetaListForJDBC() {
+        return combineProviders(provideKVMetaList(ignite), provideDBModes());
     }
 
     private final DBResource dbResource = new DBResource(DATA_BASE_NAME);

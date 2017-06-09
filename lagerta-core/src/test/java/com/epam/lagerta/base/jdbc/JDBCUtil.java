@@ -122,6 +122,11 @@ public final class JDBCUtil {
         }
     }
 
+    public static void setDBMode(DataSource dataSource, String mode) {
+        applyInConnection(dataSource, connection ->
+                connection.createStatement().execute(String.format("SET MODE %s", mode)));
+    }
+
     private static void set(FieldDescriptor descriptor, PreparedStatement preparedStatement, Object value) throws SQLException {
         if (value == null) {
             preparedStatement.setObject(descriptor.getIndex(), null);

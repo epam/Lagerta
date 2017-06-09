@@ -31,19 +31,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.epam.lagerta.base.jdbc.DataProviders.combineProviders;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideDBModes;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideKVMeta;
+import static com.epam.lagerta.base.jdbc.DataProviders.provideKVMetaList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrationTest {
+
     @DataProvider(name = DataProviders.KV_META_PROVIDER)
-    public static Object[][] provideKVMeta() {
-        return DataProviders.provideKVMeta(ignite());
+    public static Object[][] provideKVMetaForDataCapturer() {
+        return combineProviders(provideKVMeta(ignite()), provideDBModes());
     }
 
     @DataProvider(name = DataProviders.KV_META_LIST_PROVIDER)
     public static Object[][] provideForJDBCCommit() {
-        return DataProviders.provideKVMetaList(ignite());
+        return combineProviders(provideKVMetaList(ignite()), provideDBModes());
     }
 
     @Test(dataProvider = PRIMITIVES_CACHE_NAMES_PROVIDER)
@@ -61,7 +66,8 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
-    public void partiallyFoundLoadAll(KeyValueAndMetadata kvMeta) throws SQLException {
+    public void partiallyFoundLoadAll(KeyValueAndMetadata kvMeta, String dbMode) throws SQLException {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
 
         IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCacheName());
@@ -73,7 +79,8 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
     }
 
     @Test(dataProvider = DataProviders.KV_META_PROVIDER)
-    public void loadPerson(KeyValueAndMetadata kvMeta) throws SQLException {
+    public void loadPerson(KeyValueAndMetadata kvMeta, String dbMode) throws SQLException {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.insertIntoDB(dataSource, kvMeta);
 
         IgniteCache<Integer, Object> cache = ignite().cache(kvMeta.getCacheName());
@@ -85,7 +92,8 @@ public class JDBCDataCapturerLoaderIntegrationTest extends BaseSingleJVMIntegrat
     }
 
     @Test(dataProvider = DataProviders.KV_META_LIST_PROVIDER)
-    public void loadAllPersons(List<KeyValueAndMetadata> kvMetas) throws SQLException {
+    public void loadAllPersons(List<KeyValueAndMetadata> kvMetas, String dbMode) throws SQLException {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         JDBCUtil.applyInConnection(dataSource, connection -> {
             for (KeyValueAndMetadata kvMeta : kvMetas) {
                 JDBCUtil.insertIntoDB(connection, kvMeta);

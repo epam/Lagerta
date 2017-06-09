@@ -41,7 +41,8 @@ public class JDBCCommitterFunctionalTest extends JDBCBaseFunctionalTest {
     }
 
     @Test(dataProvider = DataProviders.KV_META_LIST_PROVIDER)
-    public void commit(List<KeyValueAndMetadata> data) throws SQLException {
+    public void commit(List<KeyValueAndMetadata> data, String dbMode) throws SQLException {
+        JDBCUtil.setDBMode(dataSource, dbMode);
         Map<Integer, Map<String, Object>> expectedResults = data
                 .stream()
                 .collect(Collectors.toMap(KeyValueAndMetadata::getKey, KeyValueAndMetadata::getKeyValueMap));
