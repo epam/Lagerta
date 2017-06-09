@@ -106,10 +106,10 @@ public class DataProviders {
 
     @SafeVarargs
     private static <T> T[] concatAll(T[] first, T[]... rest) {
-        Integer totalLenght = Arrays.stream(rest)
-                .map(array -> array.length)
+        int totalLength = Arrays.stream(rest)
+                .mapToInt(array -> array.length)
                 .reduce(first.length, (left, right) -> left + right);
-        T[] result = Arrays.copyOf(first, totalLenght);
+        T[] result = Arrays.copyOf(first, totalLength);
         int offset = first.length;
         for (T[] array : rest) {
             System.arraycopy(array, 0, result, offset, array.length);
