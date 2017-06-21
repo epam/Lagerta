@@ -38,9 +38,9 @@
     <modules>
         <module>core</module>
         <module>cassandra</module>
+        <module>lagerta-test</module>
         <module>lagerta-core</module>
         <module>lagerta-jmh</module>
-        <module>lagerta-test</module>
     </modules>
 
     <repositories>
