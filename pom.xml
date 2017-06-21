@@ -40,6 +40,7 @@
         <module>cassandra</module>
         <module>lagerta-core</module>
         <module>lagerta-jmh</module>
+        <module>lagerta-test</module>
     </modules>
 
     <repositories>
@@ -142,6 +143,7 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.12</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>pl.pragmatists</groupId>
@@ -170,6 +172,7 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito-core.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

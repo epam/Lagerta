@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017. EPAM Systems.
+ * Copyright (c) 2017. EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,8 @@ package com.epam.lagerta.resources;
 import com.epam.lagerta.cluster.IgniteClusterManager;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteServices;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
-import org.apache.ignite.services.ServiceConfiguration;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Core class for tests which performs set up and tear down of cluster and exposes some useful methods.
