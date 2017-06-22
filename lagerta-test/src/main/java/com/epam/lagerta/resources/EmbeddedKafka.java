@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Properties;
 
 public class EmbeddedKafka implements Resource {
-    private static final int ZOOKEEPER_PORT = 2181;
-    private static final int BASE_KAFKA_PORT = 9092;
+    public static final int DEFAULT_ZOOKEEPER_PORT = 2181;
+    public static final int DEFAULT_BASE_KAFKA_PORT = 9092;
     private static final String LOCALHOST = "localhost";
     private static final long ZOOKEEPER_AWAIT_TIME = 5_000;
 
@@ -51,7 +51,7 @@ public class EmbeddedKafka implements Resource {
     }
 
     public EmbeddedKafka(TemporaryDirectory folder, int numberOfKafkaBrokers) {
-        this(folder, numberOfKafkaBrokers, ZOOKEEPER_PORT, BASE_KAFKA_PORT);
+        this(folder, numberOfKafkaBrokers, DEFAULT_ZOOKEEPER_PORT, DEFAULT_BASE_KAFKA_PORT);
     }
 
     @Override

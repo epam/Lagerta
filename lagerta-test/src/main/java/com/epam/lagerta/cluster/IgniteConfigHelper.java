@@ -39,7 +39,7 @@ public final class IgniteConfigHelper {
      *
      * @param configuration base configuration.
      * @param gridNumber number of started grid.
-     * @param numberOfProcesses expected size of started cluster.
+     * @param clusterSize expected size of started cluster.
      */
     public static void setNumberProcesses(IgniteConfiguration configuration, int gridNumber, int clusterSize) {
         TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
