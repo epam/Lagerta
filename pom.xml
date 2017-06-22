@@ -23,7 +23,7 @@
     <groupId>com.epam</groupId>
     <artifactId>lagerta</artifactId>
     <packaging>pom</packaging>
-    <version>0.6.0.0-SNAPSHOT</version>
+    <version>0.5.1.0</version>
 
     <name>Lagerta</name>
 

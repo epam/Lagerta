@@ -23,7 +23,7 @@
     <parent>
         <artifactId>lagerta</artifactId>
         <groupId>com.epam</groupId>
-        <version>0.6.0.0-SNAPSHOT</version>
+        <version>0.5.1.0</version>
     </parent>
 
     <artifactId>lagerta-jmh</artifactId>
