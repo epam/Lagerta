@@ -23,7 +23,7 @@
     <parent>
         <artifactId>lagerta</artifactId>
         <groupId>com.epam</groupId>
-        <version>0.5.0.0</version>
+        <version>0.5.1.0</version>
     </parent>
 
     <artifactId>lagerta-jmh</artifactId>
@@ -33,7 +33,6 @@
 
     <properties>
         <jmh.version>1.13</jmh.version>
-        <lagerta-core.version>1.0-SNAPSHOT</lagerta-core.version>
         <lagerta-core.dir>${basedir}/../lagerta-core/target</lagerta-core.dir>
     </properties>
 
@@ -51,10 +50,10 @@
         <dependency>
             <groupId>com.epam</groupId>
             <artifactId>lagerta-core</artifactId>
-            <version>${lagerta-core.version}</version>
+            <version>${version}</version>
             <!--todo delete when be on remote repo -->
             <scope>system</scope>
-            <systemPath>${lagerta-core.dir}/lagerta-core-${lagerta-core.version}.jar</systemPath>
+            <systemPath>${lagerta-core.dir}/lagerta-core-${version}.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
