@@ -22,6 +22,7 @@ import com.google.common.io.Resources;
 import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -51,18 +52,12 @@ public class DBResource implements Resource {
     }
 
     public void executeResource(String resourceName) throws SQLException {
-        executeUpdateQueryFromResource(dataSource.getConnection(), resourceName);
-    }
-
-    private void executeUpdateQueryFromResource(Connection connection, String resourceName) {
         URL resource = DBResource.class.getResource(resourceName);
-        try {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
             String query = Resources.toString(resource, Charsets.UTF_8);
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate(query);
-            }
-            connection.close();
-        } catch (Exception e) {
+            statement.executeUpdate(query);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
