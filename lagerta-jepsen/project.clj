@@ -14,7 +14,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 ;;
-(defproject lagerta-jepsen "0.5.1.0"
+(defproject lagerta-jepsen "0.5.1.1"
   :description "Jepsen test of Lagerta"
   :url "https://github.com/epam/Lagerta/tree/master/lagerta-jepsen"
   :license {:name "The Apache Software License, Version 2.0"
