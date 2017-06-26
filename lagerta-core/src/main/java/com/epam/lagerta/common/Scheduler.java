@@ -36,6 +36,7 @@ public class Scheduler {
 
     /**
      * thread-safe operation
+     *
      * @param task - closure to run once
      */
     public void pushTask(Runnable task) {
@@ -44,6 +45,7 @@ public class Scheduler {
 
     /**
      * non thread-safe operation
+     *
      * @param rule closure to run every cycle
      */
     public void registerRule(Runnable rule) {
@@ -52,6 +54,7 @@ public class Scheduler {
 
     /**
      * non thread-safe operation per timeInterval
+     *
      * @param timeInterval time interval to run rule
      */
     public PeriodicRule.Builder per(long timeInterval) {
@@ -60,6 +63,7 @@ public class Scheduler {
 
     /**
      * non thread-safe operation when predicate return true
+     *
      * @param predicate condition
      */
     public PredicateRule.Builder when(BooleanSupplier predicate) {
