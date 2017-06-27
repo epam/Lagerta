@@ -230,6 +230,10 @@
                         <exclude>.git/**</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.gitkeep</exclude>
+
+                        <!-- Config files-->
+                        <exclude>**/**.yml</exclude>
+                        <exclude>**/**.yaml</exclude>
                     </excludes>
                 </configuration>
             </plugin>
