@@ -25,6 +25,11 @@ or
 ```
 docker-compose kill
 ```
+**to scale kafka nodes**
+```
+docker-compose scale scalable-kafka=3
+```
+see for more info https://github.com/wurstmeister/kafka-docker
 
 ## Running the tests
 **to enter to jepsen-control container:**
